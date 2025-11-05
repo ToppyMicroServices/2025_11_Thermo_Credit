@@ -2,6 +2,11 @@ import pandas as pd, yaml
 from lib.entropy import money_entropy
 from lib.temperature import liquidity_temperature
 from lib.loop_area import LoopArea
+import os, sys
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if ROOT not in sys.path:
+    sys.path.insert(0, ROOT)
+
 
 cfg = yaml.safe_load(open("config.yml"))
 T0  = float(cfg.get("T0", 1.0))
