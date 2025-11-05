@@ -1,0 +1,6 @@
+name: Manual Build
+on:
+  workflow_dispatch: {}
+jobs:
+  run:
+    uses: ./.github/workflows/build-and-publish.yml

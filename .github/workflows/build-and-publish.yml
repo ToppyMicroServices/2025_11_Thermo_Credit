@@ -1,0 +1,40 @@
+name: Build & Publish
+on:
+  schedule:
+    - cron: '0 19 1 * *'  # 毎月1日 JST 04:00 に相当（UTC 19:00）
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: pip install -r requirements.txt plotly pyyaml pandas numpy
+      - name: Build indicators
+        run: |
+          python scripts/01_build_features.py || true
+          python scripts/02_compute_indicators.py
+          python scripts/03_make_report.py
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
