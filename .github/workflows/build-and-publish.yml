@@ -1,4 +1,4 @@
-name: Build & Publish
+name: "Build & Publish"
 on:
   schedule:
     - cron: '0 19 1 * *'   # 毎月1日 04:00 JST（UTC19:00）
@@ -15,31 +15,49 @@ concurrency:
 
 jobs:
   build:
-    if: github.ref == 'refs/heads/main'   # mainブランチのみ
+    if: ${{ github.ref == 'refs/heads/main' && github.repository == 'ToppyMicroServices/2025_11_Thermo_Credit' }}
     runs-on: ubuntu-latest
     env:
-      PYTHONPATH: ${{ github.workspace }}  
+      PYTHONPATH: "${{ github.workspace }}"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
+          cache: pip
       - name: Install deps
         run: pip install -r requirements.txt plotly pyyaml pandas numpy requests
+      - name: Prepare static site flags
+        run: |
+          mkdir -p site
+          # NOTE: Do NOT write CNAME from a project site; the apex custom domain should be configured on the user/organization Pages repo.
+          # Leaving only .nojekyll avoids Jekyll processing while keeping project site under /<repo>/ path on the custom domain.
+          touch site/.nojekyll
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Build indicators (API→CSV→report)
         env:
-          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}   # 使う場合だけ
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}   
+          TMS_BASE_URL: https://toppymicros.com/2025_11_Thermo_Credit
         run: |
           python scripts/01_build_features.py || true
           python scripts/02_compute_indicators.py
           python scripts/03_make_report.py
+      - name: List site contents
+        run: |
+          echo '--- site tree ---'
+          find site -maxdepth 2 -type f -print | sort
       - name: Sanity check artifacts
         run: |
           test -f site/report.html
           test -s site/indicators.csv
+      - name: Sanity check archive/feed/sitemap
+        run: |
+          test -f site/archive.json
+          test -f site/feed.xml
+          test -f site/sitemap.xml
+      - name: Sanity check robots.txt
+        run: test -f site/robots.txt
       - name: Upload pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
@@ -50,7 +68,11 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+      - name: Print deployed URL
+        env:
+          DEPLOY_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          echo "Deployed to: $DEPLOY_URL"
