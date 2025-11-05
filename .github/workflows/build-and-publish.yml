@@ -1,7 +1,7 @@
 name: Build & Publish
 on:
   schedule:
-    - cron: '0 19 1 * *'  # 毎月1日 JST 04:00 に相当（UTC 19:00）
+    - cron: '0 19 1 * *'   # 毎月1日 04:00 JST（UTC19:00）
   workflow_dispatch: {}
 
 permissions:
@@ -9,22 +9,30 @@ permissions:
   pages: write
   id-token: write
 
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
 jobs:
   build:
+    if: github.ref == 'refs/heads/main'   # mainブランチのみ
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
       - name: Install deps
-        run: pip install -r requirements.txt plotly pyyaml pandas numpy
-      - name: Build indicators
+        run: pip install -r requirements.txt plotly pyyaml pandas numpy requests
+      - name: Build indicators (API→CSV→report)
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}   # 使う場合だけ
         run: |
           python scripts/01_build_features.py || true
           python scripts/02_compute_indicators.py
           python scripts/03_make_report.py
-      - name: Upload artifact
+      - name: Upload pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: site/
