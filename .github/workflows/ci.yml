@@ -1,7 +1,16 @@
 name: CI
 on:
   push:
+    branches: [ main ]
+    paths-ignore:
+      - 'site/**'                 # 生成物でCIを起動しない
+      - '.github/workflows/build-and-publish.yml'
   pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -10,6 +19,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
       - name: Install
         run: pip install -r requirements.txt && pip install pytest
       - name: Tests
