@@ -1,11 +1,13 @@
-import pandas as pd, yaml
-from lib.entropy import money_entropy
-from lib.temperature import liquidity_temperature
-from lib.loop_area import LoopArea
 import os, sys
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if ROOT not in sys.path:
-    sys.path.insert(0, ROOT)
+sys.path.insert(0, ROOT)
+LIB = os.path.join(ROOT, "lib")
+sys.path.insert(0, LIB)
+
+import pandas as pd, yaml
+from entropy import money_entropy
+from temperature import liquidity_temperature
+from loop_area import LoopArea
 
 
 cfg = yaml.safe_load(open("config.yml"))
@@ -31,5 +33,6 @@ df["loop_area"] = areas
 
 df["X_C"] = df["U"].astype(float) - T0 * df["S_M"].astype(float)
 
+os.makedirs("site", exist_ok=True)
 df.to_csv("site/indicators.csv", index=False)
 print("Wrote site/indicators.csv")
