@@ -6,6 +6,10 @@ import requests
 FRED_KEY = os.getenv("FRED_API_KEY", "")
 WB_BASE  = "https://api.worldbank.org/v2"
 
+if not FRED_KEY:
+    print("No FRED_API_KEY; skip online fetch and keep local CSVs.")
+    raise SystemExit(0)
+    
 def fred_series(series_id, start="1990-01-01"):
     url = ("https://api.stlouisfed.org/fred/series/observations"
            f"?series_id={series_id}&api_key={FRED_KEY}&file_type=json&observation_start={start}")
