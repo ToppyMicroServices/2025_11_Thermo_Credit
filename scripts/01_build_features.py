@@ -2,7 +2,11 @@
 import os, json, time, math, datetime as dt
 import pandas as pd
 import requests
-
+import sys
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if ROOT not in sys.path:
+    sys.path.insert(0, ROOT)
+# -----------------------------------
 FRED_KEY = os.getenv("FRED_API_KEY", "")
 WB_BASE  = "https://api.worldbank.org/v2"
 
