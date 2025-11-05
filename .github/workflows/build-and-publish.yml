@@ -27,6 +27,8 @@ jobs:
           cache: 'pip'
       - name: Install deps
         run: pip install -r requirements.txt plotly pyyaml pandas numpy requests
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
       - name: Build indicators (API→CSV→report)
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}   # 使う場合だけ
@@ -34,6 +36,10 @@ jobs:
           python scripts/01_build_features.py || true
           python scripts/02_compute_indicators.py
           python scripts/03_make_report.py
+      - name: Sanity check artifacts
+        run: |
+          test -f site/report.html
+          test -s site/indicators.csv
       - name: Upload pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
