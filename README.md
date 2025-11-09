@@ -6,6 +6,10 @@ Compute thermo‑credit indicators from public statistics (local CSVs or FRED AP
 
 > This dashboard is an experimental implementation of the Thermo‑Credit framework. All values are prototype indicators; see the Zenodo technical note for definitions and limitations.
 
+Dashboard(Active):
+https://toppymicros.com/2025_11_Thermo_Credit/report.html
+
+
 Core metrics:
 - S_M — Monetary Dispersion Entropy (entropy‑like, extensive)
 - T_L — Liquidity “Temperature”
