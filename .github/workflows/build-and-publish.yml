@@ -10,7 +10,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  group: pages-main
   cancel-in-progress: true
 
 jobs:
@@ -37,11 +37,13 @@ jobs:
         uses: actions/configure-pages@v5
       - name: Build indicators (API→CSV→report)
         env:
-          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}   
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
           TMS_BASE_URL: https://toppymicros.com/2025_11_Thermo_Credit
         run: |
-          python scripts/01_build_features.py || true
+          python scripts/fetch_fred_series.py --start 1990-01-01 || true
           python scripts/02_compute_indicators.py
+          python scripts/02_compute_indicators_eu.py
+          python scripts/02_compute_indicators_us.py
           python scripts/03_make_report.py
       - name: List site contents
         run: |
