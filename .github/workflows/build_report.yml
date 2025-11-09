@@ -22,6 +22,18 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Compute JP indicators
+        run: |
+          python scripts/02_compute_indicators.py
+
+      - name: Compute EU indicators (if inputs exist)
+        run: |
+          python scripts/02_compute_indicators_eu.py
+
+      - name: Compute US indicators (if inputs exist)
+        run: |
+          python scripts/02_compute_indicators_us.py
+
       - name: Optimize logo (pre-compress)
         run: |
           python scripts/optimize_logo.py --height 80 --colors 96
