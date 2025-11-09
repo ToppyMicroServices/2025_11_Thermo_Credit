@@ -1,0 +1,12 @@
+.DS_Store
+**/.DS_Store
+.venv/
+site/
+data/*.csv
+data/worldbank_cache_*.json
+# VS Code project settings: ignore noisy files but keep core shared configs
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/tasks.json

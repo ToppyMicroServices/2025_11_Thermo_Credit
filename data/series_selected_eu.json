@@ -1,0 +1,20 @@
+{
+  "money_scale_eu": {
+    "id": "ECBASSETS",
+    "source": "config",
+    "start": "1999-01-01",
+    "title": "ECB Total Assets (consolidated)"
+  },
+  "base_proxy_eu": {
+    "id": "ECBASSETS",
+    "source": "config",
+    "start": "1999-01-01",
+    "title": "ECB Total Assets"
+  },
+  "yield_proxy_eu": {
+    "id": "IRLTLT01EZM156N",
+    "source": "config",
+    "start": "1999-01-01",
+    "title": "Euro Area Long-term Yield"
+  }
+}

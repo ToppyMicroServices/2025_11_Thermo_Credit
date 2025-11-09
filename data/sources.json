@@ -1,0 +1,156 @@
+[
+  {
+    "id": "JPNASSETS",
+    "title": "BoJ Total Assets",
+    "provider": "FRED / BoJ",
+    "country": "JP",
+    "frequency": "Monthly",
+    "units": "JPY (level)",
+    "url": "https://fred.stlouisfed.org/series/JPNASSETS",
+    "note": "Used as base proxy and money_scale candidate",
+    "enabled": true
+  },
+  {
+    "id": "MYAGM2JPM189S",
+    "title": "Japan M2 (Monthly)",
+    "provider": "FRED / BoJ",
+    "country": "JP",
+    "frequency": "Monthly",
+    "units": "Index/Level",
+    "url": "https://fred.stlouisfed.org/series/MYAGM2JPM189S",
+    "note": "Money scale candidate",
+    "enabled": true
+  },
+  {
+    "id": "IRLTLT01JPM156N",
+    "title": "Long-term JGB Yield",
+    "provider": "FRED",
+    "country": "JP",
+    "frequency": "Monthly",
+    "units": "%",
+    "url": "https://fred.stlouisfed.org/series/IRLTLT01JPM156N",
+    "note": "Yield proxy (primary)",
+    "enabled": true
+  },
+  {
+    "id": "DGS10",
+    "title": "US 10Y Treasury Yield",
+    "provider": "FRED",
+    "country": "US",
+    "frequency": "Daily",
+    "units": "%",
+    "url": "https://fred.stlouisfed.org/series/DGS10",
+    "note": "Yield proxy fallback",
+    "enabled": true
+  },
+  {
+    "id": "WALCL",
+    "title": "Federal Reserve Total Assets",
+    "provider": "FRED / Federal Reserve",
+    "country": "US",
+    "frequency": "Weekly",
+    "units": "USD (level)",
+    "url": "https://fred.stlouisfed.org/series/WALCL",
+    "note": "US balance sheet proxy",
+    "enabled": true
+  },
+  {
+    "id": "WM2NS",
+    "title": "US M2 (Not Seasonally Adjusted)",
+    "provider": "FRED / Federal Reserve",
+    "country": "US",
+    "frequency": "Monthly",
+    "units": "USD (level)",
+    "url": "https://fred.stlouisfed.org/series/WM2NS",
+    "note": "US money scale candidate",
+    "enabled": true
+  },
+  {
+    "id": "ECBASSETS",
+    "title": "ECB Total Assets",
+    "provider": "FRED / ECB",
+    "country": "EA",
+    "frequency": "Weekly/Monthly",
+    "units": "EUR (level)",
+    "url": "https://fred.stlouisfed.org/series/ECBASSETS",
+    "note": "Euro area balance sheet proxy",
+    "enabled": false
+  },
+  {
+    "id": "MABMM301EZM189S",
+    "title": "Euro Area M3 (Broad Money)",
+    "provider": "FRED / ECB",
+    "country": "EA",
+    "frequency": "Monthly",
+    "units": "Index/Level",
+    "url": "https://fred.stlouisfed.org/series/MABMM301EZM189S",
+    "note": "Euro area broad money scale",
+    "enabled": false
+  },
+  {
+    "id": "IRLTLT01EZM156N",
+    "title": "Euro Area Long-term Government Bond Yields",
+    "provider": "FRED / OECD",
+    "country": "EA",
+    "frequency": "Monthly",
+    "units": "%",
+    "url": "https://fred.stlouisfed.org/series/IRLTLT01EZM156N",
+    "note": "Euro area long-term yield (primary)",
+    "enabled": false
+  },
+  {
+    "id": "DE10Y",
+    "title": "Germany 10Y Bund Yield (proxy)",
+    "provider": "FRED / Deutsche Bundesbank",
+    "country": "DE",
+    "frequency": "Daily",
+    "units": "%",
+    "url": "https://fred.stlouisfed.org/series/DE10Y",
+    "note": "Fallback if EA long-term unavailable",
+    "enabled": false
+  },
+  {
+    "id": "REPLACE_ME_JP_LOANS",
+    "title": "Japan Total Loans (Placeholder)",
+    "provider": "BIS / BoJ",
+    "country": "JP",
+    "frequency": "Quarterly",
+    "units": "JPY billions",
+    "url": "https://example.org/jp_loans",
+    "note": "Replace with actual BIS or BoJ loans series ID",
+    "enabled": false
+  },
+  {
+    "id": "REPLACE_ME_JP_CORP_BONDS",
+    "title": "Japan Corporate Bonds Outstanding (Placeholder)",
+    "provider": "BIS / JSDA",
+    "country": "JP",
+    "frequency": "Quarterly",
+    "units": "JPY billions",
+    "url": "https://example.org/jp_corp_bonds",
+    "note": "Replace with actual BIS bond outstanding series",
+    "enabled": false
+  },
+  {
+    "id": "IR3TJB01JPM156N",
+    "title": "Japan 3-Month Interbank Rate",
+    "provider": "FRED / OECD",
+    "country": "JP",
+    "frequency": "Monthly",
+    "units": "%",
+    "url": "https://fred.stlouisfed.org/series/IR3TJB01JPM156N",
+    "note": "Short-term yield for spread construction",
+    "enabled": false
+  },
+  {
+    "id": "REPLACE_ME_JP_TURNOVER",
+    "title": "Tokyo Stock Exchange Turnover (Placeholder)",
+    "provider": "TSE",
+    "country": "JP",
+    "frequency": "Monthly",
+    "units": "Index",
+    "url": "https://example.org/jp_turnover",
+    "note": "Replace with real turnover series (value traded / market cap)",
+    "enabled": false
+  }
+]

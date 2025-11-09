@@ -1,0 +1,6 @@
+# Region-specific overrides for Euro Area (EU)
+T0: 1.0
+p0: 1.5
+V0: 400000.0
+U0: 8.0e6
+S0: 8.0e5

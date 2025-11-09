@@ -1,0 +1,15 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "install-reqs",
+			"type": "shell",
+			"command": "pip install -r requirements.txt",
+			"args": [],
+			"problemMatcher": [
+				"$python"
+			],
+			"group": "build"
+		}
+	]
+}

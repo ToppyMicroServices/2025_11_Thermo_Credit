@@ -1,3 +1,73 @@
 T0: 1.0
 k: 1.0
 loop_forgetting: 0.98
+
+# Optional: preferred series (env > config > default order)
+series:
+  money_scale:
+    preferred:
+      - id: JPNASSETS
+        start: 1995-01-01
+        title: BoJ Total Assets (as money proxy)
+      - id: MYAGM2JPM189S
+        title: Japan M2 (FRED mirror)
+        start: 1990-01-01
+  base_proxy:
+    - id: JPNASSETS
+      title: BoJ Total Assets
+      start: 1990-01-01
+  yield_proxy:
+    - id: IRLTLT01JPM156N
+      title: Long-term JGB yield (FRED)
+      note: Primary JP long-term yield series
+      start: 1995-01-01
+    - id: DGS10
+      title: US 10Y (placeholder)
+      note: Fallback if JP yield unavailable
+      start: 1990-01-01
+  money_scale_eu:
+    preferred:
+      - id: ECBASSETS
+        title: ECB Total Assets (consolidated)
+        note: Euro area balance sheet proxy
+        start: 1999-01-01
+      - id: MABMM301EZM189S
+        title: Euro Area M3 (Broad Money)
+        note: Broad money scale alternative
+        start: 1999-01-01
+  base_proxy_eu:
+    - id: ECBASSETS
+      title: ECB Total Assets
+      start: 1999-01-01
+  yield_proxy_eu:
+    - id: IRLTLT01EZM156N
+      title: Euro Area Long-term Yield
+      note: Primary Euro area long-term yield series
+      start: 1999-01-01
+    - id: DE10Y
+      title: Germany 10Y Bund Yield (placeholder)
+      note: Fallback if aggregated EA yield unavailable
+      start: 1999-01-01
+  money_scale_us:
+    preferred:
+      - id: WALCL
+        title: Federal Reserve Total Assets
+        note: Fed balance sheet proxy
+        start: 1990-01-01
+      - id: WM2NS
+        title: US M2 (Not seasonally adjusted)
+        note: Broad money alternative
+        start: 1990-01-01
+  base_proxy_us:
+    - id: WALCL
+      title: Federal Reserve Total Assets
+      start: 1990-01-01
+  yield_proxy_us:
+    - id: DGS10
+      title: US 10Y Treasury Yield
+      note: Primary US long-term yield
+      start: 1990-01-01
+    - id: GS30
+      title: US 30Y Treasury Yield (fallback)
+      note: Fallback if 10Y missing
+      start: 1990-01-01

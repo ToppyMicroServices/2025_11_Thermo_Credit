@@ -1,0 +1,20 @@
+{
+  "money_scale_us": {
+    "id": "WALCL",
+    "source": "config",
+    "start": "1990-01-01",
+    "title": "Federal Reserve Total Assets"
+  },
+  "base_proxy_us": {
+    "id": "WALCL",
+    "source": "config",
+    "start": "1990-01-01",
+    "title": "Federal Reserve Total Assets"
+  },
+  "yield_proxy_us": {
+    "id": "DGS10",
+    "source": "config",
+    "start": "1990-01-01",
+    "title": "US 10Y Treasury Yield"
+  }
+}

@@ -4,3 +4,4 @@ pyyaml>=6.0
 plotly>=5.24
 requests
 kaleido>=0.2.1 
+Pillow>=10.0

@@ -1,0 +1,20 @@
+{
+  "money_scale_jp": {
+    "id": "JPNASSETS",
+    "source": "config",
+    "start": "1998-01-01",
+    "title": "BoJ Total Assets"
+  },
+  "base_proxy_jp": {
+    "id": "JPNASSETS",
+    "source": "config",
+    "start": "1998-01-01",
+    "title": "BoJ Total Assets"
+  },
+  "yield_proxy_jp": {
+    "id": "IRLTLT01JPM156N",
+    "source": "config",
+    "start": "1990-01-01",
+    "title": "Long-term JGB Yield"
+  }
+}

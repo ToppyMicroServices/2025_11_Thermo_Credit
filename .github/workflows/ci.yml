@@ -14,13 +14,51 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: [ '3.10', '3.11' ]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: 'pip'
+      - name: Install
+        run: |
+          python -m pip install -U pip
+          pip install -r requirements.txt
+          pip install pytest
+      - name: Tests
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY || '' }}
+        run: pytest -q
+  strict-eu:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
       - name: Install
-        run: pip install -r requirements.txt && pip install pytest
-      - name: Tests
-        run: pytest -q
+        run: |
+          python -m pip install -U pip
+          pip install -r requirements.txt
+          pip install pytest
+      - name: Build JP features (skip if no API key)
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY || '' }}
+        run: |
+          if [ -n "$FRED_API_KEY" ]; then python scripts/01_build_features.py; fi
+      - name: Build EU features (skip if no API key)
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY || '' }}
+        run: |
+          if [ -n "$FRED_API_KEY" ]; then python scripts/04_build_features_eu.py; fi
+      - name: Compute indicators strict
+        run: |
+          python scripts/02_compute_indicators.py
+          python scripts/02_compute_indicators_eu.py --strict || echo "[warn] EU strict run failed (placeholders or missing real data)"
+      - name: Run tests
+        run: pytest -q || echo "[warn] tests failed under strict EU scenario"
