@@ -39,7 +39,7 @@ def fred_series(series_id, start="1990-01-01", retries: int = 3, backoff: float 
             else:
                 raise
 
-def worldbank_series(country="JPN", indicator="NY.GDP.MKTP.CN"):  # 名目GDP（円）
+def worldbank_series(country="JPN", indicator="NY.GDP.MKTP.CN"):  # Nominal GDP (JPY)
     url = f"{WB_BASE}/country/{country}/indicator/{indicator}?format=json&per_page=20000"
     r = requests.get(url, timeout=30); r.raise_for_status()
     data = r.json()[1]
@@ -106,7 +106,7 @@ def build_features(series_prefs: dict) -> None:
     except Exception:
         pass
 
-    # --- 1) money.csv（M_in=M2, M_out=マネタリーベースの素朴割当） ---
+    # --- 1) money.csv (M_in = M2, M_out = monetary base naive allocation) ---
     m2 = money_choice["data"].copy()
     m2["date"] = pd.to_datetime(m2["date"])
     m2 = m2.rename(columns={"value": "M_in"})
@@ -118,9 +118,9 @@ def build_features(series_prefs: dict) -> None:
     money = m2.merge(base, on="date", how="left")
     money.to_csv("data/money.csv", index=False)
 
-    # --- 2) credit.csv（クレジット＋GDP＋金利・株式近似） ---
-    credit = fred_series("CRDQJPAPABIS")    # BIS由来：民間非金融向け信用（日本, 四半期/ドル建等）
-    gdp = worldbank_series("JPN", "NY.GDP.MKTP.CN")  # 名目GDP（円）
+    # --- 2) credit.csv (credit + GDP + rate/equity proxies) ---
+    credit = fred_series("CRDQJPAPABIS")    # BIS-derived: private non-financial sector credit (Japan, quarterly)
+    gdp = worldbank_series("JPN", "NY.GDP.MKTP.CN")  # Nominal GDP (JPY)
 
     jgb = yield_choice["data"].copy()
     jgb["date"] = pd.to_datetime(jgb["date"])
@@ -130,15 +130,15 @@ def build_features(series_prefs: dict) -> None:
     credit_q = (credit.merge(gdp, on="date", how="left")
                       .merge(jgbq[["date", "spread"]], on="date", how="left"))
     credit_q = credit_q.rename(columns={"value_x": "L_real", "value_y": "Y"})
-    credit_q["L_asset"] = credit_q["L_real"] * 0.4  # 暫定比率（後で実データに置換）
-    credit_q["U"] = credit_q["Y"]                   # モデル都合のポテンシャル代理
-    credit_q["depth"] = 1000                        # 近似・後で置換
-    credit_q["turnover"] = 1.0                      # 近似・後で置換
+    credit_q["L_asset"] = credit_q["L_real"] * 0.4  # provisional ratio (replace with real data later)
+    credit_q["U"] = credit_q["Y"]                   # model convenience: potential proxy
+    credit_q["depth"] = 1000                        # approximate; replace later
+    credit_q["turnover"] = 1.0                      # approximate; replace later
     credit_q = credit_q[["date", "L_real", "L_asset", "U", "Y", "spread", "depth", "turnover"]]
     credit_q.to_csv("data/credit.csv", index=False)
 
-    # --- 3) reg_pressure.csv（政策金利＋中銀総資産） ---
-    policy = fred_series("DFF")  # ひとまずFF金利→後で日銀コール翌日物に置換（公式XLSXあり）
+    # --- 3) reg_pressure.csv (policy rate + central bank total assets) ---
+    policy = fred_series("DFF")  # temporary: use Fed funds; later replace with BoJ overnight call rate (official XLSX exists)
     policy = policy.rename(columns={"value": "p_R"})
     policy["date"] = pd.to_datetime(policy["date"])
 
@@ -147,7 +147,7 @@ def build_features(series_prefs: dict) -> None:
                  .sort_values("date").dropna(subset=["p_R", "V_R"]))
     reg.to_csv("data/reg_pressure.csv", index=False)
 
-    # --- 4) allocation_q.csv（初期はフラットでOK：後で半自動化に差し替え） ---
+    # --- 4) allocation_q.csv (initially flat; later switch to semi-automated) ---
     dates = credit_q["date"].drop_duplicates().sort_values()
     q = pd.DataFrame({"date": dates})
     q["q_pay"] = 0.30
@@ -156,7 +156,7 @@ def build_features(series_prefs: dict) -> None:
     q["q_reserve"] = 0.15
     q.to_csv("data/allocation_q.csv", index=False)
 
-    print("API fetch -> CSV 書き出し完了")
+    print("API fetch -> CSV write complete")
 
 
 def list_series(series_prefs: dict, roles: Optional[list] = None) -> None:

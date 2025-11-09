@@ -202,7 +202,7 @@ def build_eu(series_prefs: dict) -> None:
         if sid and isinstance(df_raw, pd.DataFrame):
             df_raw.to_csv(os.path.join("data", f"{sid}.csv"), index=False)
 
-    print("EU fetch -> CSV 書き出し完了 (series_selected_eu.json, raw series CSV)")
+    print("EU fetch -> CSV write complete (series_selected_eu.json, raw series CSV)")
 
     # --- Build EU feature input CSVs from real series (replace placeholders) ---
     try:

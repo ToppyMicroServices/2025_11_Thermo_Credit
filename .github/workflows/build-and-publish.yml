@@ -1,7 +1,7 @@
 name: "Build & Publish"
 on:
   schedule:
-    - cron: '0 19 1 * *'   # 毎月1日 04:00 JST（UTC19:00）
+    - cron: '0 19 1 * *'   # Monthly on day 1 at 04:00 JST (UTC 19:00)
   workflow_dispatch: {}
 
 permissions:

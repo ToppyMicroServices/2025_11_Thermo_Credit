@@ -3,7 +3,7 @@ on:
   push:
     branches: [ main ]
     paths-ignore:
-      - 'site/**'                 # 生成物でCIを起動しない
+  - 'site/**'                 # Ignore generated site artifacts
       - '.github/workflows/build-and-publish.yml'
   pull_request:
 permissions:

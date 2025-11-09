@@ -370,9 +370,9 @@ def _selected_summary_sentence(prefix: str, meta: Optional[Dict[str, Any]]) -> O
                     return meta[ks]
         return None
     roles = [
-        ("money_scale", "マネースケール"),
-        ("base_proxy", "ベース"),
-        ("yield_proxy", "長期金利"),
+        ("money_scale", "Money scale"),
+        ("base_proxy", "Base"),
+        ("yield_proxy", "Long-term yield"),
     ]
     parts: List[str] = []
     for key, label in roles:
@@ -381,11 +381,11 @@ def _selected_summary_sentence(prefix: str, meta: Optional[Dict[str, Any]]) -> O
             title = ent.get("title") or ent.get("id", "")
             start = ent.get("start") or ""
             start_y = start[:4] if isinstance(start, str) and len(start) >= 4 else ""
-            tail = f" (開始 {start_y})" if start_y else ""
+            tail = f" (since {start_y})" if start_y else ""
             parts.append(f"{label}: {html_lib.escape(title)}{tail}")
     if not parts:
         return None
-    return f"{html_lib.escape(prefix)} — " + " ・ ".join(parts)
+    return f"{html_lib.escape(prefix)} — " + " | ".join(parts)
 
 
 def _definitions_table(ref_df: pd.DataFrame) -> str:
