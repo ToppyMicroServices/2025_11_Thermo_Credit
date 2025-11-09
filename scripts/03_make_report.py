@@ -833,6 +833,9 @@ def main() -> None:
     "table.mini{border-collapse:collapse;margin:.5rem 0}table.mini td,table.mini th{padding:.25rem .5rem;border-bottom:1px solid #ddd;text-align:right}table.mini th:first-child,table.mini td:first-child{text-align:left}"
     ".tabs{display:flex;gap:.5rem;margin:.75rem 0 1rem}.tabs button{border:1px solid #888;background:#f8f8f8;padding:.4rem .75rem;cursor:pointer;font-size:.8rem;border-radius:4px}.tabs button.active{background:#333;color:#fff}"
     ".region{display:none}.region.active{display:block}"
+    ".intro{background:#eef2f7;border:1px solid #dde4ee;padding:.85rem 1rem;border-radius:8px;margin:1rem 0}"
+    ".intro ul{margin:.5rem 0 .75rem;padding-left:1.1rem}"
+    ".intro li{margin:.3rem 0}"
     # Inputs summary
     ".inputs-summary{background:#fafafa;border:1px solid #eee;padding:.75rem;border-radius:6px;margin:.75rem 0 1rem}"
     ".inputs-summary .inputs-row{margin:.35rem 0}.inputs-summary .region-tag{display:inline-block;background:#333;color:#fff;border-radius:3px;padding:.15rem .4rem;font-size:.75rem;margin-right:.4rem}"
@@ -850,7 +853,21 @@ def main() -> None:
     + (f'<img src="{logo_uri}" alt="Company Logo"/>' if logo_uri else "")
     + '<span class="brand-name">ToppyMicroServices</span></div><h1>Thermo-Credit Monitor</h1><p class="note">Interactive charts with summary & fallbacks.</p>')
 
-    page_body = selected_summary_html + inputs_summary_html + tabs_html + regions_html + noscript + sources_html + defs_html
+    intro_html = (
+        '<section class="intro">'
+        '<h2>Thermo-Credit Prototype</h2>'
+        '<p>This page shows a prototype implementation of the Thermo-Credit framework.</p>'
+        '<ul>'
+        '<li><strong>S_M</strong>: money/credit dispersion entropy (scale × allocation diversity).</li>'
+        '<li><strong>T_L</strong>: liquidity "temperature" index (market & funding conditions, normalized).</li>'
+        '<li><strong>Loop area</strong>: policy/regulatory loop dissipation in the (S_M, V_C) plane.</li>'
+        '<li><strong>X_C</strong>: credit exergy ceiling, i.e. remaining room for non-disruptive adjustment.</li>'
+        '</ul>'
+        '<p>Data and formulas follow the Thermo-Credit v0.x specification (see link below). Values shown are illustrative / experimental.</p>'
+        '</section>'
+    )
+
+    page_body = intro_html + selected_summary_html + inputs_summary_html + tabs_html + regions_html + noscript + sources_html + defs_html
     script_block = ("\n<script>(function(){const b=[...document.querySelectorAll('.tabs button')];if(!b.length)return;"
                     "b.forEach(btn=>btn.addEventListener('click',()=>{b.forEach(x=>x.classList.remove('active'));btn.classList.add('active');"
                     "const tgt=btn.getAttribute('data-target');document.querySelectorAll('.region').forEach(r=>r.classList.remove('active'));"
