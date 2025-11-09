@@ -22,6 +22,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Fetch EU/US raw series from FRED (if API key provided)
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+        run: |
+          python scripts/fetch_fred_series.py --start 1990-01-01 || true
+
       - name: Compute JP indicators
         run: |
           python scripts/02_compute_indicators.py

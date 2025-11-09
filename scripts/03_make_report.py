@@ -31,6 +31,26 @@ REQUIRED_THERMO_COLS = ["S_M", "T_L", "p_C", "V_C", "U"]
 DERIVATIVE_COLS = ["dS_dV_at_T", "dp_dT_at_V", "maxwell_gap"]
 FIRSTLAW_COLS = ["dU", "Q_like", "W_like", "dU_pred", "firstlaw_resid"]
 
+# Expose raw_inputs_df at module level so tests can import this module and verify normalization
+raw_inputs_df = None
+try:
+    # Strategy: try CWD/data first (honors monkeypatched chdir in tests),
+    # then fall back to repo DATA_DIR. Take the first that yields any frames.
+    for src_path in (os.path.join("data", "sources.json"), os.path.join(DATA_DIR, "sources.json")):
+        try:
+            srcs = load_sources(src_path)
+            if srcs:
+                cand = load_and_normalize(enabled_sources(srcs))
+                if cand is not None:
+                    raw_inputs_df = cand
+                    break
+        except Exception:
+            continue
+except Exception as exc:
+    # Swallow but emit minimal diagnostic to aid CI debugging
+    print("[report] raw_inputs module-level init failed:", exc)
+    raw_inputs_df = None
+
 
 def _load_csv(path: str) -> Optional[pd.DataFrame]:
     if not os.path.exists(path):
@@ -676,8 +696,16 @@ def main() -> None:
     eu_selected_meta = _load_json(os.path.join(DATA_DIR, "series_selected_eu.json"))
     us_selected_meta = _load_json(os.path.join(DATA_DIR, "series_selected_us.json"))
 
+    # Prefer module-level preloaded raw_inputs_df if available; otherwise attempt repo data path
     sources_meta = load_sources(os.path.join(DATA_DIR, "sources.json"))
-    raw_inputs_df = load_and_normalize(enabled_sources(sources_meta))
+    global raw_inputs_df  # reuse module variable
+    if raw_inputs_df is None:
+        raw_inputs_df = load_and_normalize(enabled_sources(sources_meta))
+        # Fallback: if still None (e.g. tests chdir into temp dir with alternative data set), try CWD-relative sources.json
+        if raw_inputs_df is None:
+            alt_sources = load_sources(os.path.join("data", "sources.json"))
+            if alt_sources:
+                raw_inputs_df = load_and_normalize(enabled_sources(alt_sources))
     raw_inputs_fig = _build_raw_inputs_fig(raw_inputs_df)
 
     regions: List[Dict[str, Any]] = []
