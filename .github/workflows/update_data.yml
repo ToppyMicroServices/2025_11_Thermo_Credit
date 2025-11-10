@@ -5,12 +5,18 @@ on:
   schedule:
     - cron: '0 3 * * 1-5'
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   fetch-and-build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -55,6 +61,7 @@ jobs:
         if: success()
         uses: peter-evans/create-pull-request@v6
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           title: "chore(ci): update JP raw & report"
           commit-message: "chore(ci): update JP raw & report"
           branch: ci/update-jp-data
