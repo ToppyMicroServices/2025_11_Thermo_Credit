@@ -62,3 +62,31 @@ jobs:
           python scripts/02_compute_indicators_eu.py --strict || echo "[warn] EU strict run failed (placeholders or missing real data)"
       - name: Run tests
         run: pytest -q || echo "[warn] tests failed under strict EU scenario"
+
+  security:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pip-audit
+        run: |
+          python -m pip install -U pip
+          pip install pip-audit
+      - name: Dependency vulnerability scan (pip-audit)
+        run: |
+          pip-audit -r requirements.txt --strict || echo "[warn] vulnerabilities found"
+      - name: Basic secret scan (regex)
+        run: |
+          set -e
+          PATTERNS='(AKIA[0-9A-Z]{16})|(AIza[0-9A-Za-z-_]{35})|([rs]k_live_[0-9a-zA-Z]{24,})|(xox[baprs]-[0-9A-Za-z-]{10,})|(ghp_[0-9A-Za-z]{36})'
+          if grep -RInE "$PATTERNS" -- . \
+            --exclude-dir=.git --exclude-dir=.github --exclude-dir=site \
+            --exclude=*.md --exclude=*.csv --exclude=*.png --exclude=*.jpg --exclude=*.svg; then
+            echo "Potential secrets detected" && exit 1;
+          else
+            echo "No obvious secrets detected";
+          fi
