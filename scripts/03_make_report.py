@@ -129,6 +129,64 @@ def _apply_hover(fig, fmt: str) -> None:
     fig.update_traces(hovertemplate="%{x|%Y-%m-%d}<br>%{y:" + fmt + "}<extra>%{fullData.name}</extra>")
 
 
+def _filter_placeholders(df: pd.DataFrame) -> pd.DataFrame:
+    """If a 'placeholder' column exists, filter out rows marked as placeholders.
+    This hides provisional data from charts/tables while keeping them in source files.
+    """
+    if "placeholder" in df.columns:
+        try:
+            mask = ~(df["placeholder"].astype(bool))
+            return df[mask].copy()
+        except Exception:
+            return df
+    return df
+
+
+def _out_of_spec_mask(df: pd.DataFrame) -> pd.Series:
+    """Return a boolean mask for dates where diagnostics are out-of-spec.
+    Uses robust thresholds based on MAD for maxwell_gap and firstlaw_resid.
+    """
+    import numpy as np
+    idx = df.index
+    mask = pd.Series(False, index=idx)
+    for col in ("maxwell_gap", "firstlaw_resid"):
+        if col not in df.columns:
+            continue
+        s = pd.to_numeric(df[col], errors="coerce")
+        a = s.abs().dropna()
+        if a.empty:
+            continue
+        if len(a) >= 12:
+            mad = (a - a.median()).abs().median()
+            thresh = float(a.median() + 6.0 * mad) if mad and mad > 0 else float(a.quantile(0.99))
+        else:
+            thresh = float(a.quantile(0.99))
+        if not np.isfinite(thresh) or thresh <= 0:
+            continue
+        mask = mask | (s.abs() > thresh)
+    return mask
+
+
+def _mask_to_ranges(dates: pd.Series, mask: pd.Series) -> List[Tuple[pd.Timestamp, pd.Timestamp]]:
+    """Convert a boolean mask to contiguous date ranges.
+    Returns list of (start, end) inclusive timestamps.
+    """
+    ranges: List[Tuple[pd.Timestamp, pd.Timestamp]] = []
+    if dates.empty or mask.empty or len(dates) != len(mask):
+        return ranges
+    current_start = None
+    for dt_val, flag in zip(dates, mask):
+        if flag and current_start is None:
+            current_start = dt_val
+        elif not flag and current_start is not None:
+            ranges.append((current_start, prev_dt))
+            current_start = None
+        prev_dt = dt_val
+    if current_start is not None:
+        ranges.append((current_start, prev_dt))
+    return ranges
+
+
 def _augment_region_frame(frame: pd.DataFrame, effective_window: int, has_thermo: bool) -> Tuple[pd.DataFrame, bool]:
     local = frame.copy()
     for col in local.columns:
@@ -491,6 +549,8 @@ def _build_region_context(
         local = local.sort_values("date").reset_index(drop=True)
     if local.empty:
         return _empty_context()
+    # Hide provisional placeholders if marked
+    local = _filter_placeholders(local)
     has_thermo = all(c in local.columns for c in REQUIRED_THERMO_COLS)
     effective_window, eff_note = _calc_effective_window(local, diag_window)
     local, has_derivatives = _augment_region_frame(local, effective_window, has_thermo)
@@ -525,6 +585,8 @@ def _build_region_context(
             fig_specs.append((fig, title_x, x_col))
 
     deriv_cols_present = [c for c in DERIVATIVE_COLS if c in local.columns]
+    out_of_spec_note = ""
+    out_of_spec_ranges: List[Tuple[pd.Timestamp, pd.Timestamp]] = []
     if has_derivatives and effective_window >= 3 and deriv_cols_present and not plot_df.empty:
         title = f"{label} – Maxwell-like Relation"
         if eff_note:
@@ -532,12 +594,31 @@ def _build_region_context(
         fig = px.line(plot_df, x="date", y=deriv_cols_present, title=title, markers=True)
         _style_figure(fig)
         _apply_hover(fig, ".3f")
+        # Shade out-of-spec zones across the full plot if diagnostics spike
+        try:
+            mask = _out_of_spec_mask(plot_df)
+            if mask.any():
+                out_of_spec_ranges = _mask_to_ranges(plot_df["date"], mask)
+                for (x0, x1) in out_of_spec_ranges:
+                    fig.add_vrect(x0=x0, x1=x1, fillcolor="gray", opacity=0.12, line_width=0, layer="below")
+        except Exception:
+            pass
         fig_specs.append((fig, "Maxwell-like Test", "Derivatives"))
     firstlaw_cols = [c for c in ["dU", "dU_pred", "firstlaw_resid"] if c in local.columns]
     if has_thermo and firstlaw_cols and not plot_df.empty:
         fig = px.line(plot_df, x="date", y=firstlaw_cols, title=f"{label} – First-law Decomposition", markers=True)
         _style_figure(fig)
         _apply_hover(fig, ".3f")
+        # Mirror shading on first-law plot for same out-of-spec windows
+        try:
+            if not out_of_spec_ranges:
+                mask2 = _out_of_spec_mask(plot_df)
+                if mask2.any():
+                    out_of_spec_ranges = _mask_to_ranges(plot_df["date"], mask2)
+            for (x0, x1) in out_of_spec_ranges:
+                fig.add_vrect(x0=x0, x1=x1, fillcolor="gray", opacity=0.12, line_width=0, layer="below")
+        except Exception:
+            pass
         fig_specs.append((fig, "First-law Decomposition", "ΔU vs predicted"))
     if include_raw_inputs and raw_inputs_fig is not None:
         fig_specs.append((raw_inputs_fig, "Raw Inputs (first=100)", "Normalized raw inputs"))
@@ -557,8 +638,11 @@ def _build_region_context(
     if "loop_area" in local.columns:
         summary_items.append(f"Loop area: {fmt(last_row.get('loop_area'))}")
     # Summary: show X_C if present; otherwise F_C label it accordingly
+    # Also collect X_C behavior for interpretation and possible suppression
+    xc_series = None
     if "X_C" in local.columns and pd.to_numeric(local["X_C"], errors="coerce").dropna().size > 0:
         summary_items.append(f"X_C: {fmt(last_row.get('X_C'))}")
+        xc_series = pd.to_numeric(local["X_C"], errors="coerce").dropna()
     elif "F_C" in local.columns and pd.to_numeric(local["F_C"], errors="coerce").dropna().size > 0:
         summary_items.append(f"F_C: {fmt(last_row.get('F_C'))}")
     if has_derivatives and "maxwell_gap" in local.columns:
@@ -569,7 +653,18 @@ def _build_region_context(
 
     # Mini table columns with fallback: include F_C if X_C absent
     mini_cols_base = ["S_M", "T_L", "loop_area"]
-    if "X_C" in local.columns and pd.to_numeric(local["X_C"], errors="coerce").dropna().size > 0:
+    suppress_xc_numeric = False
+    if xc_series is not None and not xc_series.empty:
+        try:
+            # Suppress numeric table if X_C is deeply negative across the board
+            med = float(xc_series.median())
+            mad = float((xc_series - med).abs().median()) if xc_series.size >= 8 else float(xc_series.mad()) if hasattr(xc_series, 'mad') else 0.0
+            neg95 = float(xc_series.quantile(0.95))
+            if neg95 < 0 and med < -(3.0 * mad + 1e-6):
+                suppress_xc_numeric = True
+        except Exception:
+            suppress_xc_numeric = False
+    if not suppress_xc_numeric and "X_C" in local.columns and pd.to_numeric(local["X_C"], errors="coerce").dropna().size > 0:
         mini_cols_base.append("X_C")
     elif "F_C" in local.columns and pd.to_numeric(local["F_C"], errors="coerce").dropna().size > 0:
         mini_cols_base.append("F_C")
@@ -586,6 +681,9 @@ def _build_region_context(
         if not diag_subset.empty:
             diag_subset["date"] = diag_subset["date"].dt.strftime("%Y-%m-%d")
             diagnostics_html += f"<h2>Diagnostics – Maxwell-like (window={effective_window})</h2>" + diag_subset.to_html(index=False, border=0, classes="mini", escape=True)
+            if out_of_spec_ranges:
+                spans = ", ".join([f"{s.strftime('%Y-%m-%d')} → {e.strftime('%Y-%m-%d')}" for s, e in out_of_spec_ranges])
+                diagnostics_html += f"<p class=\"note\"><strong>Out-of-spec / crisis / proxy invalid zone</strong>: {html_lib.escape(spans)}</p>"
     elif has_thermo and diag_window:
         diagnostics_html += f"<h2>Diagnostics – Maxwell-like</h2><p class=\"note\">Insufficient data (requested window={diag_window}).</p>"
 
@@ -599,9 +697,19 @@ def _build_region_context(
 
     selected_table_html = _selected_table(selected_meta, label)
 
+    # Interpretation notes section (X_C sign)
+    interpret_notes = ""
+    if xc_series is not None and not xc_series.empty:
+        interpret_notes = (
+            "<p class=\"note\"><strong>X_C sign interpretation</strong>: above zero suggests some usable potential remains; large negative values imply limited room."
+        )
+        if suppress_xc_numeric:
+            interpret_notes += " Numeric table suppressed for X_C (estimation logic under review)."
+        interpret_notes += "</p>"
+
     region_html = (
         f"<section class=\"region-summary\"><h2>{html_lib.escape(label)}</h2>{summary_html}"
-        f"<h2>Recent values</h2>{mini_html}{diagnostics_html}{selected_table_html}</section>"
+        f"<h2>Recent values</h2>{mini_html}{diagnostics_html}{interpret_notes}{selected_table_html}</section>"
         + charts_html
     )
 
