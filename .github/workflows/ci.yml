@@ -3,7 +3,7 @@ on:
   push:
     branches: [ main ]
     paths-ignore:
-  - 'site/**'                 # Ignore generated site artifacts
+      - 'site/**'                 # Ignore generated site artifacts
       - '.github/workflows/build-and-publish.yml'
   pull_request:
 permissions:
