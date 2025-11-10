@@ -26,14 +26,20 @@ m2  = _read_raw("MYAGM2JPM189S")
 yld = _read_raw("IRLTLT01JPM156N")
 
 # Allow environment to define earliest JP date (e.g. JP_START=2012-01-01)
+def _apply_start(df: pd.DataFrame, start_ts: pd.Timestamp) -> pd.DataFrame:
+    if df.empty:
+        return df
+    return df[df["date"] >= start_ts].copy()
+
 JP_START = os.getenv("JP_START", "2012-01-01")
 try:
     jp_start_ts = pd.Timestamp(JP_START)
-    for df in (boj, m2, yld):
-        if not df.empty:
-            df.drop(df[df["date"] < jp_start_ts].index, inplace=True)
-except Exception:
-    pass
+    boj = _apply_start(boj, jp_start_ts)
+    m2  = _apply_start(m2, jp_start_ts)
+    yld = _apply_start(yld, jp_start_ts)
+    print(f"[info] Applied JP_START={jp_start_ts.date()} to raw JP series")
+except Exception as e:
+    print(f"[warn] Could not apply JP_START ({JP_START}): {e}")
 
 def _qe_dec(dfm: pd.DataFrame) -> pd.DataFrame:
     if dfm.empty:
