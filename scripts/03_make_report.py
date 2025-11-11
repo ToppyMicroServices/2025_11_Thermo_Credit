@@ -30,6 +30,13 @@ DEFAULT_BASE_URL = "https://toppymicros.com/2025_11_Thermo_Credit"
 REQUIRED_THERMO_COLS = ["S_M", "T_L", "p_C", "V_C", "U"]
 DERIVATIVE_COLS = ["dS_dV_at_T", "dp_dT_at_V", "maxwell_gap"]
 FIRSTLAW_COLS = ["dU", "Q_like", "W_like", "dU_pred", "firstlaw_resid"]
+CATEGORY_LABELS = {
+    "q_productive": "Productive",
+    "q_housing": "Housing",
+    "q_consumption": "Consumption",
+    "q_financial": "Financial",
+    "q_government": "Government",
+}
 
 # Expose raw_inputs_df at module level so tests can import this module and verify normalization
 raw_inputs_df = None
@@ -564,6 +571,21 @@ def _build_region_context(
         _style_figure(fig)
         _apply_hover(fig, ".3f")
         fig_specs.append((fig, "S_M & T_L", "Entropy & temperature"))
+    # Stacked MECE entropy view when per-category columns exist
+    cat_cols = [c for c in plot_df.columns if c.startswith("S_M_in_")]
+    cat_cols = [c for c in cat_cols if pd.to_numeric(plot_df[c], errors="coerce").dropna().abs().sum() > 0]
+    if cat_cols:
+        long_df = plot_df[["date"] + cat_cols].melt(id_vars="date", var_name="category", value_name="value")
+        long_df = long_df.dropna(subset=["date", "value"])
+        if not long_df.empty:
+            long_df["category_key"] = long_df["category"].str.replace("S_M_in_", "", n=1)
+            long_df["Category"] = long_df["category_key"].map(CATEGORY_LABELS).fillna(
+                long_df["category_key"].str.replace("_", " ").str.title()
+            )
+            fig_cat = px.area(long_df, x="date", y="value", color="Category", title=f"{label} – S_M by category")
+            _style_figure(fig_cat)
+            _apply_hover(fig_cat, ".3f")
+            fig_specs.append((fig_cat, "S_M by category", "Entropy by MECE categories"))
     if "loop_area" in local.columns and not plot_df.empty:
         fig = px.line(plot_df, x="date", y="loop_area", title=f"{label} – Policy Loop Dissipation")
         _style_figure(fig)

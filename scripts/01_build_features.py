@@ -1,5 +1,6 @@
 # scripts/01_build_features.py
 import os, json, time, math, datetime as dt
+import numpy as np
 import argparse
 from typing import Optional
 import pandas as pd
@@ -154,7 +155,30 @@ def build_features(series_prefs: dict) -> None:
     q["q_firm"] = 0.30
     q["q_asset"] = 0.25
     q["q_reserve"] = 0.15
-    q.to_csv("data/allocation_q.csv", index=False)
+
+    # Derive MECE allocation categories. Split household share into housing vs consumption.
+    housing_ratio = float(os.getenv("JP_Q_HOUSING_SHARE", 0.4))
+    housing_ratio = min(max(housing_ratio, 0.0), 1.0)
+    q["q_productive"] = q["q_firm"]
+    q["q_financial"] = q["q_asset"]
+    q["q_government"] = q["q_reserve"]
+    q["q_housing"] = q["q_pay"] * housing_ratio
+    q["q_consumption"] = (q["q_pay"] - q["q_housing"]).clip(lower=0)
+    mece_cols = ["q_productive", "q_housing", "q_consumption", "q_financial", "q_government"]
+    total = q[mece_cols].sum(axis=1).replace({0: np.nan})
+    q.loc[total.notna(), mece_cols] = (q.loc[total.notna(), mece_cols]
+                                       .div(total[total.notna()], axis=0))
+
+    # Persist original columns for backward compatibility while adding MECE set.
+    ordered_cols = [
+        "date",
+        "q_pay",
+        "q_firm",
+        "q_asset",
+        "q_reserve",
+        *mece_cols,
+    ]
+    q[ordered_cols].to_csv("data/allocation_q.csv", index=False)
 
     print("API fetch -> CSV write complete")
 
