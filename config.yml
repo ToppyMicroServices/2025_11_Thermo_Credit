@@ -2,6 +2,15 @@ T0: 1.0
 k: 1.0
 loop_forgetting: 0.98
 
+# Entropy categories (MECE) – align with allocation_q.csv columns
+q_cols:
+  - q_productive
+  - q_housing
+  - q_consumption
+  - q_financial
+  - q_government
+entropy_per_category: true
+
 # Optional: preferred series (env > config > default order)
 series:
   money_scale:

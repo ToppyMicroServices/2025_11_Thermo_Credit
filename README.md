@@ -66,6 +66,11 @@ Notes
 - Region overrides: `config_jp.yml`, `config_eu.yml`, `config_us.yml`
 - Environment variables
   - `FRED_API_KEY` (optional): FRED API key (if absent, fall back to local CSVs)
+  - `JP_START` (optional): Earliest JP date for raw series when building indicators (default `2012-01-01`). Example:
+    ```bash
+    export JP_START=2008-01-01
+    python scripts/02_compute_indicators.py
+    ```
   - `REPORT_PLOT_START` (optional): Start date for plot range (example: `2010-01-01`)
   - `CONFIG_REGION` (optional): Region override (`jp` / `eu` / `us`)
   - Branding: `BRAND_BG`, `BRAND_BG2`, `BRAND_TEXT` (header/footer brand colors)
@@ -94,6 +99,19 @@ Notes
 - Provide `data/sources.json` to show a Sources table and Raw Inputs figure.
   - Example entry: `{"id":"JPNASSETS","title":"BoJ Total Assets","enabled":true}`
   - Default CSV path is `data/<id>.csv` (columns: `date`, `value`). Use `path` to override.
+
+---
+
+## Entropy categories (MECE)
+- Monetary entropy now defaults to a five-way MECE split stored in `data/allocation_q.csv`:
+  - `q_productive` (non-financial firms)
+  - `q_housing` (household housing allocation)
+  - `q_consumption` (household consumption allocation)
+  - `q_financial` (financial system assets)
+  - `q_government` (public balance sheet)
+- The split is derived from legacy columns (`q_pay`, `q_firm`, `q_asset`, `q_reserve`). By default, household share is split 40% housing / 60% consumption. Override with `JP_Q_HOUSING_SHARE=0.35` (for example) before rebuilding features if you prefer a different ratio.
+- `config.yml` sets `q_cols` to the MECE columns and enables `entropy_per_category: true`, which creates per-category entropy flows (`S_M_in_<category>`). These show up in the report as a stacked chart.
+- If you want to experiment with a different schema, edit `data/allocation_q.csv` and update `config.yml` accordingly. Ensure the selected columns are positive and sum to ~1 per quarter.
 
 ---
 

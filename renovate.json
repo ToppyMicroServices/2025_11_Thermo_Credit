@@ -3,18 +3,25 @@
   "extends": ["config:base"],
   "dependencyDashboard": true,
   "labels": ["deps"],
+  "timezone": "Asia/Tokyo",
+  "schedule": ["before 6am on monday"],
+  "prConcurrentLimit": 5,
+  "stabilityDays": 3,
   "packageRules": [
     {
       "matchManagers": ["pip"],
       "matchPackageNames": ["plotly", "kaleido"],
       "groupName": "plotly-stack",
-      "stabilityDays": 3,
       "enabled": true
     },
     {
       "matchManagers": ["pip"],
       "matchPackagePatterns": [".*"],
       "separateMinorPatch": true
+    },
+    {
+      "matchUpdateTypes": ["major"],
+      "enabled": false
     }
   ]
 }

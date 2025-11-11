@@ -33,8 +33,12 @@ def build_indicators_core(money: pd.DataFrame,
     T0 = float(cfg.get("T0", 1.0))
     lam = float(cfg.get("loop_forgetting", 0.98))
     k_val = float(cfg.get("k", 1.0))
-
-    S = money_entropy(money, q, k=k_val)  # provides S_M
+    q_cols_cfg = cfg.get("q_cols")  # optional MECE categories override
+    per_cat = bool(cfg.get("entropy_per_category", False))
+    if q_cols_cfg and isinstance(q_cols_cfg, (list, tuple)):
+        S = money_entropy(money, q, k=k_val, q_cols=q_cols_cfg, per_category=per_cat)
+    else:
+        S = money_entropy(money, q, k=k_val, per_category=per_cat)  # provides S_M
     T = liquidity_temperature(cred)       # provides T (later T_L)
 
     df = cred.merge(S, on="date").merge(T, on="date").merge(reg, on="date")
