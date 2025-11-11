@@ -78,6 +78,15 @@ jobs:
           python -m pip install -U pip
           pip install pip-audit
           pip-audit --strict --severity critical
+      - name: Generate SBOM
+        run: |
+          pip install cyclonedx-bom
+          cyclonedx-py -r requirements.txt -o sbom.json
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: sbom.json
       - name: Basic secret scan (regex)
         run: |
           set -e
