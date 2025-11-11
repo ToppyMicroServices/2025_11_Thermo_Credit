@@ -1,0 +1,12 @@
+title = "Minimal gitleaks config"
+
+[[rules]]
+  id = "generic-api-key"
+  description = "Generic API Key"
+  regex = '''(?i)(api|secret|token)_?(key)?['"`:= ]{0,5}[0-9a-zA-Z]{32,45}'''
+  entropy = 3.5
+  [rules.allowlist]
+    description = "Allow common test strings"
+    regexes = [
+      '''(?i)test'''
+    ]

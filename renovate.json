@@ -1,0 +1,20 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:base"],
+  "dependencyDashboard": true,
+  "labels": ["deps"],
+  "packageRules": [
+    {
+      "matchManagers": ["pip"],
+      "matchPackageNames": ["plotly", "kaleido"],
+      "groupName": "plotly-stack",
+      "stabilityDays": 3,
+      "enabled": true
+    },
+    {
+      "matchManagers": ["pip"],
+      "matchPackagePatterns": [".*"],
+      "separateMinorPatch": true
+    }
+  ]
+}
