@@ -31,15 +31,17 @@ def _apply_start(df: pd.DataFrame, start_ts: pd.Timestamp) -> pd.DataFrame:
         return df
     return df[df["date"] >= start_ts].copy()
 
-JP_START = os.getenv("JP_START", "2012-01-01")
-try:
-    jp_start_ts = pd.Timestamp(JP_START)
-    boj = _apply_start(boj, jp_start_ts)
-    m2  = _apply_start(m2, jp_start_ts)
-    yld = _apply_start(yld, jp_start_ts)
-    print(f"[info] Applied JP_START={jp_start_ts.date()} to raw JP series")
-except Exception as e:
-    print(f"[warn] Could not apply JP_START ({JP_START}): {e}")
+# JP_START is opt-in via env var. If not provided, do not trim.
+_JP_START_ENV = os.getenv("JP_START", "").strip()
+if _JP_START_ENV:
+    try:
+        jp_start_ts = pd.Timestamp(_JP_START_ENV)
+        boj = _apply_start(boj, jp_start_ts)
+        m2  = _apply_start(m2, jp_start_ts)
+        yld = _apply_start(yld, jp_start_ts)
+        print(f"[info] Applied JP_START={jp_start_ts.date()} to raw JP series")
+    except Exception as e:
+        print(f"[warn] Could not apply JP_START ({_JP_START_ENV}): {e}")
 
 def _qe_dec(dfm: pd.DataFrame) -> pd.DataFrame:
     if dfm.empty:
