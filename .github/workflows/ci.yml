@@ -81,7 +81,7 @@ jobs:
           pip-audit -r constraints.txt --strict
       - name: Generate SBOM
         run: |
-          cyclonedx-py -r constraints.txt -o sbom.json
+          cyclonedx-py requirements -r constraints.txt -o sbom.json
       - name: Upload SBOM artifact
         uses: actions/upload-artifact@v4
         with:
