@@ -98,8 +98,12 @@ jobs:
           else
             echo "No obvious secrets detected";
           fi
-      - name: Gitleaks secret scan
-        uses: gitleaks/gitleaks-action@v2
-        with:
-          config-path: .gitleaks.toml
-        continue-on-error: false
+      - name: Gitleaks secret scan (OSS v8)
+        run: |
+          set -e
+          ver=8.18.4
+          curl -sSLf https://github.com/zricethezav/gitleaks/releases/download/v${ver}/gitleaks_${ver}_linux_x64.tar.gz -o gitleaks.tgz
+          tar -xzf gitleaks.tgz gitleaks
+          ./gitleaks version
+          # Scan working tree only to reduce noise; use --no-git. Fail on findings.
+          ./gitleaks detect --source . --config .gitleaks.toml --no-git --redact --verbose
