@@ -150,6 +150,11 @@ def main():
         mod = importlib.util.module_from_spec(spec)
         assert spec.loader is not None
         spec.loader.exec_module(mod)  # type: ignore[attr-defined]
+        compute_region = getattr(mod, "compute_region", None)
+        if callable(compute_region):
+            compute_region("jp")
+        else:
+            raise RuntimeError("compute_region function not found in 02_compute_indicators.py")
 
     print("[ci-prepare] Minimal data prepared for tests.")
 
