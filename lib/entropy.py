@@ -45,6 +45,10 @@ def money_entropy(
         df["Hq"] = np.nan
     else:
         df["Hq"] = df.apply(lambda r: shannon_H(r, q_cols), axis=1)
+    if not q_cols:
+        df["Hq"] = np.nan
+    else:
+        df["Hq"] = df.apply(lambda r: shannon_H(r, q_cols), axis=1)
     df["S_M_in"]  = k * df["M_in"].astype(float)  * df["Hq"]
     df["S_M_out"] = k * df["M_out"].astype(float) * df["Hq"]
     df["S_M"] = df["S_M_in"]

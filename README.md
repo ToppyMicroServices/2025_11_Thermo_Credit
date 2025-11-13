@@ -152,6 +152,19 @@ Notes
 
 ---
 
+## Entropy categories (MECE)
+- Monetary entropy now defaults to a five-way MECE split stored in `data/allocation_q.csv`:
+  - `q_productive` (non-financial firms)
+  - `q_housing` (household housing allocation)
+  - `q_consumption` (household consumption allocation)
+  - `q_financial` (financial system assets)
+  - `q_government` (public balance sheet)
+- The split is derived from legacy columns (`q_pay`, `q_firm`, `q_asset`, `q_reserve`). By default, household share is split 40% housing / 60% consumption. Override with `JP_Q_HOUSING_SHARE=0.35` (for example) before rebuilding features if you prefer a different ratio.
+- `config.yml` sets `q_cols` to the MECE columns and enables `entropy_per_category: true`, which creates per-category entropy flows (`S_M_in_<category>`). These show up in the report as a stacked chart.
+- If you want to experiment with a different schema, edit `data/allocation_q.csv` and update `config.yml` accordingly. Ensure the selected columns are positive and sum to ~1 per quarter.
+
+---
+
 ## CI
 - Workflow: `.github/workflows/build_report.yml`
   - Dependencies install → logo optimization → report build → upload `site/` as artifact

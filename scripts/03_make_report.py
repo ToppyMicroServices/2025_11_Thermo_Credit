@@ -38,6 +38,13 @@ CATEGORY_LABELS = {
     "q_financial": "Financial",
     "q_government": "Government",
 }
+CATEGORY_LABELS = {
+    "q_productive": "Productive",
+    "q_housing": "Housing",
+    "q_consumption": "Consumption",
+    "q_financial": "Financial",
+    "q_government": "Government",
+}
 
 # Expose raw_inputs_df at module level so tests can import this module and verify normalization
 raw_inputs_df = None
