@@ -3,6 +3,8 @@
 .venv/
 site/
 data/*.csv
+!data/gdp_eu.csv
+!data/gdp_us.csv
 data/worldbank_cache_*.json
 # VS Code project settings: ignore noisy files but keep core shared configs
 .vscode/*
