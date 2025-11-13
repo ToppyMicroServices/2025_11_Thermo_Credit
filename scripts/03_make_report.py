@@ -16,6 +16,7 @@ from urllib.parse import urlparse
 import numpy as np
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT not in sys.path:
@@ -130,10 +131,63 @@ def _style_figure(fig) -> None:
     )
     fig.update_xaxes(showgrid=False)
     fig.update_yaxes(showgrid=True, zeroline=True)
+    # Serif stack for a LaTeX-like feel (applies to non-math text inside figures)
+    fig.update_layout(font=dict(
+        family="STIX Two Text, Times New Roman, Times, Georgia, serif",
+        size=12,
+    ))
 
 
 def _apply_hover(fig, fmt: str) -> None:
     fig.update_traces(hovertemplate="%{x|%Y-%m-%d}<br>%{y:" + fmt + "}<extra>%{fullData.name}</extra>")
+
+
+def make_dual_axis_sm_tl(plot_df: pd.DataFrame, title: str) -> go.Figure:
+    """Build an S_M (left axis) and T_L (right axis) dual‑axis line chart.
+
+    - Left y-axis: S_M (dispersion)
+    - Right y-axis: T_L (liquidity temperature)
+    """
+    from plotly.subplots import make_subplots
+    df = plot_df.copy()
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df = df.dropna(subset=["date"])
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+    # Colors aligned with Plotly's default qualitative palette
+    col_sm = "#1f77b4"  # blue
+    col_tl = "#ff7f0e"  # orange
+    # Primary axis: S_M
+    if "S_M" in df.columns:
+        fig.add_trace(
+            go.Scatter(
+                x=df["date"],
+                y=pd.to_numeric(df["S_M"], errors="coerce"),
+                name="S_M (dispersion)",
+                mode="lines",
+                line=dict(color=col_sm, width=2.0),
+            ),
+            secondary_y=False,
+        )
+    # Secondary axis: T_L
+    if "T_L" in df.columns:
+        fig.add_trace(
+            go.Scatter(
+                x=df["date"],
+                y=pd.to_numeric(df["T_L"], errors="coerce"),
+                name="T_L (liquidity temperature)",
+                mode="lines",
+                line=dict(color=col_tl, width=2.0, dash="solid"),
+            ),
+            secondary_y=True,
+        )
+    fig.update_layout(title=title, legend=dict(orientation="h", y=1.02, yanchor="bottom", x=1.0, xanchor="right"))
+    fig.update_xaxes(title_text="Date")
+    fig.update_yaxes(title_text="S_M (dispersion)", secondary_y=False)
+    fig.update_yaxes(title_text="T_L (liquidity temperature)", secondary_y=True)
+    # Refined visual touches
+    fig.update_layout(plot_bgcolor="#fbfbfc")
+    fig.update_yaxes(showgrid=True, gridcolor="#e9ecef", zeroline=True)
+    return fig
 
 
 def _filter_placeholders(df: pd.DataFrame) -> pd.DataFrame:
@@ -264,7 +318,7 @@ def _build_compare_context(region_ctxs: List[Dict[str, Any]]) -> Optional[Dict[s
         ("X_C", "Compare – Credit Exergy Ceiling", "X_C"),
     ]
 
-    figs: List[Tuple[Any, str, str]] = []
+    raw_figs: List[Tuple[Any, str, str]] = []
     # Build a latest summary table
     latest_rows: List[Dict[str, Any]] = []
     for label, df in items:
@@ -314,12 +368,116 @@ def _build_compare_context(region_ctxs: List[Dict[str, Any]]) -> Optional[Dict[s
         long_df = long_df.dropna(subset=["date", "value"]).sort_values("date")
         if long_df.empty:
             continue
-        fig = px.line(long_df, x="date", y="value", color="Region", title=title, render_mode="svg")
+        # Use metric-specific y-axis label with plain-English hints (avoid math in Plotly SVG)
+        y_label = {
+            "S_M": "S_M (dispersion)",
+            "T_L": "T_L (liquidity temperature)",
+            "loop_area": "Loop area (dissipation)",
+            "X_C": "X_C (credit exergy ceiling)",
+        }.get(met, "Value")
+        fig = px.line(
+            long_df,
+            x="date",
+            y="value",
+            color="Region",
+            title=title,
+            render_mode="svg",
+            labels={"value": y_label, "date": "Date"},
+        )
         _style_figure(fig)
         _apply_hover(fig, ".3f")
-        figs.append((fig, title.replace("Compare – ", "Compare: "), alt))
+        raw_figs.append((fig, title.replace("Compare – ", "Compare: "), alt))
 
-    charts_html = _figs_html(figs)
+    raw_charts_html = _figs_html(raw_figs)
+
+    # Standardized comparison (per-region z-scores) and normalized entropy
+    std_figs: List[Tuple[Any, str, str]] = []
+    def _z_of(series: pd.Series) -> Optional[pd.Series]:
+        s = pd.to_numeric(series, errors="coerce")
+        s = s.dropna()
+        if s.empty:
+            return None
+        m = float(s.mean())
+        sd = float(s.std())
+        if not np.isfinite(sd) or sd <= 0:
+            return None
+        return (series.astype(float) - m) / sd
+
+    # S_M_hat (already normalized 0..1 when K fixed)
+    try:
+        start = _plot_start_date()
+        long_parts_hat: List[pd.DataFrame] = []
+        for label, df in items:
+            if "date" not in df.columns or "S_M_hat" not in df.columns:
+                continue
+            part = df[["date", "S_M_hat"]].copy()
+            part = part[part["date"] >= start]
+            part = part.rename(columns={"S_M_hat": "value"})
+            part["Region"] = label
+            long_parts_hat.append(part)
+        if long_parts_hat:
+            long_df_hat = pd.concat(long_parts_hat, ignore_index=True)
+            long_df_hat["date"] = pd.to_datetime(long_df_hat["date"], errors="coerce")
+            long_df_hat = long_df_hat.dropna(subset=["date", "value"]).sort_values("date")
+            if not long_df_hat.empty:
+                fig_hat = px.line(
+                    long_df_hat,
+                    x="date",
+                    y="value",
+                    color="Region",
+                    title="Compare – S_M_hat (normalized entropy)",
+                    render_mode="svg",
+                    labels={"value": "S_M_hat", "date": "Date"},
+                )
+                _style_figure(fig_hat)
+                _apply_hover(fig_hat, ".3f")
+                std_figs.append((fig_hat, "Compare: S_M_hat", "S_M_hat"))
+    except Exception:
+        pass
+
+    # Standardize T_L, loop_area, F_C, X_C (per-region z-score)
+    for met, title, alt in [("T_L", "Compare – T_L (standardized)", "T_L z"),
+                             ("loop_area", "Compare – Loop area (standardized)", "Loop area z"),
+                             ("U", "Compare – Internal Energy (standardized)", "U z"),
+                             ("dU", "Compare – ΔU (standardized)", "dU z"),
+                             ("dF_C", "Compare – ΔF_C (standardized)", "dF_C z"),
+                             ("F_C", "Compare – Free Energy (standardized)", "F_C z"),
+                             ("X_C", "Compare – X_C (standardized)", "X_C z")]:
+        long_parts_z: List[pd.DataFrame] = []
+        for label, df in items:
+            if "date" not in df.columns or met not in df.columns:
+                continue
+            series = pd.to_numeric(df[met], errors="coerce")
+            z = _z_of(series)
+            if z is None:
+                continue
+            part = pd.DataFrame({
+                "date": pd.to_datetime(df["date"], errors="coerce"),
+                "value": z,
+                "Region": label,
+            })
+            part = part.dropna(subset=["date", "value"])  # filter invalid dates/values
+            part = part[part["date"] >= start]
+            long_parts_z.append(part)
+        if not long_parts_z:
+            continue
+        long_df_z = pd.concat(long_parts_z, ignore_index=True).sort_values("date")
+        if long_df_z.empty:
+            continue
+        figz = px.line(
+            long_df_z,
+            x="date",
+            y="value",
+            color="Region",
+            title=title,
+            render_mode="svg",
+            labels={"value": "z-score (within region)", "date": "Date"},
+        )
+        _style_figure(figz)
+        _apply_hover(figz, ".3f")
+        std_figs.append((figz, title.replace("Compare – ", "Compare: "), alt))
+
+    std_charts_html = _figs_html(std_figs) if std_figs else ""
 
     summary_html = ""
     if latest_rows:
@@ -327,17 +485,42 @@ def _build_compare_context(region_ctxs: List[Dict[str, Any]]) -> Optional[Dict[s
         # Order columns nicely
         cols = [c for c in ["Region", "Latest date", "S_M", "T_L", "loop_area", "X_C"] if c in latest_df.columns]
         latest_df = latest_df[cols]
-        summary_html = "<h2>Compare – Latest snapshot</h2>" + latest_df.to_html(index=False, border=0, classes="mini", float_format=lambda x: f"{x:.4g}")
+        # One-line headline to orient first-time readers
+        try:
+            # Pick a common latest date if present
+            dates = pd.to_datetime(latest_df.get("Latest date"), errors="coerce").dropna()
+            latest_dt_str = dates.max().strftime("%Y-%m-%d") if not dates.empty else ""
+        except Exception:
+            latest_dt_str = ""
+        headline = (
+            f"<p><strong>At the latest date</strong>{' (' + latest_dt_str + ')' if latest_dt_str else ''}, this section compares dispersion (S<sub>M</sub>), liquidity temperature (T<sub>L</sub>), loop dissipation, and remaining credit exergy (X<sub>C</sub>) across regions. The table below gives exact values.</p>"
+        )
+        summary_html = headline + "<h2>Compare – Latest snapshot</h2>" + latest_df.to_html(index=False, border=0, classes="mini", float_format=lambda x: f"{x:.4g}")
 
+    # Build a toggle UI (Standardized default) and panes for raw vs standardized
+    toggle_html = (
+        '<div class="subtabs compare-toggle" role="tablist">'
+        '<button class="active" data-mode="std" aria-pressed="true">Standardized</button>'
+        '<button data-mode="raw" aria-pressed="false">Raw</button>'
+        '</div>'
+    )
+    _std_inner = std_charts_html if std_charts_html else "<p class=\"note small\">No standardized charts available.</p>"
+    _raw_inner = raw_charts_html if raw_charts_html else "<p class=\"note small\">No raw charts available.</p>"
+    panes_html = (
+        '<div class="compare-block">'
+        f'<div class="pane std active">{_std_inner}</div>'
+        f'<div class="pane raw">{_raw_inner}</div>'
+        '</div>'
+    )
     region_html = (
-        f"<section class=\"region-summary\"><h2>Compare (JP/EU/US)</h2>{summary_html}</section>" + charts_html
+        f"<section class=\"region-summary\"><h2>Compare (JP/EU/US)</h2>{summary_html}{toggle_html}</section>" + panes_html
     )
 
     return {
         "key": "compare",
         "label": "Compare",
         "html": region_html,
-        "fig_specs": figs,
+        "fig_specs": raw_figs + std_figs,
         "summary_line": None,
         "summary_items": [],
         "has_maxwell_fig": False,
@@ -493,7 +676,8 @@ def _sources_table(sources_meta: List[Dict[str, Any]]) -> str:
     if not rows:
         return ""
     table = pd.DataFrame(rows).to_html(index=False, border=0, classes="mini", escape=True)
-    return "<h2>Sources</h2>" + table
+    # Fold large sources table by default for first-time readers
+    return "<details><summary>Data sources</summary>" + table + "</details>"
 
 
 def _build_raw_inputs_fig(raw_df: Optional[pd.DataFrame]):
@@ -508,7 +692,16 @@ def _build_raw_inputs_fig(raw_df: Optional[pd.DataFrame]):
     color_map = raw_df.attrs.get("series_country_map", {})
     palette = {"JP": "#1f77b4", "JPN": "#1f77b4", "EU": "#ff7f0e", "EZ": "#ff7f0e", "US": "#2ca02c", "USA": "#2ca02c"}
     discrete_map = {series: palette.get(country, "#6c757d") for series, country in color_map.items()}
-    fig = px.line(long_df, x="date", y="Value", color="Series", title="Raw Inputs (normalized first=100)", color_discrete_map=discrete_map, render_mode="svg")
+    fig = px.line(
+        long_df,
+        x="date",
+        y="Value",
+        color="Series",
+        title="Raw Inputs (normalized first=100)",
+        color_discrete_map=discrete_map,
+        render_mode="svg",
+        labels={"Value": "Index (first=100)", "date": "Date", "Series": "Series"},
+    )
     _style_figure(fig)
     _apply_hover(fig, ".2f")
     return fig
@@ -567,7 +760,8 @@ def _build_region_context(
 
     fig_specs: List[Tuple[Any, str, str]] = []
     if {"S_M", "T_L"}.issubset(local.columns) and not plot_df.empty:
-        fig = px.line(plot_df, x="date", y=["S_M", "T_L"], title=f"{label} – S_M & T_L")
+        # Dual-axis layout for very different scales
+        fig = make_dual_axis_sm_tl(plot_df, title=f"{label} – S_M & T_L")
         _style_figure(fig)
         _apply_hover(fig, ".3f")
         fig_specs.append((fig, "S_M & T_L", "Entropy & temperature"))
@@ -582,29 +776,99 @@ def _build_region_context(
             long_df["Category"] = long_df["category_key"].map(CATEGORY_LABELS).fillna(
                 long_df["category_key"].str.replace("_", " ").str.title()
             )
-            fig_cat = px.area(long_df, x="date", y="value", color="Category", title=f"{label} – S_M by category")
+            fig_cat = px.area(
+                long_df,
+                x="date",
+                y="value",
+                color="Category",
+                title=f"{label} – S_M by category",
+                labels={"value": "S_M_in (per category)", "date": "Date", "Category": "Category"},
+            )
             _style_figure(fig_cat)
             _apply_hover(fig_cat, ".3f")
             fig_specs.append((fig_cat, "S_M by category", "Entropy by MECE categories"))
     if "loop_area" in local.columns and not plot_df.empty:
-        fig = px.line(plot_df, x="date", y="loop_area", title=f"{label} – Policy Loop Dissipation")
+        fig = px.line(
+            plot_df,
+            x="date",
+            y="loop_area",
+            title=f"{label} – Policy Loop Dissipation",
+            labels={"loop_area": "Loop area (dissipation)", "date": "Date"},
+        )
         _style_figure(fig)
         _apply_hover(fig, ".3f")
         fig_specs.append((fig, "Policy Loop Dissipation", "Loop area"))
-    # Exergy / free-energy figure: use X_C if available (non-all-NaN), else fall back to F_C so US still gets a plot
+    # Exergy, free energy, internal energy, change in free energy, and surplus/shortage figures
     if not plot_df.empty:
-        x_col = None
+        # Exergy X_C (if available)
         if "X_C" in plot_df.columns and pd.to_numeric(plot_df["X_C"], errors="coerce").dropna().size > 0:
-            x_col = "X_C"
-            title_x = "Credit Exergy Ceiling"
-        elif "F_C" in plot_df.columns and pd.to_numeric(plot_df["F_C"], errors="coerce").dropna().size > 0:
-            x_col = "F_C"
-            title_x = "Free Energy (F_C)"
-        if x_col is not None:
-            fig = px.line(plot_df, x="date", y=x_col, title=f"{label} – {title_x}")
-            _style_figure(fig)
-            _apply_hover(fig, ".3f")
-            fig_specs.append((fig, title_x, x_col))
+            fig_xc = px.line(
+                plot_df,
+                x="date",
+                y="X_C",
+                title=f"{label} – Credit Exergy Ceiling",
+                labels={"X_C": "X_C (credit exergy ceiling)", "date": "Date"},
+            )
+            _style_figure(fig_xc)
+            _apply_hover(fig_xc, ".3f")
+            fig_specs.append((fig_xc, "Credit Exergy Ceiling", "X_C"))
+        # Free energy F_C (always show if present)
+        if "F_C" in plot_df.columns and pd.to_numeric(plot_df["F_C"], errors="coerce").dropna().size > 0:
+            fig_fc = px.line(
+                plot_df,
+                x="date",
+                y="F_C",
+                title=f"{label} – Free Energy (F_C)",
+                labels={"F_C": "F_C (free energy)", "date": "Date"},
+            )
+            _style_figure(fig_fc)
+            _apply_hover(fig_fc, ".3f")
+            fig_specs.append((fig_fc, "Free Energy (F_C)", "F_C"))
+        # Change in free energy dF_C
+        if "dF_C" in plot_df.columns and pd.to_numeric(plot_df["dF_C"], errors="coerce").dropna().size > 0:
+            fig_dfc = px.line(
+                plot_df,
+                x="date",
+                y="dF_C",
+                title=f"{label} – ΔF_C (change in free energy)",
+                labels={"dF_C": "ΔF_C", "date": "Date"},
+            )
+            _style_figure(fig_dfc)
+            _apply_hover(fig_dfc, ".3f")
+            fig_specs.append((fig_dfc, "ΔF_C (change)", "dF_C"))
+        # Internal energy U
+        if "U" in plot_df.columns and pd.to_numeric(plot_df["U"], errors="coerce").dropna().size > 0:
+            fig_u = px.line(
+                plot_df,
+                x="date",
+                y="U",
+                title=f"{label} – Internal Energy (U)",
+                labels={"U": "U (internal energy)", "date": "Date"},
+            )
+            _style_figure(fig_u)
+            _apply_hover(fig_u, ".3f")
+            fig_specs.append((fig_u, "Internal Energy (U)", "U"))
+        # Surplus/Shortage split from ΔF_C
+        plus_ok = "X_C_plus" in plot_df.columns and pd.to_numeric(plot_df["X_C_plus"], errors="coerce").dropna().size > 0
+        minus_ok = "X_C_minus" in plot_df.columns and pd.to_numeric(plot_df["X_C_minus"], errors="coerce").dropna().size > 0
+        if plus_ok or minus_ok:
+            df_pm = plot_df[["date"]].copy()
+            if plus_ok:
+                df_pm["Surplus (X_C+)"] = pd.to_numeric(plot_df["X_C_plus"], errors="coerce")
+            if minus_ok:
+                df_pm["Shortage (X_C−)"] = pd.to_numeric(plot_df["X_C_minus"], errors="coerce")
+            y_cols = [c for c in ["Surplus (X_C+)", "Shortage (X_C−)"] if c in df_pm.columns]
+            if y_cols:
+                fig_pm = px.area(
+                    df_pm,
+                    x="date",
+                    y=y_cols,
+                    title=f"{label} – Surplus/Shortage (ΔF_C split)",
+                    labels={"value": "ΔF_C components (surplus/shortage)", "variable": "Component", "date": "Date"},
+                )
+                _style_figure(fig_pm)
+                _apply_hover(fig_pm, ".3f")
+                fig_specs.append((fig_pm, "Surplus/Shortage (ΔF_C)", "X_C_plus / X_C_minus"))
 
     deriv_cols_present = [c for c in DERIVATIVE_COLS if c in local.columns]
     out_of_spec_note = ""
@@ -613,7 +877,14 @@ def _build_region_context(
         title = f"{label} – Maxwell-like Relation"
         if eff_note:
             title += eff_note
-        fig = px.line(plot_df, x="date", y=deriv_cols_present, title=title, markers=True)
+        fig = px.line(
+            plot_df,
+            x="date",
+            y=deriv_cols_present,
+            title=title,
+            markers=True,
+            labels={"value": "Coefficient", "variable": "Series", "date": "Date"},
+        )
         _style_figure(fig)
         _apply_hover(fig, ".3f")
         # Shade out-of-spec zones across the full plot if diagnostics spike
@@ -628,7 +899,14 @@ def _build_region_context(
         fig_specs.append((fig, "Maxwell-like Test", "Derivatives"))
     firstlaw_cols = [c for c in ["dU", "dU_pred", "firstlaw_resid"] if c in local.columns]
     if has_thermo and firstlaw_cols and not plot_df.empty:
-        fig = px.line(plot_df, x="date", y=firstlaw_cols, title=f"{label} – First-law Decomposition", markers=True)
+        fig = px.line(
+            plot_df,
+            x="date",
+            y=firstlaw_cols,
+            title=f"{label} – First-law Decomposition",
+            markers=True,
+            labels={"value": "Change", "variable": "Component", "date": "Date"},
+        )
         _style_figure(fig)
         _apply_hover(fig, ".3f")
         # Mirror shading on first-law plot for same out-of-spec windows
@@ -659,6 +937,8 @@ def _build_region_context(
         summary_items.append(f"T_L: {fmt(last_row.get('T_L'))}")
     if "loop_area" in local.columns:
         summary_items.append(f"Loop area: {fmt(last_row.get('loop_area'))}")
+    if "U" in local.columns:
+        summary_items.append(f"U: {fmt(last_row.get('U'))}")
     # Summary: show X_C if present; otherwise F_C label it accordingly
     # Also collect X_C behavior for interpretation and possible suppression
     xc_series = None
@@ -673,8 +953,66 @@ def _build_region_context(
         summary_items.append(f"First-law resid: {fmt(last_row.get('firstlaw_resid'))}")
     summary_html = "<ul>" + "".join(f"<li>{html_lib.escape(item)}</li>" for item in summary_items) + "</ul>"
 
+    # Add a short state comment to orient readers (low/mid/high by intra-series quantiles)
+    def _bucket(val: Optional[float], series: pd.Series) -> Optional[str]:
+        try:
+            s = pd.to_numeric(series, errors="coerce").dropna()
+            if s.size < 6 or val is None or not np.isfinite(val):
+                return None
+            q1, q2 = float(s.quantile(0.33)), float(s.quantile(0.66))
+            if val <= q1:
+                return "low"
+            if val >= q2:
+                return "high"
+            return "mid-range"
+        except Exception:
+            return None
+
+    try:
+        last_sm = float(pd.to_numeric(local.get("S_M"), errors="coerce").dropna().iloc[-1]) if "S_M" in local.columns else None
+    except Exception:
+        last_sm = None
+    try:
+        last_tl = float(pd.to_numeric(local.get("T_L"), errors="coerce").dropna().iloc[-1]) if "T_L" in local.columns else None
+    except Exception:
+        last_tl = None
+    try:
+        last_la = float(pd.to_numeric(local.get("loop_area"), errors="coerce").dropna().iloc[-1]) if "loop_area" in local.columns else None
+    except Exception:
+        last_la = None
+    try:
+        last_xc = float(pd.to_numeric(local.get("X_C"), errors="coerce").dropna().iloc[-1]) if "X_C" in local.columns else None
+    except Exception:
+        last_xc = None
+
+    sm_bucket = _bucket(last_sm, local.get("S_M", pd.Series(dtype=float))) if "S_M" in local.columns else None
+    tl_bucket = _bucket(last_tl, local.get("T_L", pd.Series(dtype=float))) if "T_L" in local.columns else None
+    la_desc = None
+    if last_la is not None and np.isfinite(last_la):
+        la_desc = "non-zero" if abs(last_la) > 1e-12 else "near zero"
+    xc_desc = None
+    if last_xc is not None and np.isfinite(last_xc):
+        if last_xc <= 1e-9:
+            xc_desc = "≈0 (limited remaining room)"
+        else:
+            xc_desc = "positive (some room remains)"
+
+    parts: List[str] = []
+    if sm_bucket and tl_bucket:
+        parts.append(f"{label} sits in a <strong>{sm_bucket}-dispersion, {tl_bucket}-temperature</strong> regime.")
+    elif sm_bucket or tl_bucket:
+        if sm_bucket:
+            parts.append(f"Dispersion is <strong>{sm_bucket}</strong>.")
+        if tl_bucket:
+            parts.append(f"Liquidity temperature is <strong>{tl_bucket}</strong>.")
+    if la_desc:
+        parts.append(f"Loop area is <strong>{la_desc}</strong>, indicating {'ongoing dissipation' if la_desc=='non-zero' else 'a quiet loop'}.")
+    if xc_desc:
+        parts.append(f"X<sub>C</sub> is <strong>{xc_desc}</strong>.")
+    comment_html = ("<p>" + " ".join(parts) + "</p>") if parts else ""
+
     # Mini table columns with fallback: include F_C if X_C absent
-    mini_cols_base = ["S_M", "T_L", "loop_area"]
+    mini_cols_base = ["S_M", "T_L", "loop_area", "U", "dF_C"]
     suppress_xc_numeric = False
     if xc_series is not None and not xc_series.empty:
         try:
@@ -729,8 +1067,12 @@ def _build_region_context(
             interpret_notes += " Numeric table suppressed for X_C (estimation logic under review)."
         interpret_notes += "</p>"
 
+    # Fold advanced diagnostics by default
+    if diagnostics_html:
+        diagnostics_html = f"<details><summary>Advanced diagnostics</summary>{diagnostics_html}</details>"
+
     region_html = (
-        f"<section class=\"region-summary\"><h2>{html_lib.escape(label)}</h2>{summary_html}"
+        f"<section class=\"region-summary\"><h2>{html_lib.escape(label)}</h2>{summary_html}{comment_html}"
         f"<h2>Recent values</h2>{mini_html}{diagnostics_html}{interpret_notes}{selected_table_html}</section>"
         + charts_html
     )
@@ -881,6 +1223,17 @@ def main() -> None:
 
     primary_ctx = regions[0]
     defs_html = _definitions_table(primary_ctx["frame"])
+    # Optional formulas block (rendered via MathJax)
+    formulas_html = (
+        "<h2>Formulas</h2>"
+        "<ul>"
+        "<li>Free energy: $F_C = U - T_0\\, S_M$</li>"
+        "<li>Change in free energy: $\\Delta F_C(t) = F_C(t) - F_C^{\\mathrm{ref}}$</li>"
+        "<li>Surplus/shortage split: $X_C^{+}(t) = \\max(0,\\, \\Delta F_C(t)),\\; X_C^{-}(t) = \\max(0,\\, -\\Delta F_C(t))$</li>"
+        "<li>First-law (discrete approximation): $\\Delta U \\approx \\bar T\\, \\Delta S - \\bar p\\, \\Delta V$</li>"
+        "<li>Maxwell-like relation (rolling OLS): $\\left. \\partial S / \\partial V \\right|_T \\approx \\left. \\partial p / \\partial T \\right|_V$</li>"
+        "</ul>"
+    )
     sources_html = _sources_table(sources_meta)
 
     selected_summary_html = ""
@@ -953,55 +1306,69 @@ def main() -> None:
     BRAND_BG2 = os.getenv("BRAND_BG2", "#1b263b")
     BRAND_TEXT = os.getenv("BRAND_TEXT", "#ffffff")
 
+    style_block = (
+        "body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;line-height:1.5;margin:1.25rem;background:#f6f8fb}"
+        "h1{font-size:1.6rem;margin:0 0 .5rem}h2{font-size:1.1rem;margin:1.25rem 0 .5rem}.wrap{max-width:1100px;margin:0 auto}"
+        ".note{color:#333;margin:.5rem 0 1rem}.note.small{font-size:.85rem;color:#666}figure{margin:1rem 0}figcaption{font-size:.8rem;color:#555}"
+        ".region-summary{background:#fff;border:1px solid #eee;border-radius:8px;padding:.85rem 1rem}"
+        "table.mini{border-collapse:collapse;margin:.5rem 0}table.mini td,table.mini th{padding:.25rem .5rem;border-bottom:1px solid:#ddd;text-align:right}table.mini th:first-child,table.mini td:first-child{text-align:left}"
+        ".tabs{display:flex;gap:.5rem;margin:.75rem 0 1rem}.tabs button{border:1px solid #888;background:#f8f8f8;padding:.4rem .75rem;cursor:pointer;font-size:.8rem;border-radius:4px}.tabs button.active{background:#333;color:#fff}"
+        ".subtabs{display:flex;gap:.4rem;margin:.5rem 0 .75rem}.subtabs button{border:1px solid #aaa;background:#f6f7f9;padding:.3rem .6rem;font-size:.78rem;border-radius:999px;cursor:pointer}.subtabs button.active{background:#333;color:#fff;border-color:#333}"
+        ".compare-block .pane{display:none}.compare-block .pane.active{display:block}"
+        ".region{display:none}.region.active{display:block}"
+        ".intro{background:#eef2f7;border:1px solid #dde4ee;padding:.85rem 1rem;border-radius:8px;margin:1rem 0}"
+        ".intro ul{margin:.5rem 0 .75rem;padding-left:1.1rem}"
+        ".intro li{margin:.3rem 0}"
+        "details{margin:.5rem 0}details>summary{cursor:pointer;list-style:none;font-weight:600}details>summary::-webkit-details-marker{display:none}"
+        ".inputs-summary{background:#fafafa;border:1px solid #eee;padding:.75rem;border-radius:6px;margin:.75rem 0 1rem}"
+        ".inputs-summary .inputs-row{margin:.35rem 0}.inputs-summary .region-tag{display:inline-block;background:#333;color:#fff;border-radius:3px;padding:.15rem .4rem;font-size:.75rem;margin-right:.4rem}"
+        ".inputs-summary .pill-list{display:inline}.inputs-summary .pill{display:inline-block;border:1px solid #ddd;background:#fff;border-radius:999px;padding:.15rem .5rem;margin:.15rem .25rem;font-size:.75rem}"
+        + f":root{{--brand-bg:{BRAND_BG};--brand-bg2:{BRAND_BG2};--brand-text:{BRAND_TEXT};}}"
+        ".brandbar{display:flex;align-items:center;gap:10px;margin-bottom:1rem;padding:.5rem .75rem;border-radius:8px;background:linear-gradient(90deg,var(--brand-bg),var(--brand-bg2));color:var(--brand-text)}"
+        ".brandbar img{height:40px;width:auto;border-radius:6px;box-shadow:0 0 0 1px rgba(255,255,255,.2)}"
+        ".brandbar .brand-name{font-weight:600;font-size:1rem;color:var(--brand-text)}"
+        ".footer-brand{margin-top:2rem;padding:.75rem;border-top:none;border-radius:8px;background:linear-gradient(90deg,var(--brand-bg),var(--brand-bg2));font-size:.75rem;color:var(--brand-text);display:flex;align-items:center;gap:10px}"
+        ".footer-brand img{height:32px;width:auto;border-radius:6px;box-shadow:0 0 0 1px rgba(255,255,255,.2)}"
+    )
+
     head = ("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" "
-        "content=\"width=device-width,initial-scale=1\"><title>Thermo-Credit Monitor</title><meta name=\"description\" "
-    "content=\"Monthly thermo-credit indicators.\"><style>"
-    # Base
-    "body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;line-height:1.5;margin:1.25rem}"
-    "h1{font-size:1.6rem;margin:0 0 .5rem}h2{font-size:1.1rem;margin:1.25rem 0 .5rem}.wrap{max-width:1100px;margin:0 auto}"
-    ".note{color:#333;margin:.5rem 0 1rem}figure{margin:1rem 0}figcaption{font-size:.8rem;color:#555}"
-    "table.mini{border-collapse:collapse;margin:.5rem 0}table.mini td,table.mini th{padding:.25rem .5rem;border-bottom:1px solid #ddd;text-align:right}table.mini th:first-child,table.mini td:first-child{text-align:left}"
-    ".tabs{display:flex;gap:.5rem;margin:.75rem 0 1rem}.tabs button{border:1px solid #888;background:#f8f8f8;padding:.4rem .75rem;cursor:pointer;font-size:.8rem;border-radius:4px}.tabs button.active{background:#333;color:#fff}"
-    ".region{display:none}.region.active{display:block}"
-    ".intro{background:#eef2f7;border:1px solid #dde4ee;padding:.85rem 1rem;border-radius:8px;margin:1rem 0}"
-    ".intro ul{margin:.5rem 0 .75rem;padding-left:1.1rem}"
-    ".intro li{margin:.3rem 0}"
-    # Inputs summary
-    ".inputs-summary{background:#fafafa;border:1px solid #eee;padding:.75rem;border-radius:6px;margin:.75rem 0 1rem}"
-    ".inputs-summary .inputs-row{margin:.35rem 0}.inputs-summary .region-tag{display:inline-block;background:#333;color:#fff;border-radius:3px;padding:.15rem .4rem;font-size:.75rem;margin-right:.4rem}"
-    ".inputs-summary .pill-list{display:inline}.inputs-summary .pill{display:inline-block;border:1px solid #ddd;background:#fff;border-radius:999px;padding:.15rem .5rem;margin:.15rem .25rem;font-size:.75rem}"
-    # Brand colors via CSS variables
-    + f":root{{--brand-bg:{BRAND_BG};--brand-bg2:{BRAND_BG2};--brand-text:{BRAND_TEXT};}}"
-    # Brandbar (header)
-    ".brandbar{display:flex;align-items:center;gap:10px;margin-bottom:1rem;padding:.5rem .75rem;border-radius:8px;background:linear-gradient(90deg,var(--brand-bg),var(--brand-bg2));color:var(--brand-text)}"
-    ".brandbar img{height:40px;width:auto;border-radius:6px;box-shadow:0 0 0 1px rgba(255,255,255,.2)}"
-    ".brandbar .brand-name{font-weight:600;font-size:1rem;color:var(--brand-text)}"
-    # Footer brand
-    ".footer-brand{margin-top:2rem;padding:.75rem;border-top:none;border-radius:8px;background:linear-gradient(90deg,var(--brand-bg),var(--brand-bg2));font-size:.75rem;color:var(--brand-text);display:flex;align-items:center;gap:10px}"
-    ".footer-brand img{height:32px;width:auto;border-radius:6px;box-shadow:0 0 0 1px rgba(255,255,255,.2)}"
-    "</style></head><body><div class=\"wrap\"><div class=\"brandbar\">"
-    + (f'<img src="{logo_uri}" alt="Company Logo"/>' if logo_uri else "")
-    + '<span class="brand-name">ToppyMicroServices</span></div><h1>Thermo-Credit Monitor</h1><p class="note">Interactive charts with summary & fallbacks.</p>')
+            "content=\"width=device-width,initial-scale=1\"><title>Thermo-Credit Monitor</title><meta name=\"description\" "
+            "content=\"Monthly thermo-credit indicators.\"><style>" + style_block + "</style>"
+            + "</head><body><div class=\"wrap\"><div class=\"brandbar\">"
+            + (f'<img src="{logo_uri}" alt="Company Logo"/>' if logo_uri else "")
+            + '<span class="brand-name">ToppyMicroServices</span></div><h1>Thermo-Credit Monitor</h1><p class="note">Interactive charts with summary & fallbacks.</p>')
 
     intro_html = (
         '<section class="intro">'
-        '<h2>Thermo-Credit Prototype</h2>'
-        '<p>This page shows a prototype implementation of the Thermo-Credit framework.</p>'
+        '<h2>What this page shows</h2>'
+        '<p>This dashboard tracks monthly thermo-credit indicators for Japan, the Euro Area, and the US. '
+        'It is meant to answer very simple questions:</p>'
         '<ul>'
-        '<li><strong>S_M</strong>: money/credit dispersion entropy (scale × allocation diversity).</li>'
-        '<li><strong>T_L</strong>: liquidity "temperature" index (market & funding conditions, normalized).</li>'
-        '<li><strong>Loop area</strong>: policy/regulatory loop dissipation in the (S_M, V_C) plane.</li>'
-        '<li><strong>X_C</strong>: credit exergy ceiling, i.e. remaining room for non-disruptive adjustment.</li>'
+        '<li>Is credit currently <strong>tight or loose</strong> in each region?</li>'
+        '<li>How much <strong>room is left</strong> for non-disruptive adjustment?</li>'
+        '<li>Where do we see signs of <strong>stress or overheating</strong> in the loop?</li>'
         '</ul>'
-        '<p>Data and formulas follow the Thermo-Credit v0.x specification (see link below). Values shown are illustrative / experimental.</p>'
+        '<p>Under the hood, the framework uses four core metrics:</p>'
+        '<ul>'
+        '<li><strong>S<sub>M</sub></strong> – dispersion of money/credit (size × allocation spread)</li>'
+        '<li><strong>T<sub>L</sub></strong> – liquidity “temperature” (funding &amp; market conditions)</li>'
+        '<li><strong>Loop area</strong> – dissipation along the policy/regulatory loop</li>'
+        '<li><strong>X<sub>C</sub></strong> – remaining “credit exergy”, i.e. safe room to adjust</li>'
+        '</ul>'
+        '<p>Values here are <strong>experimental</strong> and follow the Thermo-Credit v0.x spec. '
+        'They are for research and discussion, not for trading or regulatory use.</p>'
         '</section>'
     )
 
-    page_body = intro_html + selected_summary_html + inputs_summary_html + tabs_html + regions_html + noscript + sources_html + defs_html
-    script_block = ("\n<script>(function(){const b=[...document.querySelectorAll('.tabs button')];if(!b.length)return;"
-                    "b.forEach(btn=>btn.addEventListener('click',()=>{b.forEach(x=>x.classList.remove('active'));btn.classList.add('active');"
+    page_body = intro_html + selected_summary_html + inputs_summary_html + tabs_html + regions_html + noscript + sources_html + defs_html + formulas_html
+    script_block = ("\n<script>(function(){const tabs=[...document.querySelectorAll('.tabs button')];if(tabs.length){"
+                    "tabs.forEach(btn=>btn.addEventListener('click',()=>{tabs.forEach(x=>x.classList.remove('active'));btn.classList.add('active');"
                     "const tgt=btn.getAttribute('data-target');document.querySelectorAll('.region').forEach(r=>r.classList.remove('active'));"
-                    "const el=document.getElementById('region-'+tgt);if(el)el.classList.add('active');}));})();</script></body></html>")
+                    "const el=document.getElementById('region-'+tgt);if(el)el.classList.add('active');}));}"
+                    "document.querySelectorAll('.compare-toggle').forEach(ct=>{const btns=[...ct.querySelectorAll('button')];const block=ct.parentElement.nextElementSibling;"
+                    "btns.forEach(btn=>btn.addEventListener('click',()=>{btns.forEach(x=>x.classList.remove('active'));btn.classList.add('active');const mode=btn.getAttribute('data-mode');"
+                    "if(block){block.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));const target=block.querySelector('.pane.'+(mode==='std'?'std':'raw'));if(target)target.classList.add('active');}"
+                    "}));});})();</script></body></html>")
 
     final_html = head + page_body + '<div class="footer-brand">' + (f'<img src="{logo_uri}" alt="Company Logo"/>' if logo_uri else "") + '<span>© ' + datetime.utcnow().strftime('%Y') + ' ToppyMicroServices</span></div></div>' + script_block
     with open(os.path.join(SITE_DIR, "report.html"), "w", encoding="utf-8") as fp:
@@ -1022,7 +1389,12 @@ def main() -> None:
                 except Exception:
                     pass
 
-    month_head = head.replace("<title>Thermo-Credit Monitor</title>", f"<title>Thermo-Credit Monitor – {month_key}</title>")
+    month_head = ("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" "
+                  f"content=\"width=device-width,initial-scale=1\"><title>Thermo-Credit Monitor – {month_key}</title><meta name=\"description\" "
+                  "content=\"Monthly thermo-credit indicators.\"><style>" + style_block + "</style>"
+                  + "</head><body><div class=\"wrap\"><div class=\"brandbar\">"
+                  + (f'<img src="{logo_uri}" alt="Company Logo"/>' if logo_uri else "")
+                  + '<span class="brand-name">ToppyMicroServices</span></div><h1>Thermo-Credit Monitor</h1><p class="note">Interactive charts with summary & fallbacks.</p>')
     month_html = month_head + page_body + '<div class="footer-brand">' + (f'<img src="{logo_uri}" alt="Company Logo"/>' if logo_uri else "") + '<span>© ' + datetime.utcnow().strftime('%Y') + ' ToppyMicroServices</span></div></div>' + script_block
     with open(os.path.join(month_dir, "index.html"), "w", encoding="utf-8") as fp:
         fp.write(month_html)

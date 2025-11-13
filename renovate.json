@@ -1,27 +1,38 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:base"],
-  "dependencyDashboard": true,
-  "labels": ["deps"],
   "timezone": "Asia/Tokyo",
-  "schedule": ["before 6am on monday"],
-  "prConcurrentLimit": 5,
-  "stabilityDays": 3,
+  "schedule": ["before 5am on monday"],
+  "labels": ["deps"],
+  "pip_requirements": {
+    "fileMatch": ["^requirements\\.txt$"],
+    "enabled": true
+  },
+  "ignorePaths": ["site/**", "data/**"],
   "packageRules": [
     {
-      "matchManagers": ["pip"],
-      "matchPackageNames": ["plotly", "kaleido"],
+      "matchPackagePatterns": ["plotly", "kaleido"],
       "groupName": "plotly-stack",
-      "enabled": true
+      "schedule": ["before 5am on monday"],
+      "stabilityDays": 3
     },
     {
-      "matchManagers": ["pip"],
-      "matchPackagePatterns": [".*"],
-      "separateMinorPatch": true
-    },
-    {
-      "matchUpdateTypes": ["major"],
-      "enabled": false
+      "matchPackagePatterns": ["pandas", "numpy"],
+      "groupName": "core-numeric",
+      "stabilityDays": 5
     }
-  ]
+  ],
+  "regexManagers": [
+    {
+      "fileMatch": ["constraints.txt"],
+      "matchStrings": [
+        "(?<depName>[A-Za-z0-9_.-]+)==(?<currentValue>[0-9]+\\.[0-9]+\\.[0-9]+)"
+      ],
+      "datasourceTemplate": "pypi"
+    }
+  ],
+  "dependencyDashboard": true,
+  "prHourlyLimit": 3,
+  "prConcurrentLimit": 10,
+  "updateNotScheduled": false
 }

@@ -1,0 +1,64 @@
+name: Matrix CI (Pinned vs Latest)
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: [ '3.10', '3.11' ]
+        mode: [ pinned, latest ]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: 'pip'
+      - name: Install (pinned)
+        if: matrix.mode == 'pinned'
+        run: |
+          python -m pip install -U pip
+          pip install -r requirements.txt -c constraints.txt
+          pip install -r constraints.txt --no-deps --quiet || true  # ensure tooling available
+      - name: Install (latest)
+        if: matrix.mode == 'latest'
+        run: |
+          python -m pip install -U pip
+          pip install -r requirements.txt
+          pip install pytest pip-audit cyclonedx-bom
+      - name: Build minimal features (optional)
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY || '' }}
+        run: |
+          if [ -n "$FRED_API_KEY" ]; then python scripts/01_build_features.py || true; fi
+          python scripts/02_compute_indicators.py || true
+      - name: Run tests
+        run: pytest -q || (echo "[warn] tests failed in ${{ matrix.mode }} mode" && exit 1)
+      - name: pip-audit (pinned only strict)
+        if: matrix.mode == 'pinned'
+        run: |
+          pip install pip-audit
+          pip-audit -r constraints.txt --strict
+      - name: pip-audit (latest informational)
+        if: matrix.mode == 'latest'
+        run: |
+          pip-audit -r requirements.txt || echo "[info] latest audit non-strict failures ignored"
+      - name: SBOM (pinned mode)
+        if: matrix.mode == 'pinned'
+        run: |
+          pip install cyclonedx-bom
+          cyclonedx-py requirements constraints.txt -o sbom-${{ matrix.python }}.json
+      - name: Upload SBOM artifacts
+        if: matrix.mode == 'pinned'
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ matrix.python }}
+          path: sbom-${{ matrix.python }}.json

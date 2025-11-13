@@ -1,20 +1,44 @@
 {
-  "money_scale_jp": {
+  "money_scale": {
     "id": "JPNASSETS",
     "source": "config",
-    "start": "1998-01-01",
-    "title": "BoJ Total Assets"
+    "start": "1995-01-01",
+    "title": "BoJ Total Assets (as money proxy)"
   },
-  "base_proxy_jp": {
+  "base_proxy": {
     "id": "JPNASSETS",
-    "source": "config",
-    "start": "1998-01-01",
-    "title": "BoJ Total Assets"
-  },
-  "yield_proxy_jp": {
-    "id": "IRLTLT01JPM156N",
     "source": "config",
     "start": "1990-01-01",
-    "title": "Long-term JGB Yield"
+    "title": "BoJ Total Assets"
+  },
+  "yield_proxy": {
+    "id": "IRLTLT01JPM156N",
+    "source": "config",
+    "start": "1995-01-01",
+    "title": "Long-term JGB yield (FRED)"
+  },
+  "asset_proxy": {
+    "id": "JPNASSETS",
+    "source": "config",
+    "start": "1995-01-01",
+    "title": "BoJ Total Assets (asset side proxy)"
+  },
+  "energy_proxy": {
+    "id": "NY.GDP.MKTP.CN@2000-01-01",
+    "source": "config",
+    "start": "1990-01-01",
+    "title": "Nominal GDP (energy component proxy)"
+  },
+  "depth_proxy": {
+    "id": "CRDQJPAPABIS",
+    "source": "config",
+    "start": "1990-01-01",
+    "title": "Private non-financial sector credit (depth stock)"
+  },
+  "turnover_proxy": {
+    "id": "MYAGM2JPM189S",
+    "source": "config",
+    "start": "1990-01-01",
+    "title": "Japan M2 (use as liquidity turnover proxy)"
   }
 }

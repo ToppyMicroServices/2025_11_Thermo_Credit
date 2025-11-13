@@ -44,6 +44,14 @@ def build_indicators_core(money: pd.DataFrame,
     df = cred.merge(S, on="date").merge(T, on="date").merge(reg, on="date")
     df = df.sort_values("date").reset_index(drop=True)
 
+    # Attach underlying allocation share columns (q_*) so downstream tests and
+    # diagnostics can recompute normalized entropy independently. These are NOT
+    # needed for S_M computation itself (already done) but provide transparency.
+    q_share_cols = [c for c in q.columns if c.startswith("q_")]
+    if q_share_cols:
+        df_q = q[["date"] + q_share_cols].drop_duplicates("date")
+        df = df.merge(df_q, on="date", how="left")
+
     la = LoopArea(lam=lam)
     areas = []
     for _, r in df.iterrows():
@@ -74,6 +82,65 @@ def build_indicators_core(money: pd.DataFrame,
             df["X_C"] = df["F_C"]
     else:
         df["X_C"] = df["F_C"]
+
+    # Enforce non-negative exergy by baseline adjustment or clipping.
+    # Default behavior: clip negatives at 0 (shift, if used, is for visualization only).
+    # Configure via cfg:
+    #   exergy_floor_zero: bool (default True)
+    #   exergy_floor_mode: 'clip' (default) or 'shift'
+    try:
+        if bool(cfg.get("exergy_floor_zero", True)) and "X_C" in df.columns:
+            mode = str(cfg.get("exergy_floor_mode", "clip")).strip().lower()
+            xnum = pd.to_numeric(df["X_C"], errors="coerce")
+            if mode == "clip":
+                df["X_C"] = xnum.clip(lower=0)
+            else:
+                xmin = float(xnum.min()) if np.isfinite(xnum.min()) else np.nan
+                if np.isfinite(xmin) and xmin < 0:
+                    df["X_C"] = xnum - xmin
+    except Exception:
+        # If anything goes wrong, leave X_C as-is
+        pass
+
+    # Fixed-reference split of free energy into surplus/shortage components
+    # ΔF_C(t) = F_C(t) - F_C_ref; X_C_plus = max(0, ΔF_C); X_C_minus = max(0, -ΔF_C)
+    try:
+        fc = pd.to_numeric(df.get("F_C", pd.Series([], dtype=float)), errors="coerce")
+        F_ref = None
+        # Preference order for reference: explicit cfg value -> cfg date pick -> first valid
+        if "F_C_ref" in cfg:
+            try:
+                F_ref = float(cfg.get("F_C_ref"))
+            except Exception:
+                F_ref = None
+        if F_ref is None and "F_C_ref_date" in cfg:
+            try:
+                ref_dt = pd.to_datetime(cfg.get("F_C_ref_date"))
+                # exact match only; if multiple, take first
+                match = df.loc[df["date"] == ref_dt, "F_C"]
+                if not match.empty:
+                    F_ref = float(pd.to_numeric(match, errors="coerce").dropna().iloc[0])
+            except Exception:
+                F_ref = None
+        if F_ref is None:
+            idx0 = fc.first_valid_index()
+            if idx0 is not None:
+                F_ref = float(fc.loc[idx0])
+        if F_ref is not None and np.isfinite(F_ref):
+            dF = fc.astype(float) - F_ref
+            df["Delta_F_C"] = dF
+            df["X_C_plus"] = dF.clip(lower=0)
+            df["X_C_minus"] = (-dF).clip(lower=0)
+        else:
+            # If we cannot resolve a fixed reference, emit NaNs for the split
+            df["Delta_F_C"] = np.nan
+            df["X_C_plus"] = np.nan
+            df["X_C_minus"] = np.nan
+    except Exception:
+        # Do not fail the pipeline if any issue occurs; keep base columns
+        df["Delta_F_C"] = np.nan
+        df["X_C_plus"] = np.nan
+        df["X_C_minus"] = np.nan
 
     return df
 
@@ -129,6 +196,12 @@ def compute_diagnostics(df: pd.DataFrame, window: int = 24) -> pd.DataFrame:
     df["dU"] = df["U"].astype(float).diff()
     df["dS"] = df["S_M"].astype(float).diff()
     df["dV"] = df["V_C"].astype(float).diff()
+    # Also expose dF_C (helps standardized cross-region comparison of changes)
+    if "F_C" in df.columns:
+        try:
+            df["dF_C"] = df["F_C"].astype(float).diff()
+        except Exception:
+            df["dF_C"] = np.nan
     df["T_bar"] = df["T_L"].astype(float).rolling(2).mean()
     df["p_bar"] = df["p_C"].astype(float).rolling(2).mean()
     df["Q_like"] = df["T_bar"] * df["dS"]

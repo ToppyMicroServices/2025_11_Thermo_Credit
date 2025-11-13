@@ -1,11 +1,20 @@
 import numpy as np
 import pandas as pd
 from typing import Sequence, Iterable
+import math
 
 def shannon_H_from_probs(p: np.ndarray) -> float:
-    p = np.clip(p.astype(float), 1e-12, 1.0)
-    p = p / p.sum()
-    return float(-(p * np.log(p)).sum())
+    p = p.astype(float)
+    # Align with test behavior: clamp negatives to 0 before normalization
+    p[p < 0] = 0.0
+    s = p.sum()
+    if s <= 0 or not np.isfinite(s):
+        return float("nan")
+    p = p / s
+    mask = p > 0
+    if not np.any(mask):
+        return 0.0
+    return float(-(p[mask] * np.log(p[mask])).sum())
 
 def shannon_H(row: pd.Series, cols: Iterable[str]) -> float:
     probs = row[list(cols)].values.astype(float)
@@ -39,7 +48,13 @@ def money_entropy(
     df["S_M_in"]  = k * df["M_in"].astype(float)  * df["Hq"]
     df["S_M_out"] = k * df["M_out"].astype(float) * df["Hq"]
     df["S_M"] = df["S_M_in"]
-    cols = ["date","Hq","S_M","S_M_in","S_M_out"]
+    # Expose normalized entropy (scale-free) dividing by log(K)
+    K = len(q_cols) if q_cols else 0
+    if K > 0:
+        df["S_M_hat"] = df["Hq"].astype(float) / math.log(K)
+    else:
+        df["S_M_hat"] = np.nan
+    cols = ["date","Hq","S_M_hat","S_M","S_M_in","S_M_out"]
     if per_category and q_cols:
         # raw probability vector
         for c in q_cols:
