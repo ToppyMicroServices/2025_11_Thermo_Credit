@@ -80,3 +80,69 @@ series:
       title: US 30Y Treasury Yield (fallback)
       note: Fallback if 10Y missing
       start: 1990-01-01
+
+  # Credit enrichment roles (placeholders; replace with real preferred series)
+  asset_proxy:
+    - id: JPNASSETS
+      title: BoJ Total Assets (asset side proxy)
+      note: Replace with bank loans to private sector if available
+      start: 1995-01-01
+  energy_proxy:
+    - id: NY.GDP.MKTP.CN@2000-01-01
+      title: Nominal GDP (energy component proxy)
+  depth_proxy:
+    - id: CRDQJPAPABIS
+      title: Private non-financial sector credit (depth stock)
+  turnover_proxy:
+    - id: MYAGM2JPM189S
+      title: Japan M2 (use as liquidity turnover proxy)
+
+  # Region-specific credit enrichment overrides
+  depth_proxy_eu:
+    - id: CRDQEZAPABIS
+      title: Euro Area private non-financial sector credit (depth stock)
+      start: 1999-01-01
+  turnover_proxy_eu:
+    - id: ECBASSETS
+      title: ECB Total Assets (liquidity/turnover proxy placeholder)
+      start: 1999-01-01
+
+  depth_proxy_us:
+    - id: CRDQUSAPABIS
+      title: US private non-financial sector credit (depth stock)
+      start: 1990-01-01
+  turnover_proxy_us:
+    - id: WALCL
+      title: Federal Reserve Total Assets (liquidity/turnover proxy placeholder)
+      start: 1990-01-01
+
+# Enrichment calibration (optional overrides)
+enrichment:
+  depth_scale: 4.0               # heuristic multiplier base; ignored if real depth series present
+  turnover_min: 0.1              # lower clipping bound
+  turnover_max: 10.0             # upper clipping bound
+  turnover_clip_warn_threshold: 0.15  # warn when clipped rows fraction > this
+
+# Default parameters for leverage heuristics and allocation weights
+parameters:
+  leverage_share:
+    default: 0.4
+    jp: 0.4
+    eu: 0.4
+    us: 0.4
+  quarterly_allocations:
+    jp:
+      q_pay: 0.30
+      q_firm: 0.30
+      q_asset: 0.25
+      q_reserve: 0.15
+    eu:
+      q_households: 0.30
+      q_corporates: 0.35
+      q_government: 0.20
+      q_row: 0.15
+    us:
+      q_households: 0.30
+      q_corporates: 0.35
+      q_public: 0.20
+      q_rest: 0.15

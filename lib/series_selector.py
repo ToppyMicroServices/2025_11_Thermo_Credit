@@ -38,11 +38,23 @@ DEFAULT_SERIES: Dict[str, List[Dict[str, Any]]] = {
         {"id": "DGS10", "title": "US 10Y Treasury Yield", "start": DEFAULT_START},
         {"id": "GS30", "title": "US 30Y Treasury Yield", "start": DEFAULT_START},
     ],
+    # Credit enrichment (JP defaults; region-specific can override via config)
+    "asset_proxy": [
+        {"id": "JPNASSETS", "title": "BoJ Total Assets", "start": DEFAULT_START},
+    ],
+    "energy_proxy": [
+        {"id": "NY.GDP.MKTP.CN", "title": "Nominal GDP (World Bank)", "start": DEFAULT_START},
+    ],
+    "depth_proxy": [
+        {"id": "CRDQJPAPABIS", "title": "Private NF credit (BIS)", "start": DEFAULT_START},
+    ],
+    "turnover_proxy": [
+        {"id": "MYAGM2JPM189S", "title": "Japan M2", "start": DEFAULT_START},
+    ],
 }
 
 
-def load_series_preferences(config_path: str) -> Dict[str, List[Any]]:
-    """Load per-role series preferences from a YAML config file if available."""
+def _read_config(config_path: str) -> Dict[str, Any]:
     try:
         with open(config_path, "r", encoding="utf-8") as fh:
             content = yaml.safe_load(fh) or {}
@@ -54,7 +66,17 @@ def load_series_preferences(config_path: str) -> Dict[str, List[Any]]:
 
     if not isinstance(content, dict):
         return {}
+    return content
 
+
+def load_project_config(config_path: str) -> Dict[str, Any]:
+    """Load the full project config as a dictionary (missing/invalid -> empty dict)."""
+    return _read_config(config_path)
+
+
+def load_series_preferences(config_path: str) -> Dict[str, List[Any]]:
+    """Load per-role series preferences from a YAML config file if available."""
+    content = _read_config(config_path)
     raw_series = content.get("series", {})
     if not isinstance(raw_series, dict):
         return {}
@@ -207,6 +229,7 @@ def select_series(
 __all__ = [
     "DEFAULT_SERIES",
     "DEFAULT_START",
+    "load_project_config",
     "load_series_preferences",
     "candidate_queue",
     "select_series",

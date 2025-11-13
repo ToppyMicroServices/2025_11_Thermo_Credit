@@ -13,9 +13,13 @@ from lib.series_selector import (
     DEFAULT_SERIES,
     DEFAULT_START,
     candidate_queue,
+    load_project_config,
     load_series_preferences,
     select_series,
 )
+from lib.credit_enrichment import compute_enrichment
+from lib.worldbank import fetch_worldbank_series
+from lib.config_params import allocation_weights, leverage_share
 
 FRED_KEY = os.getenv("FRED_API_KEY", "")
 CONFIG_PATH = os.path.join(ROOT, "config.yml")
@@ -52,82 +56,11 @@ def fred_series(series_id: str, start: str = DEFAULT_START, retries: int = 3, ba
             else:
                 raise
 
-def worldbank_series(country: str = "EMU", indicator: str = "NY.GDP.MKTP.CN", retries: int = 4, backoff: float = 2.0) -> pd.DataFrame:
-    """Fetch World Bank indicator with cache, UA, jitter, and CSV fallback.
-
-    Fallback order:
-      1) Cache file data/worldbank_cache_{country}_{indicator}.json
-      2) Live request with UA + backoff + jitter
-      3) Local CSV data/gdp_eu.csv (columns: date,value)
-      4) Local CSV data/eurostat_gdp_eu.csv (columns: date,value)
-    """
-    cache_name = f"worldbank_cache_{country}_{indicator}.json".replace("/", "_")
-    cache_path = os.path.join("data", cache_name)
-
-    # 1) Cache hit
-    if os.path.exists(cache_path):
-        try:
-            j = json.load(open(cache_path, "r", encoding="utf-8"))
-            df = pd.DataFrame(j)[["date", "value"]]
-            df["date"] = pd.to_datetime(df["date"]) + pd.offsets.QuarterEnd(0)
-            df["value"] = pd.to_numeric(df["value"], errors="coerce")
-            out = df.dropna().sort_values("date")
-            if not out.empty:
-                return out
-        except Exception:
-            pass
-
-    # 2) Live request with UA/backoff/jitter
-    base = "https://api.worldbank.org/v2"
-    url = f"{base}/country/{country}/indicator/{indicator}?format=json&per_page=20000"
-    headers = {"User-Agent": "TQTC-Research/1.0 (+https://toppymicros.com)"}
-    last = None
-    for i in range(retries):
-        try:
-            # small jitter 0-250ms
-            time.sleep(0.05 + 0.2 * (i / max(1, retries-1)))
-            r = requests.get(url, timeout=45, headers=headers)
-            r.raise_for_status()
-            payload = r.json()
-            data = payload[1]
-            df = pd.DataFrame(data)[["date", "value"]]
-            # write cache
-            try:
-                os.makedirs("data", exist_ok=True)
-                json.dump(df.to_dict(orient="records"), open(cache_path, "w", encoding="utf-8"))
-            except Exception:
-                pass
-            df["date"] = pd.to_datetime(df["date"]) + pd.offsets.QuarterEnd(0)
-            df["value"] = pd.to_numeric(df["value"], errors="coerce")
-            return df.dropna().sort_values("date")
-        except Exception as e:
-            last = e
-            if i < retries - 1:
-                time.sleep(backoff ** i)
-            else:
-                break
-
-    # 3) Local CSV fallback(s)
-    for local_path in [os.path.join("data", "gdp_eu.csv"), os.path.join("data", "eurostat_gdp_eu.csv")]:
-        if os.path.exists(local_path):
-            try:
-                df = pd.read_csv(local_path)
-                date_col = next((c for c in df.columns if str(c).lower()=="date"), None)
-                val_col = next((c for c in df.columns if str(c).lower()=="value"), None)
-                if not date_col or not val_col:
-                    continue
-                df = df[[date_col, val_col]].rename(columns={date_col: "date", val_col: "value"})
-                df["date"] = pd.to_datetime(df["date"]) + pd.offsets.QuarterEnd(0)
-                df["value"] = pd.to_numeric(df["value"], errors="coerce")
-                out = df.dropna().sort_values("date")
-                if not out.empty:
-                    return out
-            except Exception:
-                continue
-    # If all failed, raise last error if present
-    if last:
-        raise last
-    raise RuntimeError("WorldBank GDP fetch and all fallbacks failed")
+def worldbank_series(country: str = "EMU", indicator: str = "NY.GDP.MKTP.CN") -> pd.DataFrame:
+    return fetch_worldbank_series(country, indicator, fallback_csvs=[
+        os.path.join("data", "gdp_eu.csv"),
+        os.path.join("data", "eurostat_gdp_eu.csv"),
+    ])
 
 
 def _log_selection(role: str, info: dict) -> None:
@@ -156,7 +89,7 @@ def list_series(series_prefs: dict, roles: Optional[list] = None) -> None:
             print(f"  - {item['id']}{suffix} [{item['source']}, start={start}]")
 
 
-def build_eu(series_prefs: dict) -> None:
+def build_eu(series_prefs: dict, project_config: dict) -> None:
     money_choice = select_series(
         "money_scale_eu",
         ROLE_ENV_EU.get("money_scale_eu"),
@@ -228,14 +161,29 @@ def build_eu(series_prefs: dict) -> None:
         gdp = worldbank_series("EMU", "NY.GDP.MKTP.CN").rename(columns={"value": "Y"})
         yld = yield_choice.get("data").copy()
         yld["date"] = pd.to_datetime(yld["date"])  # monthly
-        yq = yld.resample("Q", on="date").mean().reset_index().rename(columns={"value": "spread"})
+        # Use explicit quarter ending alias (December) 'QE-DEC'
+        yq = yld.resample("QE-DEC", on="date").mean().reset_index().rename(columns={"value": "spread"})
         cred = (bis.merge(gdp, on="date", how="left")
                     .merge(yq[["date", "spread"]], on="date", how="left")
                     .sort_values("date"))
-        cred["L_asset"] = cred["L_real"].astype(float) * 0.4
+        leverage_ratio = leverage_share(project_config, "eu", 0.4)
+        cred["L_asset"] = cred["L_real"].astype(float) * leverage_ratio
         cred["U"] = cred["Y"].astype(float)  # proxy
-        cred["depth"] = 1000
-        cred["turnover"] = 1.0
+        # Shared enrichment computation (no external depth/turnover quarterly series yet; heuristics apply)
+        warnings: list[str] = []
+        enrich_cfg = project_config.get("enrichment", {}) if isinstance(project_config, dict) else {}
+        cred = compute_enrichment(
+            cred,
+            depth_source=None,
+            turnover_source=None,
+            warnings=warnings,
+            depth_scale=enrich_cfg.get("depth_scale"),
+            turnover_min=enrich_cfg.get("turnover_min"),
+            turnover_max=enrich_cfg.get("turnover_max"),
+            clip_warn_threshold=enrich_cfg.get("turnover_clip_warn_threshold"),
+        )
+        for w in warnings:
+            print(f"[EU enrichment] WARNING: {w}")
         cred = cred[["date", "L_real", "L_asset", "U", "Y", "spread", "depth", "turnover"]]
         cred.to_csv(os.path.join("data", "credit_eu.csv"), index=False)
 
@@ -251,11 +199,15 @@ def build_eu(series_prefs: dict) -> None:
         if not os.path.exists(alloc_path):
             dates = cred["date"].drop_duplicates().sort_values()
             qdf = pd.DataFrame({"date": dates})
-            # Example EU purpose buckets; replace with real shares when available
-            qdf["q_households"] = 0.30
-            qdf["q_corporates"] = 0.35
-            qdf["q_government"] = 0.20
-            qdf["q_row"] = 0.15
+            default_weights = {
+                "q_households": 0.30,
+                "q_corporates": 0.35,
+                "q_government": 0.20,
+                "q_row": 0.15,
+            }
+            region_weights = allocation_weights(project_config, "eu", default_weights)
+            for col, value in region_weights.items():
+                qdf[col] = float(value)
             qdf.to_csv(alloc_path, index=False)
         print("EU feature CSVs built: money_eu.csv, credit_eu.csv, reg_pressure_eu.csv (+ allocation_q_eu.csv if missing)")
     except Exception as e:
@@ -272,6 +224,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     series_prefs = load_series_preferences(CONFIG_PATH)
+    project_config = load_project_config(CONFIG_PATH)
 
     if args.list_series:
         list_series(series_prefs, args.role)
@@ -281,7 +234,7 @@ def main() -> None:
         print("No FRED_API_KEY; skip EU online fetch and keep local CSVs.")
         return
 
-    build_eu(series_prefs)
+    build_eu(series_prefs, project_config)
 
 
 if __name__ == "__main__":
