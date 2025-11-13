@@ -29,6 +29,9 @@ jobs:
           python -m pip install -U pip
           pip install -r requirements.txt -c constraints.txt
           pip install pytest
+      - name: Prepare minimal data (no network)
+        run: |
+          python scripts/ci_prepare_minimal_data.py
       - name: Tests
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY || '' }}
