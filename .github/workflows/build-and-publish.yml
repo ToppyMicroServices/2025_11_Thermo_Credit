@@ -27,6 +27,9 @@ jobs:
           cache: pip
       - name: Install deps
         run: pip install -r requirements.txt plotly pyyaml pandas numpy requests
+      - name: Prepare minimal data (no network)
+        run: |
+          python scripts/ci_prepare_minimal_data.py
       - name: Prepare static site flags
         run: |
           mkdir -p site

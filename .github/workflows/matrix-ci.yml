@@ -38,6 +38,7 @@ jobs:
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY || '' }}
         run: |
+          python scripts/ci_prepare_minimal_data.py
           if [ -n "$FRED_API_KEY" ]; then python scripts/01_build_features.py || true; fi
           python scripts/02_compute_indicators.py || true
       - name: Run tests

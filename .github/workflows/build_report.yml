@@ -22,6 +22,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Prepare minimal data (no network)
+        run: |
+          python scripts/ci_prepare_minimal_data.py
+
       - name: Fetch EU/US raw series from FRED (if API key provided)
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
