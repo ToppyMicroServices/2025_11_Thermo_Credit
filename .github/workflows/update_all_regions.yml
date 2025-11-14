@@ -1,0 +1,83 @@
+name: Update All Regions Data
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    # Weekdays at 04:00 UTC (after JP-only job, slightly staggered)
+    - cron: '30 3 * * 1-5'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  fetch-and-build-all:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -c constraints.txt
+
+      - name: Fetch JP raw from FRED
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          JP_START: 2012-01-01
+          FRED_SLEEP: '0.6'
+        run: |
+          python scripts/fetch_jp_raw.py
+
+      - name: Build EU features (if API key provided)
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+        run: |
+          if [ -n "$FRED_API_KEY" ]; then python scripts/04_build_features_eu.py; else echo "[info] No FRED_API_KEY; skip EU feature build"; fi
+
+      - name: Build US features (if API key provided)
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+        run: |
+          if [ -n "$FRED_API_KEY" ]; then python scripts/05_build_features_us.py; else echo "[info] No FRED_API_KEY; skip US feature build"; fi
+
+      - name: Compute indicators for all regions
+        env:
+          JP_START: 2012-01-01
+        run: |
+          python scripts/02_compute_all_regions.py
+
+      - name: Build report (JP-focused but may include multi-region summaries)
+        env:
+          REPORT_PLOT_START: 2012-01-01
+        run: |
+          python scripts/03_make_report.py
+
+      - name: Commit changes
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore(ci): update all regions data & report"
+          fi
+
+      - name: Create Pull Request
+        if: success()
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: "chore(ci): update all regions data & report"
+          commit-message: "chore(ci): update all regions data & report"
+          branch: ci/update-all-regions
+          delete-branch: true
