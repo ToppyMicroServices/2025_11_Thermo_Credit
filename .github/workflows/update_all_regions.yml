@@ -29,6 +29,18 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt -c constraints.txt
 
+      - name: Fetch EU/US raw from FRED (if API key provided)
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          OBS_START: 1990-01-01
+          FRED_SLEEP: '0.5'
+        run: |
+          if [ -n "${FRED_API_KEY}" ]; then
+            python scripts/fetch_fred_series.py --start "${OBS_START}"
+          else
+            echo "[info] No FRED_API_KEY; skip EU/US fetch"
+          fi
+
       - name: Fetch JP raw from FRED
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
