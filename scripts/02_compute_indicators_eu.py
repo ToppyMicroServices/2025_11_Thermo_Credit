@@ -30,7 +30,7 @@ LIB = os.path.join(ROOT, "lib")
 if LIB not in sys.path:
     sys.path.insert(0, LIB)
 
-from lib.indicators import build_indicators_core, compute_diagnostics
+from lib.indicators import build_indicators_core, compute_diagnostics, DEFAULT_HEADROOM_COLS
 
 try:
     from lib.config_loader import load_config
@@ -44,6 +44,24 @@ k_val = float(CFG.get("k", 1.0))
 DATA_DIR = os.path.join(ROOT, "data")
 SITE_DIR = os.path.join(ROOT, "site")
 os.makedirs(SITE_DIR, exist_ok=True)
+
+HEADROOM_DECAY = dict(zip(DEFAULT_HEADROOM_COLS, (0.04, 0.05, 0.06)))
+
+
+def _with_headrooms(reg: Optional[pd.DataFrame]) -> Optional[pd.DataFrame]:
+    if reg is None or reg.empty:
+        return reg
+    df = reg.copy()
+    base_col = "V_R" if "V_R" in df.columns else "V_C" if "V_C" in df.columns else None
+    if base_col is None or "p_R" not in df.columns:
+        return df
+    base = pd.to_numeric(df[base_col], errors="coerce")
+    pressure = pd.to_numeric(df.get("p_R"), errors="coerce").fillna(0).clip(lower=0)
+    for col, coeff in HEADROOM_DECAY.items():
+        if col in df.columns:
+            continue
+        df[col] = (base * (1 - coeff * pressure)).clip(lower=0)
+    return df
 
 
 def _load_csv(path: str) -> Optional[pd.DataFrame]:
@@ -245,6 +263,7 @@ def _ensure_placeholders():
                 ydf = ydf.rename(columns={"value": "p_R"})
                 bdf = bdf.rename(columns={"value": "V_R"})
                 reg = ydf.merge(bdf, on="date", how="outer").sort_values("date").dropna()
+                reg = _with_headrooms(reg)
                 reg.to_csv(reg_csv, index=False)
                 print("[EU] Placeholder reg_pressure_eu.csv created (p_R from yield, V_R from assets).")
             except Exception as e:
@@ -264,7 +283,7 @@ def main():
     money = _load_csv(os.path.join(DATA_DIR, "money_eu.csv"))
     q = _load_csv(os.path.join(DATA_DIR, "allocation_q_eu.csv"))
     cred = _load_csv(os.path.join(DATA_DIR, "credit_eu.csv"))
-    reg = _load_csv(os.path.join(DATA_DIR, "reg_pressure_eu.csv"))
+    reg = _with_headrooms(_load_csv(os.path.join(DATA_DIR, "reg_pressure_eu.csv")))
 
     missing = []
     if money is None: missing.append("money_eu.csv")
@@ -291,7 +310,7 @@ def main():
 
     _tmp = _resample_quarter_end(money, ["M_in", "M_out"])
     money = _tmp if _tmp is not None else money
-    _tmp = _resample_quarter_end(reg, ["p_R", "V_R"])
+    _tmp = _resample_quarter_end(reg, ["p_R", "V_R"] + list(DEFAULT_HEADROOM_COLS))
     reg = _tmp if _tmp is not None else reg
     # allocation shares: resample by mean in quarter
     if q is not None and not q.empty:

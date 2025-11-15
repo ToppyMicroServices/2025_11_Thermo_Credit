@@ -18,7 +18,9 @@ from lib.series_selector import (
     select_series,
     candidate_queue,
 )
+from lib.config_loader import load_config
 from lib.credit_enrichment import compute_enrichment
+from lib.external_coupling import build_external_coupling_indices
 from lib.worldbank import fetch_worldbank_series
 from lib.config_params import allocation_weights, leverage_share
 # -----------------------------------
@@ -35,6 +37,21 @@ ROLE_ENV = {
     "depth_proxy": None,
     "turnover_proxy": None,
 }
+
+
+def _persist_series(series_id: str, df: pd.DataFrame) -> None:
+    if df is None or df.empty:
+        return
+    os.makedirs(os.path.join(ROOT, "data"), exist_ok=True)
+    df.to_csv(os.path.join("data", f"{series_id}.csv"), index=False)
+
+
+def _external_series_fetcher(series_id: str, start: Optional[str] = None) -> pd.DataFrame:
+    df = fred_series(series_id, start or DEFAULT_START)
+    df = df.copy()
+    df["date"] = pd.to_datetime(df["date"])
+    _persist_series(series_id, df)
+    return df
 
 def build_features(series_prefs: dict, project_config: dict) -> None:
     """Fetch source series and build feature tables.
@@ -141,14 +158,20 @@ def build_features(series_prefs: dict, project_config: dict) -> None:
     if turnover_src is not None and turnover_src.notna().sum() == 0:
         turnover_src = None
     enrich_cfg = project_config.get("enrichment", {}) if isinstance(project_config, dict) else {}
+    depth_fallback = enrich_cfg.get("depth_fallback")
+    turnover_fallback = enrich_cfg.get("turnover_fallback")
+    depth_toy = enrich_cfg.get("depth_toy", depth_fallback)
+    turnover_toy = enrich_cfg.get("turnover_toy", turnover_fallback)
     enriched = compute_enrichment(
         credit_q[["date", "L_real", "L_asset", "U", "Y", "spread"]],
         depth_source=depth_src,
         turnover_source=turnover_src,
         warnings=warnings,
         depth_scale=enrich_cfg.get("depth_scale"),
+        depth_fallback=depth_fallback,
         turnover_min=enrich_cfg.get("turnover_min"),
         turnover_max=enrich_cfg.get("turnover_max"),
+        turnover_fallback=turnover_fallback,
         clip_warn_threshold=enrich_cfg.get("turnover_clip_warn_threshold"),
     )
     for w in warnings:
@@ -157,8 +180,8 @@ def build_features(series_prefs: dict, project_config: dict) -> None:
     # Toy baselines retained for regression protection
     credit_q["L_asset_toy"] = credit_q["L_real"] * leverage_ratio
     credit_q["U_gdp_only"] = credit_q["Y"]
-    credit_q["depth_toy"] = 1000
-    credit_q["turnover_toy"] = 1.0
+    credit_q["depth_toy"] = depth_toy if depth_toy is not None else 1000.0
+    credit_q["turnover_toy"] = turnover_toy if turnover_toy is not None else 1.0
     credit_q = credit_q[["date", "L_real", "L_asset", "U", "Y", "spread", "depth", "turnover",
                          "L_asset_toy", "U_gdp_only", "depth_toy", "turnover_toy"]]
     credit_q.to_csv("data/credit.csv", index=False)
@@ -167,6 +190,12 @@ def build_features(series_prefs: dict, project_config: dict) -> None:
     assets = base.copy().rename(columns={"M_out": "V_R"})
     reg = (policy.merge(assets, on="date", how="outer")
                  .sort_values("date").dropna(subset=["p_R", "V_R"]))
+    ext_cfg = project_config.get("external_coupling", {}) if isinstance(project_config, dict) else {}
+    ext_df = build_external_coupling_indices(ext_cfg, _external_series_fetcher)
+    if not ext_df.empty:
+        ext_path = os.path.join("data", "external_coupling_jp.csv")
+        ext_df.to_csv(ext_path, index=False)
+        reg = reg.merge(ext_df, on="date", how="left")
     reg.to_csv("data/reg_pressure.csv", index=False)
 
     dates = credit_q["date"].drop_duplicates().sort_values()
@@ -256,7 +285,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     series_prefs = load_series_preferences(CONFIG_PATH)
-    project_config = load_project_config(CONFIG_PATH)
+    project_config = load_config("jp")
 
     if args.list_series:
         list_series(series_prefs, args.role)

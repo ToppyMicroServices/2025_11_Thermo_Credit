@@ -15,11 +15,202 @@ Missing optional pieces (e.g., U or S_M for F_C) will result in NaNs instead of 
 from __future__ import annotations
 import pandas as pd
 import numpy as np
-from typing import Dict, Any
+from typing import Dict, Any, Optional, Tuple
 
 from lib.loop_area import LoopArea
 from lib.entropy import money_entropy
 from lib.temperature import liquidity_temperature
+
+
+DEFAULT_HEADROOM_COLS = ("capital_headroom", "lcr_headroom", "nsfr_headroom")
+
+
+def _sanitize_numeric(series: pd.Series) -> pd.Series:
+    return pd.to_numeric(series, errors="coerce") if isinstance(series, pd.Series) else pd.Series(dtype=float)
+
+
+def _detrend_no_lookahead(series: pd.Series,
+                           method: str = "rolling",
+                           window: int = 12,
+                           min_periods: Optional[int] = None) -> Tuple[pd.Series, pd.Series]:
+    """Return (trend, detrended) using only past observations.
+
+    Supported methods:
+      - "rolling" (default): simple moving average with given window
+      - "ema": exponential moving average (span=window)
+    """
+    s = _sanitize_numeric(series)
+    if window <= 1:
+        window = 2
+    if min_periods is None or min_periods < 1:
+        min_periods = max(1, min(window, 3))
+    method = (method or "rolling").strip().lower()
+    if method == "ema":
+        trend = s.ewm(span=window, adjust=False, min_periods=min_periods).mean()
+    else:
+        trend = s.rolling(window=window, min_periods=min_periods).mean()
+    detrended = s - trend
+    return trend, detrended
+
+
+def _apply_u_detrend(df: pd.DataFrame, cfg: Dict[str, Any]) -> pd.DataFrame:
+    if "U" not in df.columns:
+        return df
+    u_cfg = cfg.get("U_detrend", {}) if isinstance(cfg, dict) else {}
+    enabled = u_cfg.get("enabled")
+    if enabled is None:
+        enabled = True
+    if not enabled:
+        return df
+    try:
+        window = int(u_cfg.get("window", 12))
+    except Exception:
+        window = 12
+    try:
+        min_periods = u_cfg.get("min_periods")
+        min_periods = int(min_periods) if min_periods is not None else None
+    except Exception:
+        min_periods = None
+    method = str(u_cfg.get("method", "rolling")).strip().lower()
+    try:
+        trend, detrended = _detrend_no_lookahead(df["U"], method=method, window=window, min_periods=min_periods)
+        df["U_trend"] = trend
+        df["U_star"] = detrended
+    except Exception:
+        df["U_trend"] = np.nan
+        df["U_star"] = np.nan
+    return df
+
+
+def _headroom_columns(cfg: Dict[str, Any]) -> Tuple[str, ...]:
+    cols = cfg.get("V_C_headroom_cols") if isinstance(cfg, dict) else None
+    if cols and isinstance(cols, (list, tuple)):
+        return tuple(str(c) for c in cols)
+    return DEFAULT_HEADROOM_COLS
+
+
+def _derive_headroom(df: pd.DataFrame, cfg: Dict[str, Any]) -> Tuple[pd.DataFrame, Tuple[str, ...]]:
+    base = None
+    for cand in ("V_C", "V_R"):
+        if cand in df.columns:
+            ser = _sanitize_numeric(df[cand])
+            if ser.notna().any():
+                base = ser
+                break
+    if base is None:
+        return df, tuple()
+    scales = cfg.get("V_C_headroom_scales") if isinstance(cfg, dict) else None
+    if not scales or not isinstance(scales, (list, tuple)):
+        scales = (1.0, 1.0, 1.0)
+    cols = _headroom_columns(cfg)
+    derived_cols = []
+    for idx, col in enumerate(cols):
+        scale = float(scales[idx]) if idx < len(scales) else float(scales[-1])
+        col_name = col or f"headroom_{idx}"
+        df[col_name] = base * scale
+        derived_cols.append(col_name)
+    return df, tuple(derived_cols)
+
+
+def _apply_vc_formula(df: pd.DataFrame, cfg: Dict[str, Any]) -> pd.DataFrame:
+    mode = str(cfg.get("V_C_formula", "legacy")).strip().lower() if isinstance(cfg, dict) else "legacy"
+    if mode != "min_headroom":
+        return df
+    candidate_cols = list(_headroom_columns(cfg))
+    available = [c for c in candidate_cols if c in df.columns]
+    if not available:
+        inferred = [c for c in df.columns if str(c).endswith("_headroom")]
+        available = inferred
+    if not available:
+        df, inferred_tuple = _derive_headroom(df, cfg)
+        available = list(inferred_tuple)
+    if not available:
+        return df
+    headroom = df[available].apply(pd.to_numeric, errors="coerce")
+    vc_head = headroom.min(axis=1, skipna=True)
+    if "V_C" in df.columns:
+        legacy = _sanitize_numeric(df["V_C"])
+    elif "V_R" in df.columns:
+        legacy = _sanitize_numeric(df["V_R"])
+    else:
+        legacy = pd.Series(np.nan, index=df.index)
+    df["V_C_legacy"] = legacy
+    df["V_C_headroom"] = vc_head
+    mask = vc_head.notna()
+    if mask.any():
+        df.loc[mask, "V_C"] = vc_head[mask]
+    df["V_C_formula_used"] = "min_headroom"
+    return df
+
+
+def _apply_external_coupling(df: pd.DataFrame, cfg: Dict[str, Any]) -> pd.DataFrame:
+    ext_cfg = cfg.get("external_coupling") if isinstance(cfg, dict) else None
+    if not isinstance(ext_cfg, dict) or not ext_cfg.get("enabled"):
+        return df
+    alpha = float(ext_cfg.get("alpha", 0.0) or 0.0)
+    delta = float(ext_cfg.get("delta", 0.0) or 0.0)
+    if alpha and "E_p" in df.columns and "p_C" in df.columns:
+        baseline = pd.to_numeric(df["p_C"], errors="coerce")
+        ep = pd.to_numeric(df["E_p"], errors="coerce")
+        contrib = alpha * ep
+        df["p_C_baseline"] = baseline
+        df["E_p_contrib"] = contrib
+        df["p_C_coupling_alpha"] = alpha
+        df["p_C"] = baseline + contrib.fillna(0.0)
+    if delta and "E_T" in df.columns and "T_L" in df.columns:
+        baseline_t = pd.to_numeric(df["T_L"], errors="coerce")
+        et = pd.to_numeric(df["E_T"], errors="coerce")
+        contrib_t = delta * et
+        df["T_L_baseline"] = baseline_t
+        df["E_T_contrib"] = contrib_t
+        df["T_L_coupling_delta"] = delta
+        df["T_L"] = baseline_t + contrib_t.fillna(0.0)
+    return df
+
+
+def _apply_chemical_potentials(df: pd.DataFrame,
+                               cfg: Dict[str, Any],
+                               q_cols: Optional[Tuple[str, ...]] = None) -> pd.DataFrame:
+    if not q_cols:
+        return df
+    if "M_in" not in df.columns:
+        return df
+    q_cols_present = [c for c in q_cols if c in df.columns]
+    if not q_cols_present:
+        return df
+    try:
+        k_val = float(cfg.get("k", 1.0))
+    except Exception:
+        k_val = 1.0
+    if k_val == 0:
+        return df
+    try:
+        T0 = float(cfg.get("T0", 1.0))
+    except Exception:
+        T0 = 1.0
+    eps = cfg.get("mu_share_floor", 1e-6)
+    try:
+        eps = float(eps)
+    except Exception:
+        eps = 1e-6
+    shares = df[q_cols_present].astype(float).clip(lower=eps)
+    M_in = pd.to_numeric(df["M_in"], errors="coerce")
+    factor = T0 * k_val * M_in
+    log_term = np.log(shares)
+    for col in q_cols_present:
+        df[f"mu_{col}"] = factor * (log_term[col] + 1.0)
+
+    # Relative chemical potentials Δμ_i = μ_i − μ̄ (per row, across buckets).
+    # These remain diagnostics only and are not yet used to drive any flows.
+    mu_cols = [f"mu_{col}" for col in q_cols_present if f"mu_{col}" in df.columns]
+    if mu_cols:
+        mu_vals = df[mu_cols].apply(pd.to_numeric, errors="coerce")
+        mu_bar = mu_vals.mean(axis=1)
+        df["mu_mean"] = mu_bar
+        for col in mu_cols:
+            dcol = col.replace("mu_", "dmu_", 1)
+            df[dcol] = mu_vals[col] - mu_bar
+    return df
 
 
 def build_indicators_core(money: pd.DataFrame,
@@ -52,6 +243,11 @@ def build_indicators_core(money: pd.DataFrame,
         df_q = q[["date"] + q_share_cols].drop_duplicates("date")
         df = df.merge(df_q, on="date", how="left")
 
+    money_cols = [c for c in ("M_in", "M_out") if c in money.columns]
+    if money_cols:
+        df_money = money[["date"] + money_cols].drop_duplicates("date")
+        df = df.merge(df_money, on="date", how="left")
+
     la = LoopArea(lam=lam)
     areas = []
     for _, r in df.iterrows():
@@ -67,6 +263,12 @@ def build_indicators_core(money: pd.DataFrame,
         rename_map["T"] = "T_L"
     if rename_map:
         df = df.rename(columns=rename_map)
+
+    df = _apply_external_coupling(df, cfg)
+    chem_cols = tuple(q_cols_cfg) if q_cols_cfg else tuple(q_share_cols)
+    df = _apply_chemical_potentials(df, cfg, chem_cols)
+    df = _apply_vc_formula(df, cfg)
+    df = _apply_u_detrend(df, cfg)
 
     if all(c in df.columns for c in ["U", "S_M"]):
         df["F_C"] = df["U"].astype(float) - T0 * df["S_M"].astype(float)

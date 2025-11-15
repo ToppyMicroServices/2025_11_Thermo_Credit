@@ -46,6 +46,247 @@ CATEGORY_LABELS = {
     "q_government": "Government",
 }
 
+ChartSpec = Tuple[Any, str, str, Optional[str]]
+
+
+def _latest_numeric(frame: Optional[pd.DataFrame], column: str) -> Optional[float]:
+    if frame is None or not isinstance(frame, pd.DataFrame) or column not in frame.columns:
+        return None
+    try:
+        vals = pd.to_numeric(frame[column], errors="coerce").dropna()
+    except Exception:
+        return None
+    if vals.empty:
+        return None
+    val = float(vals.iloc[-1])
+    return val if np.isfinite(val) else None
+
+
+def _series_bucket(series: Optional[pd.Series], value: Optional[float] = None) -> Optional[str]:
+    if series is None:
+        return None
+    try:
+        s = pd.to_numeric(series, errors="coerce").dropna()
+    except Exception:
+        return None
+    if s.size < 6:
+        return None
+    val = float(s.iloc[-1]) if value is None else float(value)
+    if val is None or not np.isfinite(val):
+        return None
+    q1, q2 = float(s.quantile(0.33)), float(s.quantile(0.66))
+    if not np.isfinite(q1) or not np.isfinite(q2):
+        return None
+    if val <= q1:
+        return "low"
+    if val >= q2:
+        return "high"
+    return "mid-range"
+
+
+def _series_trend(series: Optional[pd.Series]) -> Optional[str]:
+    if series is None:
+        return None
+    try:
+        s = pd.to_numeric(series, errors="coerce").dropna()
+    except Exception:
+        return None
+    if s.size < 3:
+        return None
+    tail = s.tail(4)
+    if tail.size < 2:
+        return None
+    delta = float(tail.iloc[-1] - tail.iloc[0])
+    if not np.isfinite(delta):
+        return None
+    if abs(delta) < 1e-6:
+        return "flat"
+    return "rising" if delta > 0 else "falling"
+
+
+def _metric_phrase(metric: str) -> str:
+    mapping = {
+        "S_M": "dispersion",
+        "T_L": "liquidity temperature",
+        "loop_area": "loop dissipation",
+        "X_C": "credit exergy",
+        "S_M_hat": "normalized dispersion",
+        "U": "internal energy",
+        "dU": "ΔU",
+        "dF_C": "ΔF_C",
+        "F_C": "free energy",
+    }
+    key = metric.replace("(standardized)", "").strip()
+    return mapping.get(key, metric)
+
+
+def _compare_interpretation(short_label: str, frame: Optional[pd.DataFrame]) -> Optional[str]:
+    if frame is None or not isinstance(frame, pd.DataFrame):
+        return "Cross-region view; tighter clustering implies similar regimes."
+    if not {"value", "Region"}.issubset(frame.columns):
+        return "Cross-region view; tighter clustering implies similar regimes."
+    data = frame.copy()
+    data["value"] = pd.to_numeric(data["value"], errors="coerce")
+    data = data.dropna(subset=["value"])
+    if "date" in data.columns:
+        data = data.sort_values("date")
+    if data.empty:
+        return "Cross-region view; tighter clustering implies similar regimes."
+    latest = data.groupby("Region").tail(1)
+    latest = latest.dropna(subset=["value"])
+    if latest.empty or latest["Region"].nunique() < 2:
+        return "Cross-region view; watch relative slopes."
+    leader = latest.loc[latest["value"].idxmax()]
+    laggard = latest.loc[latest["value"].idxmin()]
+    if leader.get("Region") == laggard.get("Region"):
+        return "Cross-region view; watch relative slopes."
+    metric = short_label.replace("Compare:", "").strip()
+    phrase = _metric_phrase(metric)
+    return (
+        f"{phrase.capitalize()} highest in {leader['Region']} (≈{leader['value']:.2f}) "
+        f"vs {laggard['Region']} (≈{laggard['value']:.2f})."
+    )
+
+
+def _chart_interpretation(short_label: str, frame: Optional[pd.DataFrame]) -> Optional[str]:
+    label = (short_label or "").strip()
+    if not label:
+        return None
+    if label.startswith("Compare"):
+        return _compare_interpretation(label, frame)
+    if label == "Raw Inputs (first=100)":
+        return "Each input series is rebased to 100 at its start; steep slopes flag faster money/credit growth."
+    if frame is None or not isinstance(frame, pd.DataFrame) or frame.empty:
+        return None
+    def _bucket_text(col: str, val: Optional[float]) -> Optional[str]:
+        bucket = _series_bucket(frame.get(col), val)
+        return f"{val:.2f} ({bucket})" if val is not None and bucket else (f"{val:.2f}" if val is not None else None)
+
+    if label == "S_M & T_L":
+        sm = _latest_numeric(frame, "S_M")
+        tl = _latest_numeric(frame, "T_L")
+        if sm is None and tl is None:
+            return None
+        parts: List[str] = []
+        sm_txt = _bucket_text("S_M", sm)
+        if sm_txt:
+            parts.append(f"S_M≈{sm_txt}")
+        tl_txt = _bucket_text("T_L", tl)
+        if tl_txt:
+            parts.append(f"T_L≈{tl_txt}")
+        suffix = " Balanced readings mean policy has room; high/high combos often precede overheating."
+        return ", ".join(parts) + suffix if parts else None
+
+    if label == "S_M by category":
+        cat_cols = [c for c in frame.columns if c.startswith("S_M_in_")]
+        if not cat_cols:
+            return "Category stacking shows which lending blocks drive dispersion."
+        try:
+            latest = frame[cat_cols].apply(pd.to_numeric, errors="coerce").dropna(how="all").tail(1)
+        except Exception:
+            latest = pd.DataFrame()
+        if latest.empty:
+            return "Category stacking shows which lending blocks drive dispersion."
+        row = latest.iloc[0]
+        contribs: List[Tuple[str, float]] = []
+        total = 0.0
+        for col, val in row.items():
+            if pd.isna(val):
+                continue
+            total += abs(float(val))
+            key = col.replace("S_M_in_", "")
+            contribs.append((CATEGORY_LABELS.get(key, key.replace("_", " ").title()), float(val)))
+        if total <= 0 or not contribs:
+            return "Category stacking shows which lending blocks drive dispersion."
+        contribs.sort(key=lambda kv: abs(kv[1]), reverse=True)
+        top_parts = [f"{name} {abs(val)/total:.0%}" for name, val in contribs[:2]]
+        return "Latest dispersion split: " + ", ".join(top_parts) + "."
+
+    if label == "Policy Loop Dissipation":
+        val = _latest_numeric(frame, "loop_area")
+        if val is None:
+            return None
+        trend = _series_trend(frame.get("loop_area"))
+        state = "dissipating" if val > 0 else ("amplifying" if val < 0 else "quiet")
+        tail = f" and {trend}" if trend else ""
+        return f"Loop area ≈{val:.3f} ({state}{tail})."
+
+    if label == "Credit Exergy Ceiling":
+        val = _latest_numeric(frame, "X_C")
+        if val is None:
+            return "Tracks remaining credit headroom; above zero means slack remains."
+        bucket = _series_bucket(frame.get("X_C"), val)
+        trend = _series_trend(frame.get("X_C"))
+        tone = "slack" if val > 0 else "tight"
+        trend_txt = f", {trend}" if trend else ""
+        bucket_txt = f" ({bucket})" if bucket else ""
+        return f"X_C≈{val:.2f}{bucket_txt}{trend_txt} so headroom looks {tone}."
+
+    if label == "Free Energy (F_C)":
+        val = _latest_numeric(frame, "F_C")
+        if val is None:
+            return None
+        trend = _series_trend(frame.get("F_C"))
+        bucket = _series_bucket(frame.get("F_C"), val)
+        bucket_txt = f" ({bucket})" if bucket else ""
+        trend_txt = f" and {trend}" if trend else ""
+        return f"F_C≈{val:.2f}{bucket_txt}{trend_txt}; falling values hint at demand destruction."
+
+    if label == "ΔF_C (change)":
+        val = _latest_numeric(frame, "dF_C")
+        if val is None:
+            return None
+        direction = "releasing" if val > 0 else "absorbing" if val < 0 else "stable"
+        trend = _series_trend(frame.get("dF_C"))
+        tail = f" and {trend}" if trend else ""
+        return f"ΔF_C≈{val:.3f}, so the system is {direction}{tail}."
+
+    if label == "Internal Energy (U)":
+        val = _latest_numeric(frame, "U")
+        if val is None:
+            return None
+        bucket = _series_bucket(frame.get("U"), val)
+        trend = _series_trend(frame.get("U"))
+        parts = [f"U≈{val:.2f}"]
+        if bucket:
+            parts.append(f"{bucket}")
+        if trend:
+            parts.append(trend)
+        return " / ".join(parts) + " potential stored in the system."
+
+    if label == "Surplus/Shortage (ΔF_C)":
+        plus = _latest_numeric(frame, "Surplus (X_C+)")
+        minus = _latest_numeric(frame, "Shortage (X_C−)")
+        if plus is None and minus is None:
+            return None
+        if plus is not None and minus is not None:
+            dominance = "surplus" if plus > minus else "shortage" if minus > plus else "balanced"
+            return f"Surplus≈{plus:.2f}, shortage≈{minus:.2f}; {dominance} dominates."
+        if plus is not None:
+            return f"Surplus≈{plus:.2f}; shortages muted."
+        return f"Shortage≈{minus:.2f}; little positive slack left." if minus is not None else None
+
+    if label == "Maxwell-like Test":
+        gap = _latest_numeric(frame, "maxwell_gap")
+        if gap is None:
+            return "Comparing ∂S/∂V|T and ∂p/∂T|V; overlap means proxies agree."
+        try:
+            series = pd.to_numeric(frame.get("maxwell_gap"), errors="coerce").dropna()
+        except Exception:
+            series = pd.Series(dtype=float)
+        mad = float((series - series.median()).abs().median()) if not series.empty else 0.0
+        spec = "inside spec" if mad == 0 or abs(gap) <= 3 * mad else "out-of-spec"
+        return f"Maxwell gap≈{gap:.3f} ({spec})."
+
+    if label == "First-law Decomposition":
+        resid = _latest_numeric(frame, "firstlaw_resid")
+        if resid is None:
+            return "Tracks ΔU versus predicted TΔS−pΔV contributions."
+        trend = _series_trend(frame.get("firstlaw_resid"))
+        trend_txt = f" trending {trend}" if trend and trend != "flat" else ""
+        return f"Residual≈{resid:.3f}{trend_txt}; near zero means the proxies close the energy balance."
+
+    return None
 # Expose raw_inputs_df at module level so tests can import this module and verify normalization
 raw_inputs_df = None
 try:
@@ -271,12 +512,15 @@ def _augment_region_frame(frame: pd.DataFrame, effective_window: int, has_thermo
     return local, has_derivatives
 
 
-def _figs_html(specs: List[Tuple[Any, str, str]]) -> str:
+def _figs_html(specs: List[ChartSpec]) -> str:
     parts: List[str] = []
-    for fig, title, alt in specs:
+    for fig, title, alt, interp in specs:
         html = fig.to_html(full_html=False, include_plotlyjs="cdn")
+        caption = f"<strong>{html_lib.escape(title)}</strong>"
+        if interp:
+            caption += f"<span class=\"chart-note-inline\">{html_lib.escape(interp)}</span>"
         parts.append(
-            f"<figure aria-label=\"{html_lib.escape(alt)}\">{html}<figcaption>{html_lib.escape(title)}</figcaption></figure>"
+            f"<figure aria-label=\"{html_lib.escape(alt)}\">{html}<figcaption>{caption}</figcaption></figure>"
         )
     return "".join(parts)
 
@@ -325,7 +569,7 @@ def _build_compare_context(region_ctxs: List[Dict[str, Any]]) -> Optional[Dict[s
         ("X_C", "Compare – Credit Exergy Ceiling", "X_C"),
     ]
 
-    raw_figs: List[Tuple[Any, str, str]] = []
+    raw_figs: List[ChartSpec] = []
     # Build a latest summary table
     latest_rows: List[Dict[str, Any]] = []
     for label, df in items:
@@ -393,12 +637,14 @@ def _build_compare_context(region_ctxs: List[Dict[str, Any]]) -> Optional[Dict[s
         )
         _style_figure(fig)
         _apply_hover(fig, ".3f")
-        raw_figs.append((fig, title.replace("Compare – ", "Compare: "), alt))
+        short_label = title.replace("Compare – ", "Compare: ")
+        interp = _chart_interpretation(short_label, long_df)
+        raw_figs.append((fig, short_label, alt, interp))
 
     raw_charts_html = _figs_html(raw_figs)
 
     # Standardized comparison (per-region z-scores) and normalized entropy
-    std_figs: List[Tuple[Any, str, str]] = []
+    std_figs: List[ChartSpec] = []
     def _z_of(series: pd.Series) -> Optional[pd.Series]:
         s = pd.to_numeric(series, errors="coerce")
         s = s.dropna()
@@ -438,7 +684,8 @@ def _build_compare_context(region_ctxs: List[Dict[str, Any]]) -> Optional[Dict[s
                 )
                 _style_figure(fig_hat)
                 _apply_hover(fig_hat, ".3f")
-                std_figs.append((fig_hat, "Compare: S_M_hat", "S_M_hat"))
+                interp = _chart_interpretation("Compare: S_M_hat", long_df_hat)
+                std_figs.append((fig_hat, "Compare: S_M_hat", "S_M_hat", interp))
     except Exception:
         pass
 
@@ -482,7 +729,9 @@ def _build_compare_context(region_ctxs: List[Dict[str, Any]]) -> Optional[Dict[s
         )
         _style_figure(figz)
         _apply_hover(figz, ".3f")
-        std_figs.append((figz, title.replace("Compare – ", "Compare: "), alt))
+        short_label = title.replace("Compare – ", "Compare: ")
+        interp = _chart_interpretation(short_label, long_df_z)
+        std_figs.append((figz, short_label, alt, interp))
 
     std_charts_html = _figs_html(std_figs) if std_figs else ""
 
@@ -765,13 +1014,14 @@ def _build_region_context(
     plot_start = _plot_start_date()
     plot_df = local[local["date"] >= plot_start].copy() if "date" in local.columns else local.copy()
 
-    fig_specs: List[Tuple[Any, str, str]] = []
+    fig_specs: List[ChartSpec] = []
     if {"S_M", "T_L"}.issubset(local.columns) and not plot_df.empty:
         # Dual-axis layout for very different scales
         fig = make_dual_axis_sm_tl(plot_df, title=f"{label} – S_M & T_L")
         _style_figure(fig)
         _apply_hover(fig, ".3f")
-        fig_specs.append((fig, "S_M & T_L", "Entropy & temperature"))
+        interp = _chart_interpretation("S_M & T_L", plot_df)
+        fig_specs.append((fig, "S_M & T_L", "Entropy & temperature", interp))
     # Stacked MECE entropy view when per-category columns exist
     cat_cols = [c for c in plot_df.columns if c.startswith("S_M_in_")]
     cat_cols = [c for c in cat_cols if pd.to_numeric(plot_df[c], errors="coerce").dropna().abs().sum() > 0]
@@ -793,7 +1043,8 @@ def _build_region_context(
             )
             _style_figure(fig_cat)
             _apply_hover(fig_cat, ".3f")
-            fig_specs.append((fig_cat, "S_M by category", "Entropy by MECE categories"))
+            interp = _chart_interpretation("S_M by category", plot_df)
+            fig_specs.append((fig_cat, "S_M by category", "Entropy by MECE categories", interp))
     if "loop_area" in local.columns and not plot_df.empty:
         fig = px.line(
             plot_df,
@@ -804,7 +1055,8 @@ def _build_region_context(
         )
         _style_figure(fig)
         _apply_hover(fig, ".3f")
-        fig_specs.append((fig, "Policy Loop Dissipation", "Loop area"))
+    interp = _chart_interpretation("Policy Loop Dissipation", plot_df)
+    fig_specs.append((fig, "Policy Loop Dissipation", "Loop area", interp))
     # Exergy, free energy, internal energy, change in free energy, and surplus/shortage figures
     if not plot_df.empty:
         # Exergy X_C (if available)
@@ -818,7 +1070,8 @@ def _build_region_context(
             )
             _style_figure(fig_xc)
             _apply_hover(fig_xc, ".3f")
-            fig_specs.append((fig_xc, "Credit Exergy Ceiling", "X_C"))
+            interp = _chart_interpretation("Credit Exergy Ceiling", plot_df)
+            fig_specs.append((fig_xc, "Credit Exergy Ceiling", "X_C", interp))
         # Free energy F_C (always show if present)
         if "F_C" in plot_df.columns and pd.to_numeric(plot_df["F_C"], errors="coerce").dropna().size > 0:
             fig_fc = px.line(
@@ -830,7 +1083,8 @@ def _build_region_context(
             )
             _style_figure(fig_fc)
             _apply_hover(fig_fc, ".3f")
-            fig_specs.append((fig_fc, "Free Energy (F_C)", "F_C"))
+            interp = _chart_interpretation("Free Energy (F_C)", plot_df)
+            fig_specs.append((fig_fc, "Free Energy (F_C)", "F_C", interp))
         # Change in free energy dF_C
         if "dF_C" in plot_df.columns and pd.to_numeric(plot_df["dF_C"], errors="coerce").dropna().size > 0:
             fig_dfc = px.line(
@@ -842,7 +1096,8 @@ def _build_region_context(
             )
             _style_figure(fig_dfc)
             _apply_hover(fig_dfc, ".3f")
-            fig_specs.append((fig_dfc, "ΔF_C (change)", "dF_C"))
+            interp = _chart_interpretation("ΔF_C (change)", plot_df)
+            fig_specs.append((fig_dfc, "ΔF_C (change)", "dF_C", interp))
         # Internal energy U
         if "U" in plot_df.columns and pd.to_numeric(plot_df["U"], errors="coerce").dropna().size > 0:
             fig_u = px.line(
@@ -854,7 +1109,8 @@ def _build_region_context(
             )
             _style_figure(fig_u)
             _apply_hover(fig_u, ".3f")
-            fig_specs.append((fig_u, "Internal Energy (U)", "U"))
+            interp = _chart_interpretation("Internal Energy (U)", plot_df)
+            fig_specs.append((fig_u, "Internal Energy (U)", "U", interp))
         # Surplus/Shortage split from ΔF_C
         plus_ok = "X_C_plus" in plot_df.columns and pd.to_numeric(plot_df["X_C_plus"], errors="coerce").dropna().size > 0
         minus_ok = "X_C_minus" in plot_df.columns and pd.to_numeric(plot_df["X_C_minus"], errors="coerce").dropna().size > 0
@@ -875,7 +1131,8 @@ def _build_region_context(
                 )
                 _style_figure(fig_pm)
                 _apply_hover(fig_pm, ".3f")
-                fig_specs.append((fig_pm, "Surplus/Shortage (ΔF_C)", "X_C_plus / X_C_minus"))
+                interp = _chart_interpretation("Surplus/Shortage (ΔF_C)", df_pm)
+                fig_specs.append((fig_pm, "Surplus/Shortage (ΔF_C)", "X_C_plus / X_C_minus", interp))
 
     deriv_cols_present = [c for c in DERIVATIVE_COLS if c in local.columns]
     out_of_spec_note = ""
@@ -903,7 +1160,8 @@ def _build_region_context(
                     fig.add_vrect(x0=x0, x1=x1, fillcolor="gray", opacity=0.12, line_width=0, layer="below")
         except Exception:
             pass
-        fig_specs.append((fig, "Maxwell-like Test", "Derivatives"))
+    interp = _chart_interpretation("Maxwell-like Test", plot_df)
+    fig_specs.append((fig, "Maxwell-like Test", "Derivatives", interp))
     firstlaw_cols = [c for c in ["dU", "dU_pred", "firstlaw_resid"] if c in local.columns]
     if has_thermo and firstlaw_cols and not plot_df.empty:
         fig = px.line(
@@ -926,9 +1184,11 @@ def _build_region_context(
                 fig.add_vrect(x0=x0, x1=x1, fillcolor="gray", opacity=0.12, line_width=0, layer="below")
         except Exception:
             pass
-        fig_specs.append((fig, "First-law Decomposition", "ΔU vs predicted"))
+        interp = _chart_interpretation("First-law Decomposition", plot_df)
+        fig_specs.append((fig, "First-law Decomposition", "ΔU vs predicted", interp))
     if include_raw_inputs and raw_inputs_fig is not None:
-        fig_specs.append((raw_inputs_fig, "Raw Inputs (first=100)", "Normalized raw inputs"))
+        interp = _chart_interpretation("Raw Inputs (first=100)", None)
+        fig_specs.append((raw_inputs_fig, "Raw Inputs (first=100)", "Normalized raw inputs", interp))
 
     charts_html = _figs_html(fig_specs)
 
@@ -960,21 +1220,6 @@ def _build_region_context(
         summary_items.append(f"First-law resid: {fmt(last_row.get('firstlaw_resid'))}")
     summary_html = "<ul>" + "".join(f"<li>{html_lib.escape(item)}</li>" for item in summary_items) + "</ul>"
 
-    # Add a short state comment to orient readers (low/mid/high by intra-series quantiles)
-    def _bucket(val: Optional[float], series: pd.Series) -> Optional[str]:
-        try:
-            s = pd.to_numeric(series, errors="coerce").dropna()
-            if s.size < 6 or val is None or not np.isfinite(val):
-                return None
-            q1, q2 = float(s.quantile(0.33)), float(s.quantile(0.66))
-            if val <= q1:
-                return "low"
-            if val >= q2:
-                return "high"
-            return "mid-range"
-        except Exception:
-            return None
-
     try:
         last_sm = float(pd.to_numeric(local.get("S_M"), errors="coerce").dropna().iloc[-1]) if "S_M" in local.columns else None
     except Exception:
@@ -992,8 +1237,8 @@ def _build_region_context(
     except Exception:
         last_xc = None
 
-    sm_bucket = _bucket(last_sm, local.get("S_M", pd.Series(dtype=float))) if "S_M" in local.columns else None
-    tl_bucket = _bucket(last_tl, local.get("T_L", pd.Series(dtype=float))) if "T_L" in local.columns else None
+    sm_bucket = _series_bucket(local.get("S_M"), last_sm) if "S_M" in local.columns else None
+    tl_bucket = _series_bucket(local.get("T_L"), last_tl) if "T_L" in local.columns else None
     la_desc = None
     if last_la is not None and np.isfinite(last_la):
         la_desc = "non-zero" if abs(last_la) > 1e-12 else "near zero"
@@ -1017,6 +1262,42 @@ def _build_region_context(
     if xc_desc:
         parts.append(f"X<sub>C</sub> is <strong>{xc_desc}</strong>.")
     comment_html = ("<p>" + " ".join(parts) + "</p>") if parts else ""
+
+    chart_lines: List[Tuple[str, str]] = []
+    if "S_M" in local.columns or "T_L" in local.columns:
+        msg_parts: List[str] = []
+        if "S_M" in local.columns and last_sm is not None:
+            sm_desc = sm_bucket or f"{fmt(last_sm)}"
+            msg_parts.append(f"S_M is {sm_desc}")
+        if "T_L" in local.columns and last_tl is not None:
+            tl_desc = tl_bucket or f"{fmt(last_tl)}"
+            msg_parts.append(f"T_L is {tl_desc}")
+        if msg_parts:
+            chart_lines.append(("S_M & T_L", ", ".join(msg_parts) + f" as of {last_date.strftime('%Y-%m-%d')}"))
+    if "loop_area" in local.columns and last_la is not None:
+        loop_trend = _series_trend(local.get("loop_area"))
+        trend_txt = f" and {loop_trend}" if loop_trend else ""
+        chart_lines.append(("Policy Loop Dissipation", f"Loop area is {la_desc or fmt(last_la)}{trend_txt}."))
+    if last_xc is not None:
+        xc_trend = _series_trend(xc_series) if xc_series is not None else None
+        xc_text = xc_desc or f"{fmt(last_xc)}"
+        suffix = f" and {xc_trend}" if xc_trend else ""
+        chart_lines.append(("Credit Exergy Ceiling", f"X_C is {xc_text}{suffix}."))
+    if has_derivatives and "maxwell_gap" in local.columns:
+        gap_desc = fmt(last_row.get("maxwell_gap"))
+        spec = "alerts active" if out_of_spec_ranges else "inside spec"
+        chart_lines.append(("Maxwell-like Test", f"Gap is {gap_desc} ({spec})."))
+    if has_thermo and "firstlaw_resid" in local.columns:
+        resid_desc = fmt(last_row.get("firstlaw_resid"))
+        chart_lines.append(("First-law Decomposition", f"Residual is {resid_desc} (ΔU minus predicted)."))
+
+    chart_notes_html = ""
+    if chart_lines:
+        items = "".join(
+            f"<div class=\"chart-note\"><strong>{html_lib.escape(title)}</strong><span>{html_lib.escape(text)}</span></div>"
+            for title, text in chart_lines
+        )
+        chart_notes_html = f"<div class=\"chart-notes\"><h3>Interpretation</h3>{items}</div>"
 
     # Mini table columns with fallback: include F_C if X_C absent
     mini_cols_base = ["S_M", "T_L", "loop_area", "U", "dF_C"]
@@ -1079,7 +1360,7 @@ def _build_region_context(
         diagnostics_html = f"<details><summary>Advanced diagnostics</summary>{diagnostics_html}</details>"
 
     region_html = (
-        f"<section class=\"region-summary\"><h2>{html_lib.escape(label)}</h2>{summary_html}{comment_html}"
+        f"<section class=\"region-summary\"><h2>{html_lib.escape(label)}</h2>{summary_html}{comment_html}{chart_notes_html}"
         f"<h2>Recent values</h2>{mini_html}{diagnostics_html}{interpret_notes}{selected_table_html}</section>"
         + charts_html
     )
@@ -1278,7 +1559,7 @@ def main() -> None:
     png_fallback_ok = False
     if jp_ctx:
         png_targets: List[Tuple[Any, str]] = []
-        for fig, short_label, _ in jp_ctx["fig_specs"]:
+        for fig, short_label, _, _ in jp_ctx["fig_specs"]:
             filename = label_to_filename.get(short_label)
             if filename:
                 png_targets.append((fig, filename))
@@ -1323,6 +1604,11 @@ def main() -> None:
         ".subtabs{display:flex;gap:.4rem;margin:.5rem 0 .75rem}.subtabs button{border:1px solid #aaa;background:#f6f7f9;padding:.3rem .6rem;font-size:.78rem;border-radius:999px;cursor:pointer}.subtabs button.active{background:#333;color:#fff;border-color:#333}"
         ".compare-block .pane{display:none}.compare-block .pane.active{display:block}"
         ".region{display:none}.region.active{display:block}"
+    ".chart-notes{background:#f1f4fb;border:1px solid #dce3f1;border-radius:6px;padding:.4rem .7rem;margin:.8rem 0}"
+    ".chart-note{display:flex;flex-direction:column;margin:.2rem 0;font-size:.82rem}"
+    ".chart-note strong{font-weight:600;color:#1b2a43}"
+    ".chart-note span{color:#333;font-size:.78rem}"
+    ".chart-note-inline{display:block;font-size:.78rem;color:#444;margin-top:.2rem}"
         ".intro{background:#eef2f7;border:1px solid #dde4ee;padding:.85rem 1rem;border-radius:8px;margin:1rem 0}"
         ".intro ul{margin:.5rem 0 .75rem;padding-left:1.1rem}"
         ".intro li{margin:.3rem 0}"

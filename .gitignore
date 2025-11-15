@@ -1,11 +1,49 @@
+# macOS cruft
 .DS_Store
 **/.DS_Store
+
+# Python build artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+pip-wheel-metadata/
+build/
+dist/
+
+# Test / coverage caches
+.pytest_cache/
+.hypothesis/
+.coverage
+coverage.xml
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments / env files
 .venv/
+venv/
+env/
+.env
+.env.*
+
+# Project outputs (regenerated locally)
 site/
 data/*.csv
 !data/gdp_eu.csv
 !data/gdp_us.csv
 data/worldbank_cache_*.json
+data/external_coupling_*.csv
+data/series_selected_*.json.backup
+
+# Logs and scratch files
+*.log
+*.tmp
+*.bak
+*.swp
+
 # VS Code project settings: ignore noisy files but keep core shared configs
 .vscode/*
 !.vscode/extensions.json

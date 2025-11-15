@@ -16,7 +16,7 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
-from lib.indicators import build_indicators_core, compute_diagnostics
+from lib.indicators import build_indicators_core, compute_diagnostics, DEFAULT_HEADROOM_COLS
 
 try:
     from lib.config_loader import load_config
@@ -27,6 +27,24 @@ except Exception:
 DATA_DIR = os.path.join(ROOT, "data")
 SITE_DIR = os.path.join(ROOT, "site")
 os.makedirs(SITE_DIR, exist_ok=True)
+
+HEADROOM_DECAY = dict(zip(DEFAULT_HEADROOM_COLS, (0.04, 0.05, 0.06)))
+
+
+def _with_headrooms(reg: Optional[pd.DataFrame]) -> Optional[pd.DataFrame]:
+    if reg is None or reg.empty:
+        return reg
+    df = reg.copy()
+    base_col = "V_R" if "V_R" in df.columns else "V_C" if "V_C" in df.columns else None
+    if base_col is None or "p_R" not in df.columns:
+        return df
+    base = pd.to_numeric(df[base_col], errors="coerce")
+    pressure = pd.to_numeric(df.get("p_R"), errors="coerce").fillna(0).clip(lower=0)
+    for col, coeff in HEADROOM_DECAY.items():
+        if col in df.columns:
+            continue
+        df[col] = (base * (1 - coeff * pressure)).clip(lower=0)
+    return df
 
 
 def _load_csv(path: str) -> Optional[pd.DataFrame]:
@@ -162,6 +180,7 @@ def _ensure_placeholders():
                         .mean()
                         .reset_index()
                     )
+                reg = _with_headrooms(reg)
                 reg.to_csv(reg_csv, index=False)
                 print("[US] Placeholder reg_pressure_us.csv created (p_R from yield, V_R from assets).")
             except Exception as exc:
@@ -182,7 +201,7 @@ def main() -> None:
     money = _load_csv(os.path.join(DATA_DIR, "money_us.csv"))
     q = _load_csv(os.path.join(DATA_DIR, "allocation_q_us.csv"))
     cred = _load_csv(os.path.join(DATA_DIR, "credit_us.csv"))
-    reg = _load_csv(os.path.join(DATA_DIR, "reg_pressure_us.csv"))
+    reg = _with_headrooms(_load_csv(os.path.join(DATA_DIR, "reg_pressure_us.csv")))
 
     missing = []
     if money is None:

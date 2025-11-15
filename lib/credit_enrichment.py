@@ -25,8 +25,10 @@ def compute_enrichment(
     turnover_col: str = "turnover",
     warnings: Optional[list] = None,
     depth_scale: Optional[float] = None,
+    depth_fallback: Optional[float] = None,
     turnover_min: Optional[float] = None,
     turnover_max: Optional[float] = None,
+    turnover_fallback: Optional[float] = None,
     clip_warn_threshold: Optional[float] = None,
 ) -> pd.DataFrame:
     """Compute depth & turnover columns with fallback and clipping diagnostics.
@@ -50,8 +52,10 @@ def compute_enrichment(
 
     # Resolve calibration parameters
     depth_scale = _cal(depth_scale, 4.0)
+    depth_fallback = _cal(depth_fallback, DEFAULT_DEPTH_FALLBACK)
     turnover_min = _cal(turnover_min, 0.1)
     turnover_max = _cal(turnover_max, 10.0)
+    turnover_fallback = _cal(turnover_fallback, DEFAULT_TURNOVER_FALLBACK)
     clip_warn_threshold = _cal(clip_warn_threshold, 0.15)
 
     # Treat all-NaN sources as missing
@@ -70,11 +74,11 @@ def compute_enrichment(
         l_series = out[l_real_col].astype(float)
         # If all zeros or NaN, assign uniform DEFAULT_DEPTH_FALLBACK
         if l_series.notna().sum() == 0 or l_series.abs().sum() == 0:
-            out[depth_col] = DEFAULT_DEPTH_FALLBACK
+            out[depth_col] = depth_fallback
         else:
             med = l_series.median() or 1.0
-            scaled = l_series * DEFAULT_DEPTH_FALLBACK / med
-            out[depth_col] = scaled.fillna(DEFAULT_DEPTH_FALLBACK)
+            scaled = l_series * depth_fallback / med
+            out[depth_col] = scaled.fillna(depth_fallback)
 
     # Turnover heuristic: U / L_real (capacity over stock)
     if turnover_source is not None:
@@ -82,7 +86,7 @@ def compute_enrichment(
     else:
         with np.errstate(divide="ignore", invalid="ignore"):
             base_ratio = out[u_col].astype(float) / out[l_real_col].replace({0: np.nan}).astype(float)
-        out[turnover_col] = base_ratio.replace([np.inf, -np.inf], np.nan).fillna(DEFAULT_TURNOVER_FALLBACK)
+    out[turnover_col] = base_ratio.replace([np.inf, -np.inf], np.nan).fillna(turnover_fallback)
 
     # Clip turnover to sane bounds
     clipped_low = out[turnover_col] < turnover_min

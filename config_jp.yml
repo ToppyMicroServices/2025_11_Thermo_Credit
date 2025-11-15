@@ -4,3 +4,7 @@ p0: 1.0
 V0: 300000.0
 U0: 5.0e6
 S0: 5.0e5
+
+external_coupling:
+  alpha: 0.2
+  delta: 0.0

@@ -81,19 +81,30 @@ Notes
 - Base config: `config.yml`
 - Region overrides: `config_jp.yml`, `config_eu.yml`, `config_us.yml`
   - Credit enrichment keys (JP baseline + EU/US extensions) live in `config.yml`:
-    - `asset_proxy`, `energy_proxy`, `depth_proxy`, `turnover_proxy` (Japan defaults)
-    - `depth_proxy_eu`, `turnover_proxy_eu` (Euro area overrides)
-    - Planned: `depth_proxy_us`, `turnover_proxy_us` (add when US enrichment sources defined)
+  - `asset_proxy`, `energy_proxy`, `depth_proxy`, `turnover_proxy` (Japan defaults)
+  - `depth_proxy_eu`, `turnover_proxy_eu` (Euro area overrides)
+  - `depth_proxy_us`, `turnover_proxy_us` (US overrides)
   - Scripts select these roles (env > config > defaults). Depth/turnover currently computed with heuristic scaling when real series absent; tests guard column presence per region.
   - Exergy floor controls (optional):
     - `exergy_floor_zero` (bool, default true): enforce non‑negative X_C.
     - `exergy_floor_mode` (string, `clip`|`shift`, default `clip`):
       - `clip`: clamp negative values to 0 (default; preferred for operations).
       - `shift`: add a constant offset so that min(X_C)=0 (use for visualization only).
+  - Internal energy detrending (`U_detrend`):
+    - `enabled` (default `true`): compute `U_trend` and `U_star = U - trend` without lookahead.
+    - `method`: `rolling` (default) or `ema`.
+    - `window` / `min_periods`: quarter-length smoothing window and minimum sample count.
+    - These series propagate into diagnostics/tests so sudden jumps in U can be compared on a stationary baseline.
+  - Credit capacity ceiling (`V_C_formula`):
+    - `min_headroom` (default) replaces `V_C` with the tightest regulatory buffer among `capital_headroom`, `lcr_headroom`, and `nsfr_headroom`.
+    - `V_C_headroom_cols`: override the column names if your CSVs use different labels.
+    - `V_C_headroom_scales`: fallback multipliers applied when explicit columns are missing (defaults to `[1.0, 1.0, 1.0]`).
+    - Regional builders (`scripts/04_build_features_eu.py`, `scripts/05_build_features_us.py`) and placeholder generators now emit these headroom columns; when absent, the indicator build derives heuristic values from `p_R` and `V_R` so the pipeline stays stable.
   - Enrichment edge cases & fallbacks:
     - All‑NaN or entirely missing depth/turnover sources: heuristic fallback engaged (depth scaled by median credit stock; turnover from `U / L_real` with safe division).
     - All‑zero `L_real`: depth defaults to a constant (1000) and turnover falls back to 1.0 before clipping to bounds.
     - Clipping diagnostics: if > `turnover_clip_warn_threshold` fraction of rows are clipped (default 15%), a warning is collected.
+    - Fallback constants and toy regression guards live under `enrichment` (`depth_fallback`, `turnover_fallback`, `depth_toy`, `turnover_toy`) so you can tune them per region (override in `config_jp.yml`, etc.).
     - Toy baselines (`L_asset_toy`, `depth_toy`, `turnover_toy`) are ensured during indicator build for regression protection.
 - Environment variables
   - `FRED_API_KEY` (optional): FRED API key (if absent, fall back to local CSVs)
@@ -106,6 +117,21 @@ Notes
   - `CONFIG_REGION` (optional): Region override (`jp` / `eu` / `us`)
   - Branding: `BRAND_BG`, `BRAND_BG2`, `BRAND_TEXT` (header/footer brand colors)
 
+### External pressure / temperature coupling
+- Configure under `external_coupling` in `config.yml` (override per region via `config_<region>.yml`). Keys:
+  - `enabled`: master switch for computing the monthly driver composites.
+  - `alpha` / `delta`: coupling coefficients applied to credit pressure (`p_C`) and liquidity temperature (`T_L`). Japan currently sets `alpha=0.2` while every region keeps `delta=0.0` until temperature coupling is validated.
+  - `frequency`: monthly aggregation frequency (default `MS`).
+  - `pressure_components` / `temperature_components`: driver specs with `id`, optional `id_b` (for spreads), `transform`, `scale`, and `key`. Defaults pull US stress proxies: HY OAS, US–JP 10Y yield spread, USDJPY log returns, VIX, and MOVE.
+- `scripts/01_build_features.py` invokes `lib.external_coupling.build_external_coupling_indices` to fetch the configured drivers (FRED IDs), z-score them monthly, and compute composite indices `E_p` / `E_T`. Raw driver CSVs plus `data/external_coupling_<region>.csv` are persisted for reproducibility.
+- The resulting `E_p` / `E_T` columns are merged into `data/reg_pressure.csv`. During indicator construction, `lib.indicators.build_indicators_core` records baseline `p_C` / `T_L`, then applies the coupling contributions (`p_C ← p_C + α·E_p`, `T_L ← T_L + δ·E_T`). Diagnostic columns (`p_C_baseline`, `E_p_contrib`, `T_L_baseline`, `E_T_contrib`) remain in `site/indicators*.csv` so you can audit the effect or dial coefficients back to zero.
+- If coupling is enabled but both coefficients equal zero, the build is equivalent to the disabled state (guarded by `tests/test_external_coupling.py`).
+
+### Chemical potentials per allocation bucket
+  - `q_cols` determines which allocation buckets receive potentials (defaults to the MECE set in `config.yml`).
+  - `mu_share_floor` (optional, default `1e-6`) clips very small shares before taking logarithms to keep `\mu` finite.
+  - The build also derives a time-varying cross-bucket mean `mu_mean` and relative spreads `dmu_<bucket> = mu_<bucket> - mu_mean`. These `\Delta\mu_i` columns are centered by construction (they sum to zero across buckets each date) and act as dimensionless drivers for future flow experiments.
+  ...
 ---
 
 ## Branding & logo
@@ -128,6 +154,11 @@ Notes
 ## Data & sources
 - By default the scripts read `data/*.csv`; `scripts/02_compute_indicators*.py` compute indicators.
 - Provide `data/sources.json` to show a Sources table and Raw Inputs figure.
+- Provide BIS private credit series directly: `CRDQJPAPABIS`, `CRDQEZAPABIS`, and `CRDQUSAPABIS` are configured under `data/sources.json` (Quarterly, billions of local currency) so enrichment depth proxies point to real BIS tables out of the box.
+  - Source citation: Bank for International Settlements (BIS), “Credit to the Private Non-Financial Sector,” series CRDQJPAPABIS / CRDQEZAPABIS / CRDQUSAPABIS (BIS Data Portal). If you download the same identifiers via FRED, cite both the original BIS source and FRED as the distribution host (BIS also recommends dual attribution / FRED経由取得時は一次出所=BIS・ホスト=FREDを併記)。
+- Turnover proxies rely on existing liquidity series (JP: `MYAGM2JPM189S`, EU: `ECBASSETS`, US: `WALCL`) so no placeholder entries remain.
+- A compact `data/credit.csv` (JP) placeholder is committed so tests work out-of-the-box. Replace it with fresh features from `scripts/01_build_features.py` when running the full pipeline; the file only contains a handful of rows covering the enrichment-required columns (`L_asset`, `depth`, `turnover`, toy baselines, etc.)
+- Matching stubs for `data/credit_eu.csv` and `data/credit_us.csv` now ship with the repo so EU/US enrichment suites also run without pulling the full historical datasets. Overwrite them with outputs from `scripts/04_build_features_eu.py` / `scripts/05_build_features_us.py` when you need live data.
   - Example entry: `{"id":"JPNASSETS","title":"BoJ Total Assets","enabled":true}`
   - Default CSV path is `data/<id>.csv` (columns: `date`, `value`). Use `path` to override.
   - World Bank integration (GDP indicator fetch):

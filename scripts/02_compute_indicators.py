@@ -1,13 +1,31 @@
 import os, sys
-import pandas as pd, yaml
+import pandas as pd
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
-from lib.indicators import build_indicators_core
-from lib.indicators import compute_diagnostics
+from lib.indicators import build_indicators_core, compute_diagnostics, DEFAULT_HEADROOM_COLS
+from lib.config_loader import load_config
 
 REGION = os.getenv("REGION", "jp").strip().lower()
+
+HEADROOM_DECAY = dict(zip(DEFAULT_HEADROOM_COLS, (0.04, 0.05, 0.06)))
+
+
+def _ensure_headrooms(reg: pd.DataFrame) -> pd.DataFrame:
+    if reg is None or reg.empty:
+        return reg
+    df = reg.copy()
+    base_col = "V_R" if "V_R" in df.columns else "V_C" if "V_C" in df.columns else None
+    if base_col is None or "p_R" not in df.columns:
+        return df
+    base = pd.to_numeric(df[base_col], errors="coerce")
+    pressure = pd.to_numeric(df.get("p_R"), errors="coerce").fillna(0).clip(lower=0)
+    for col, coeff in HEADROOM_DECAY.items():
+        if col in df.columns:
+            continue
+        df[col] = (base * (1 - coeff * pressure)).clip(lower=0)
+    return df
 
 
 def _ensure_minimal_inputs() -> None:
@@ -101,31 +119,7 @@ def _ensure_minimal_inputs() -> None:
         [["2023-01-01", 0.5, 80.0]],
     )
 
-def _load_cfg(region: str):
-    """Load base config.yml and overlay region-specific config if present.
-    Region file takes precedence for overlapping keys.
-    """
-    base = {}
-    try:
-        with open("config.yml", "r") as f:
-            base = yaml.safe_load(f) or {}
-    except Exception:
-        base = {}
-    reg = {}
-    if region in ("jp", "eu", "us"):
-        p = f"config_{region}.yml"
-        if os.path.exists(p):
-            try:
-                with open(p, "r") as f:
-                    reg = yaml.safe_load(f) or {}
-            except Exception:
-                reg = {}
-    if isinstance(base, dict) and isinstance(reg, dict):
-        merged = {**base, **reg}
-        return merged
-    return base or reg or {}
-
-cfg = _load_cfg(REGION)
+cfg = load_config(REGION)
 
 # When running in JP mode, ensure minimal inputs exist so CI or local runs
 # that don't have raw data available don't fail with FileNotFoundError.
@@ -224,13 +218,9 @@ if not money.empty and not q.empty and money["date"].min() < q["date"].min():
         })
         q = pd.concat([q_ext, q], ignore_index=True).sort_values("date").reset_index(drop=True)
 
-# Credit & regulatory pressure: if existing quarterly files cover earlier period, keep; otherwise leave as-is
-cred  = pd.read_csv("data/credit.csv", parse_dates=["date"]).sort_values("date")
-reg   = pd.read_csv("data/reg_pressure.csv", parse_dates=["date"]).sort_values("date")
-
 def compute_region(region: str) -> str:
     region = region.strip().lower()
-    cfg = _load_cfg(region)
+    cfg = load_config(region)
     series_cfg = cfg.get("series", {}) if isinstance(cfg, dict) else {}
     if region == "eu":
         ms_pref = (series_cfg.get("money_scale_eu", {}) or {}).get("preferred")
@@ -286,6 +276,7 @@ def compute_region(region: str) -> str:
 
     cred  = pd.read_csv("data/credit.csv", parse_dates=["date"]).sort_values("date")
     reg   = pd.read_csv("data/reg_pressure.csv", parse_dates=["date"]).sort_values("date")
+    reg   = _ensure_headrooms(reg)
 
     df = build_indicators_core(money, q, cred, reg, cfg)
     df = compute_diagnostics(df)

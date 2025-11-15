@@ -63,7 +63,13 @@ def ensure_reg_pressure():
         ["2023-10-01", 0.65, 86.0],
         ["2024-01-01", 0.7, 88.0],
     ]
-    write_csv(path, ["date", "p_R", "V_R"], rows)
+    enriched = []
+    for date, p_r, v_r in rows:
+        cap = v_r * (1 - 0.04 * p_r)
+        lcr = v_r * (1 - 0.05 * p_r)
+        nsfr = v_r * (1 - 0.06 * p_r)
+        enriched.append([date, p_r, v_r, cap, lcr, nsfr])
+    write_csv(path, ["date", "p_R", "V_R", "capital_headroom", "lcr_headroom", "nsfr_headroom"], enriched)
 
 
 def ensure_credit_jp():

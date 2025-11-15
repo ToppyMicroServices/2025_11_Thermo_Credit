@@ -63,6 +63,12 @@ def load_config(region_code: str | None) -> Dict[str, Any]:
         if k == 'series' and isinstance(v, dict):
             merged_series = _merge_series(base_cfg.get('series', {}), v)
             merged['series'] = merged_series
+        elif k == 'external_coupling' and isinstance(v, dict):
+            base_ext = base_cfg.get('external_coupling', {})
+            ext = dict(base_ext) if isinstance(base_ext, dict) else {}
+            for sub_key, sub_val in v.items():
+                ext[sub_key] = sub_val
+            merged['external_coupling'] = ext
         else:
             merged[k] = v
     return merged

@@ -16,13 +16,14 @@ from lib.series_selector import (
     DEFAULT_SERIES,
     DEFAULT_START,
     candidate_queue,
-    load_project_config,
     load_series_preferences,
     select_series,
 )
 from lib.worldbank import fetch_worldbank_series
 from lib.credit_enrichment import compute_enrichment
 from lib.config_params import allocation_weights, leverage_share
+from lib.config_loader import load_config
+from lib.external_coupling import build_external_coupling_indices
 
 FRED_KEY = os.getenv("FRED_API_KEY", "")
 CONFIG_PATH = os.path.join(ROOT, "config.yml")
@@ -90,6 +91,27 @@ def list_series(series_prefs: dict, roles: Optional[list] = None) -> None:
             suffix = f" - {title}" if title else ""
             suffix += f" ({note})" if note else ""
             print(f"  - {item['id']}{suffix} [{item['source']}, start={start}]")
+
+
+def _external_series_fetcher(series_id: str, start: Optional[str] = None) -> pd.DataFrame:
+    df = fred_series(series_id, start or DEFAULT_START)
+    df = df.copy()
+    df["date"] = pd.to_datetime(df["date"])
+    os.makedirs("data", exist_ok=True)
+    df.to_csv(os.path.join("data", f"{series_id}.csv"), index=False)
+    return df
+
+
+def _attach_headrooms(reg: pd.DataFrame) -> pd.DataFrame:
+    df = reg.copy()
+    if "V_R" not in df.columns:
+        return df
+    base = pd.to_numeric(df["V_R"], errors="coerce")
+    pressure = pd.to_numeric(df.get("p_R"), errors="coerce").fillna(0).clip(lower=0)
+    df["capital_headroom"] = (base * (1 - 0.04 * pressure)).clip(lower=0)
+    df["lcr_headroom"] = (base * (1 - 0.05 * pressure)).clip(lower=0)
+    df["nsfr_headroom"] = (base * (1 - 0.06 * pressure)).clip(lower=0)
+    return df
 
 
 def build_us(series_prefs: dict, project_config: dict) -> None:
@@ -178,8 +200,10 @@ def build_us(series_prefs: dict, project_config: dict) -> None:
         turnover_source=None,
         warnings=warnings,
         depth_scale=enrich_cfg.get("depth_scale"),
+        depth_fallback=enrich_cfg.get("depth_fallback"),
         turnover_min=enrich_cfg.get("turnover_min"),
         turnover_max=enrich_cfg.get("turnover_max"),
+        turnover_fallback=enrich_cfg.get("turnover_fallback"),
         clip_warn_threshold=enrich_cfg.get("turnover_clip_warn_threshold"),
     )
     for w in warnings:
@@ -200,6 +224,13 @@ def build_us(series_prefs: dict, project_config: dict) -> None:
         .sort_values("date")
         .dropna(subset=["p_R", "V_R"], how="any")
     )
+    reg = _attach_headrooms(reg)
+    ext_cfg = project_config.get("external_coupling", {}) if isinstance(project_config, dict) else {}
+    ext_df = build_external_coupling_indices(ext_cfg, _external_series_fetcher)
+    if not ext_df.empty:
+        ext_path = os.path.join("data", "external_coupling_us.csv")
+        ext_df.to_csv(ext_path, index=False)
+        reg = reg.merge(ext_df, on="date", how="left")
     reg.to_csv("data/reg_pressure_us.csv", index=False)
 
     # allocation_q_us.csv (flat weights for now)
@@ -231,7 +262,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     series_prefs = load_series_preferences(CONFIG_PATH)
-    project_config = load_project_config(CONFIG_PATH)
+    project_config = load_config("us")
 
     if args.list_series:
         list_series(series_prefs, args.role)

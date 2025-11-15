@@ -110,26 +110,81 @@
     "enabled": false
   },
   {
-    "id": "REPLACE_ME_JP_LOANS",
-    "title": "Japan Total Loans (Placeholder)",
-    "provider": "BIS / BoJ",
+    "id": "CRDQJPAPABIS",
+    "title": "BIS Private Non-financial Credit (Japan)",
+    "provider": "BIS",
     "country": "JP",
     "frequency": "Quarterly",
     "units": "JPY billions",
-    "url": "https://example.org/jp_loans",
-    "note": "Replace with actual BIS or BoJ loans series ID",
-    "enabled": false
+    "url": "https://stats.bis.org/statx/srs/table/CRDQJPAP",
+    "note": "Domestic currency credit to private non-financial sector (BIS table CRDQ)",
+    "enabled": true
   },
   {
-    "id": "REPLACE_ME_JP_CORP_BONDS",
-    "title": "Japan Corporate Bonds Outstanding (Placeholder)",
-    "provider": "BIS / JSDA",
-    "country": "JP",
+    "id": "CRDQEZAPABIS",
+    "title": "BIS Private Non-financial Credit (Euro Area)",
+    "provider": "BIS",
+    "country": "EA",
     "frequency": "Quarterly",
-    "units": "JPY billions",
-    "url": "https://example.org/jp_corp_bonds",
-    "note": "Replace with actual BIS bond outstanding series",
-    "enabled": false
+    "units": "EUR billions",
+    "url": "https://stats.bis.org/statx/srs/table/CRDQEZAP",
+    "note": "Domestic currency credit to private non-financial sector (BIS table CRDQ)",
+    "enabled": true
+  },
+  {
+    "id": "CRDQUSAPABIS",
+    "title": "BIS Private Non-financial Credit (United States)",
+    "provider": "BIS",
+    "country": "US",
+    "frequency": "Quarterly",
+    "units": "USD billions",
+    "url": "https://stats.bis.org/statx/srs/table/CRDQUSAP",
+    "note": "Domestic currency credit to private non-financial sector (BIS table CRDQ)",
+    "enabled": true
+  },
+  {
+    "id": "BAMLH0A0HYM2EY",
+    "title": "ICE BofA US High Yield Index Option-Adjusted Spread",
+    "provider": "ICE / FRED",
+    "country": "US",
+    "frequency": "Daily",
+    "units": "percentage points",
+    "url": "https://fred.stlouisfed.org/series/BAMLH0A0HYM2EY",
+    "note": "Pressure driver: US high yield OAS (normalized before aggregation)",
+    "enabled": true
+  },
+  {
+    "id": "DEXJPUS",
+    "title": "USD/JPY Exchange Rate (JPY per USD)",
+    "provider": "Federal Reserve / FRED",
+    "country": "US/JP",
+    "frequency": "Daily",
+    "units": "JPY per USD",
+    "url": "https://fred.stlouisfed.org/series/DEXJPUS",
+    "note": "Pressure driver: used to compute USDJPY returns",
+    "enabled": true
+  },
+  {
+    "id": "VIXCLS",
+    "title": "CBOE Volatility Index (VIX)",
+    "provider": "CBOE / FRED",
+    "country": "US",
+    "frequency": "Daily",
+    "units": "Index",
+    "url": "https://fred.stlouisfed.org/series/VIXCLS",
+    "note": "Temperature driver candidate",
+    "enabled": true
+  },
+  {
+    "id": "MOVE",
+    "title": "ICE BofA MOVE Index",
+    "provider": "ICE / FRED",
+    "country": "US",
+    "frequency": "Daily",
+    "units": "Index",
+    "url": "https://fred.stlouisfed.org/series/MOVE",
+    "note": "Temperature driver candidate (Treasury volatility)",
+    "enabled": true
   },
   {
     "id": "IR3TJB01JPM156N",
@@ -140,17 +195,6 @@
     "units": "%",
     "url": "https://fred.stlouisfed.org/series/IR3TJB01JPM156N",
     "note": "Short-term yield for spread construction",
-    "enabled": false
-  },
-  {
-    "id": "REPLACE_ME_JP_TURNOVER",
-    "title": "Tokyo Stock Exchange Turnover (Placeholder)",
-    "provider": "TSE",
-    "country": "JP",
-    "frequency": "Monthly",
-    "units": "Index",
-    "url": "https://example.org/jp_turnover",
-    "note": "Replace with real turnover series (value traded / market cap)",
     "enabled": false
   }
 ]

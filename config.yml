@@ -2,6 +2,24 @@ T0: 1.0
 k: 1.0
 loop_forgetting: 0.98
 
+# Internal energy detrending (U -> U_star). No-lookahead rolling mean by default.
+U_detrend:
+  enabled: true
+  method: rolling   # rolling or ema
+  window: 12        # quarters
+  min_periods: 4
+
+# V_C formula: use min of headroom components by default
+V_C_formula: min_headroom   # legacy to skip
+V_C_headroom_cols:
+  - capital_headroom
+  - lcr_headroom
+  - nsfr_headroom
+V_C_headroom_scales:
+  - 1.0
+  - 1.0
+  - 1.0
+
 # Entropy categories (MECE) – align with allocation_q.csv columns
 q_cols:
   - q_productive
@@ -122,6 +140,34 @@ enrichment:
   turnover_min: 0.1              # lower clipping bound
   turnover_max: 10.0             # upper clipping bound
   turnover_clip_warn_threshold: 0.15  # warn when clipped rows fraction > this
+  depth_fallback: 1000.0         # default depth stock when L_real lacks signal
+  turnover_fallback: 1.0         # default turnover when ratios unavailable
+  depth_toy: 1000.0              # toy regression guard columns (JP pipeline)
+  turnover_toy: 1.0
+
+external_coupling:
+  enabled: true
+  alpha: 0.0    # pressure coupling coefficient (regional overrides can set >0)
+  delta: 0.0    # temperature coupling coefficient (keep 0 for now)
+  frequency: MS # aggregate drivers to month-start for alignment with credit/reg tables
+  pressure_components:
+    - key: hy_oas
+      id: BAMLH0A0HYM2EY
+      transform: value
+    - key: usjp_10y_spread
+      id: DGS10
+      id_b: IRLTLT01JPM156N
+      transform: spread
+    - key: usd_jpy_return
+      id: DEXJPUS
+      transform: log_return
+  temperature_components:
+    - key: vix
+      id: VIXCLS
+      transform: value
+    - key: move
+      id: MOVE
+      transform: value
 
 # Default parameters for leverage heuristics and allocation weights
 parameters:
