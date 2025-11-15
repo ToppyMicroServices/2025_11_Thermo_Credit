@@ -52,6 +52,13 @@ jobs:
         run: |
           python scripts/03_make_report.py
 
+      - name: Sanity check site outputs
+        run: |
+          test -f site/report.html
+          test -s site/indicators.csv
+          test -s site/indicators_eu.csv
+          test -s site/indicators_us.csv
+
       - name: Upload site artifact
         uses: actions/upload-artifact@v4
         with:

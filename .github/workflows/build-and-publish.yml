@@ -56,6 +56,8 @@ jobs:
         run: |
           test -f site/report.html
           test -s site/indicators.csv
+          test -s site/indicators_eu.csv
+          test -s site/indicators_us.csv
       - name: Sanity check archive/feed/sitemap
         run: |
           test -f site/archive.json
