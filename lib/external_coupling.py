@@ -70,7 +70,11 @@ def _component_series(
     start_override = spec.get("start")
     cache_key = (series_id, start_override)
     if cache_key not in cache:
-        cache[cache_key] = fetcher(series_id, start_override)
+        try:
+            cache[cache_key] = fetcher(series_id, start_override)
+        except Exception as exc:
+            print(f"[external_coupling] failed to fetch {series_id}: {exc}")
+            cache[cache_key] = pd.DataFrame()
     primary_df = cache[cache_key]
     primary = _to_monthly(primary_df, freq)
     secondary = None
@@ -78,7 +82,11 @@ def _component_series(
     if secondary_id:
         sec_key = (secondary_id, spec.get("start_b") or start_override)
         if sec_key not in cache:
-            cache[sec_key] = fetcher(secondary_id, spec.get("start_b") or start_override)
+            try:
+                cache[sec_key] = fetcher(secondary_id, spec.get("start_b") or start_override)
+            except Exception as exc:
+                print(f"[external_coupling] failed to fetch {secondary_id}: {exc}")
+                cache[sec_key] = pd.DataFrame()
         secondary = _to_monthly(cache[sec_key], freq)
     transform = spec.get("transform", "value")
     ser = _transform_series(primary, transform, secondary)

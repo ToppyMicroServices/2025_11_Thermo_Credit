@@ -165,9 +165,13 @@ external_coupling:
     - key: vix
       id: VIXCLS
       transform: value
-    - key: move
-      id: MOVE
-      transform: value
+    # MOVE: ICE BofA MOVE Index
+    # FRED API does not provide this series via the JSON endpoint we use, so
+    # attempting to fetch it results in HTTP 400. Until we wire a local CSV
+    # or alternate data source, keep it disabled to avoid breaking builds.
+    # - key: move
+    #   id: MOVE
+    #   transform: value
 
 # Default parameters for leverage heuristics and allocation weights
 parameters:

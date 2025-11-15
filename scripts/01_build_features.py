@@ -218,8 +218,24 @@ def build_features(series_prefs: dict, project_config: dict) -> None:
 
 # --- helpers (JP) ---
 def fred_series(series_id: str, start: str = DEFAULT_START, retries: int = 3, backoff: float = 1.5) -> pd.DataFrame:
+    """Fetch a FRED series as a DataFrame with ``date``/``value``.
+
+    Notes
+    -----
+    - Some series (notably MOVE) can intermittently return HTTP 400 even with
+      a valid API key. To keep the pipeline and CI resilient, we fall back to a
+      local cached CSV if the HTTP request ultimately fails.
+    """
+    # First, try to use an on-disk cache if it exists. This allows CI runs and
+    # offline work to proceed even if FRED is temporarily unhappy.
+    cache_path = os.path.join("data", f"{series_id}.csv")
+
     if not FRED_KEY:
-        raise RuntimeError("FRED_API_KEY not set; cannot fetch online.")
+        if os.path.exists(cache_path):
+            df = pd.read_csv(cache_path)
+            return df
+        raise RuntimeError("FRED_API_KEY not set; cannot fetch online and no cached CSV found.")
+
     url = (
         "https://api.stlouisfed.org/fred/series/observations"
         f"?series_id={series_id}&api_key={FRED_KEY}&file_type=json&observation_start={start}"
@@ -233,12 +249,24 @@ def fred_series(series_id: str, start: str = DEFAULT_START, retries: int = 3, ba
             df = pd.DataFrame(obs)[["date", "value"]]
             df["value"] = pd.to_numeric(df["value"], errors="coerce")
             df = df.dropna()
+            # keep cache up to date
+            os.makedirs("data", exist_ok=True)
+            df.to_csv(cache_path, index=False)
             return df
         except Exception as e:
             last = e
             if i < retries - 1:
                 time.sleep(backoff ** i)
             else:
+                # Final failure: fall back to cache if present instead of
+                # blowing up the whole build (e.g., MOVE occasionally 400s).
+                if os.path.exists(cache_path):
+                    print(f"[fred_series] HTTP error for {series_id}, using cached CSV: {last}")
+                    try:
+                        df = pd.read_csv(cache_path)
+                        return df
+                    except Exception as cache_exc:
+                        print(f"[fred_series] failed to read cached CSV for {series_id}: {cache_exc}")
                 raise
 
 def worldbank_series(country: str = "JPN", indicator: str = "NY.GDP.MKTP.CN") -> pd.DataFrame:
