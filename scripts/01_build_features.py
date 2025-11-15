@@ -1,5 +1,5 @@
 # scripts/01_build_features.py
-import os, json, time, math, datetime as dt
+import os, json, time, math, datetime as dt, glob
 import numpy as np
 import numpy as np
 import argparse
@@ -270,7 +270,36 @@ def fred_series(series_id: str, start: str = DEFAULT_START, retries: int = 3, ba
                 raise
 
 def worldbank_series(country: str = "JPN", indicator: str = "NY.GDP.MKTP.CN") -> pd.DataFrame:
-    return fetch_worldbank_series(country, indicator)
+    cache_dir = os.path.join(ROOT, "data")
+    # Prefer explicit indicator files, but fall back to any "indicator@start" CSV the repo already ships.
+    fallback_patterns = [
+        os.path.join("data", f"{indicator}.csv"),
+        os.path.join("data", f"{indicator}@2000-01-01.csv"),
+        os.path.join(cache_dir, f"{indicator}.csv"),
+        os.path.join(cache_dir, f"{indicator}@2000-01-01.csv"),
+        os.path.join("data", f"{indicator}@*.csv"),
+        os.path.join(cache_dir, f"{indicator}@*.csv"),
+    ]
+    fallback_csvs: list[str] = []
+    for pattern in fallback_patterns:
+        if "*" in pattern:
+            fallback_csvs.extend(glob.glob(pattern))
+        else:
+            fallback_csvs.append(pattern)
+    # Deduplicate while preserving order so we try deterministic sources first.
+    unique_fallbacks = []
+    seen: set[str] = set()
+    for path in fallback_csvs:
+        if path not in seen:
+            unique_fallbacks.append(path)
+            seen.add(path)
+
+    return fetch_worldbank_series(
+        country,
+        indicator,
+        cache_dir=cache_dir,
+        fallback_csvs=unique_fallbacks,
+    )
 
 def _log_selection(role: str, info: dict) -> None:
     title = info.get("title") or ""; start = info.get("start") or DEFAULT_START
