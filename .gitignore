@@ -35,6 +35,9 @@ data/*.csv
 !data/gdp_eu.csv
 !data/gdp_us.csv
 data/worldbank_cache_*.json
+!data/worldbank_cache_USA_NY.GDP.MKTP.CN.json
+!data/worldbank_cache_JPN_NY.GDP.MKTP.CN.json
+!data/worldbank_cache_EMU_NY.GDP.MKTP.CN.json
 data/external_coupling_*.csv
 data/series_selected_*.json.backup
 
