@@ -1,6 +1,9 @@
-T0: 1.0
-k: 1.0
-loop_forgetting: 0.98
+# Global defaults for thermo-credit parameters.
+# Region-specific overrides live in `config_jp.yml`, `config_eu.yml`, and `config_us.yml`.
+
+T0: 1.0              # Global reference temperature (dimensionless). Regional configs can override.
+k: 1.0               # Boltzmann-like scaling constant for translating energy to temperature.
+loop_forgetting: 0.98  # Exponential forgetting factor for loop area / hysteresis (0.98 ~ 2-year memory).
 
 # Internal energy detrending (U -> U_star). No-lookahead rolling mean by default.
 U_detrend:

@@ -1,10 +1,13 @@
 # Region-specific overrides for Euro Area (EU)
-T0: 1.0
-p0: 1.5
-V0: 400000.0
-U0: 8.0e6
-S0: 8.0e5
+# These values override the global defaults in `config.yml`.
+# Any key not listed here will fall back to the shared config.
+
+T0: 1.0        # Reference temperature (dimensionless). Typically left at 1.0.
+p0: 1.5        # Reference pressure level for EU; >1 means "mildly stressed" baseline.
+V0: 400000.0   # Reference volume / credit scale for EU (relative size parameter).
+U0: 8.0e6      # Baseline internal energy of the EU credit system (model scale).
+S0: 8.0e5      # Baseline entropy of allocations in the EU (model scale).
 
 external_coupling:
-  alpha: 0.2
-  delta: 0.0
+  alpha: 0.2   # Strength of external pressure coupling into EU indicators (E_p).
+  delta: 0.0   # Strength of external temperature coupling (E_T); 0.0 = disabled.

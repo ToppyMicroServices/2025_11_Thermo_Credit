@@ -1,11 +1,13 @@
 # Region-specific overrides for United States (US)
-# Set boundary conditions so X_C computes without falling back to F_C
-T0: 1.0
-p0: 2.0      # example baseline credit pressure
-V0: 500000.0 # example baseline credit volume
-U0: 1.0e7    # example baseline internal energy
-S0: 1.0e6    # example baseline entropy
+# These values override the global defaults in `config.yml`.
+# Any key not listed here will fall back to the shared config.
+
+T0: 1.0        # Reference temperature (dimensionless). Typically left at 1.0.
+p0: 2.0        # Reference pressure level for US; >1 means a more stressed baseline.
+V0: 500000.0   # Reference volume / credit scale for US (relative size parameter).
+U0: 1.0e7      # Baseline internal energy of the US credit system (model scale).
+S0: 1.0e6      # Baseline entropy of allocations in the US (model scale).
 
 external_coupling:
-  alpha: 0.2
-  delta: 0.0
+  alpha: 0.2   # Strength of external pressure coupling into US indicators (E_p).
+  delta: 0.0   # Strength of external temperature coupling (E_T); 0.0 = disabled.

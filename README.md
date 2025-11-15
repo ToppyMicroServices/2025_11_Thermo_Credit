@@ -2,6 +2,80 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17563221.svg)](https://doi.org/10.5281/zenodo.17563221)
 
+Compute thermo‑credit indicators from public statistics (local CSVs or FRED API) and render a monthly, multi‑region dashboard.
+
+> Experimental prototype of the Thermo‑Credit framework. Indicators are for research only; see the Zenodo note for theory and limitations.
+Live dashboard:
+https://toppymicros.com/2025_11_Thermo_Credit/report.html
+
+Key outputs (per region):
+- `site/report.html` — interactive dashboard (Plotly)
+- `site/indicators*.csv` — indicator time series
+- `data/*.csv` — intermediate feature tables
+---
+
+## Citation
+If you use this repository, please cite the Zenodo record:
+
+- DOI: https://doi.org/10.5281/zenodo.17563221
+---
+
+## Quick start
+
+```bash
+python3 -m venv .venv && source .venv/bin/activate
+python -m pip install -U pip
+### JP‑specific knobs
+
+- `JP_START` (env var): earliest JP date for raw series when building indicators (e.g. `2012-01-01`).
+  - Affects raw series ingestion only (BoJ assets, M2, yields, etc.).
+  - If missing, scripts reuse committed CSVs under `data/`.
+- `REPORT_PLOT_START`: plot window start only (does **not** change computed indicators).
+## Multi‑region usage (JP / EU / US)
+
+JP (default):
+
+```bash
+python scripts/02_compute_indicators.py
+python scripts/03_make_report.py
+---
+
+## Configuration overview
+
+Base config: `config.yml`
+Region overrides: `config_jp.yml`, `config_eu.yml`, `config_us.yml`
+  - Enrichment edge cases & fallbacks:
+    - All‑NaN or entirely missing depth/turnover sources: heuristic fallback engaged (depth scaled by median credit stock; turnover from `U / L_real` with safe division).
+    - All‑zero `L_real`: depth defaults to a constant (1000) and turnover falls back to 1.0 before clipping to bounds.
+    - Clipping diagnostics: if > `turnover_clip_warn_threshold` fraction of rows are clipped (default 15%), a warning is collected.
+    - Fallback constants and toy regression guards live under `enrichment` (`depth_fallback`, `turnover_fallback`, `depth_toy`, `turnover_toy`) so you can tune them per region (override in `config_jp.yml`, etc.).
+    - Toy baselines (`L_asset_toy`, `depth_toy`, `turnover_toy`) are ensured during indicator build for regression protection.
+  - Branding: `BRAND_BG`, `BRAND_BG2`, `BRAND_TEXT` (header/footer brand colors).
+
+Detailed descriptions of external coupling (`E_p`, `E_T`) and chemical potentials (μ, Δμ) have been moved to `docs/external_coupling.md`.
+
+---
+
+## Data & sources
+---
+
+## CI
+
+Workflow: `.github/workflows/build_report.yml`
+  - Dependencies install → logo optimization → report build → upload `site/` as artifact
+## Tips
+- PNG fallback export requires `kaleido`.
+- Recommend excluding generated artifacts (`site/`) and large CSVs from Git (CI regenerates them).
+
+---
+
+## License
+See `LICENSE`.
+
+# Thermo‑Credit Monitor (TQTC)
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17563221.svg)](https://doi.org/10.5281/zenodo.17563221)
+
 Compute thermo‑credit indicators from public statistics (local CSVs or FRED API) and render a monthly, multi‑region report.
 
 > This dashboard is an experimental implementation of the Thermo‑Credit framework. All values are prototype indicators; see the Zenodo technical note for definitions and limitations.
@@ -131,23 +205,6 @@ Notes
   - `q_cols` determines which allocation buckets receive potentials (defaults to the MECE set in `config.yml`).
   - `mu_share_floor` (optional, default `1e-6`) clips very small shares before taking logarithms to keep `\mu` finite.
   - The build also derives a time-varying cross-bucket mean `mu_mean` and relative spreads `dmu_<bucket> = mu_<bucket> - mu_mean`. These `\Delta\mu_i` columns are centered by construction (they sum to zero across buckets each date) and act as dimensionless drivers for future flow experiments.
-  ...
----
-
-## Branding & logo
-- The logo is embedded inline as a Base64 data URI.
-- To pre-optimize (recommended):
-  ```bash
-  python scripts/optimize_logo.py --height 80 --colors 96
-  ```
-  Output: `scripts/og-brand-clean.min.png` (used preferentially if present)
-- Brand colors can be overridden via environment variables:
-  ```bash
-  export BRAND_BG="#0d1b2a"
-  export BRAND_BG2="#1b263b"
-  export BRAND_TEXT="#ffffff"
-  python scripts/03_make_report.py
-  ```
 
 ---
 
