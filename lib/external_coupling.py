@@ -106,7 +106,8 @@ def _build_group(
     if not frames:
         return pd.DataFrame(), []
     df = pd.concat(frames, axis=1, join="outer")
-    df.index = df.index.to_period(freq).to_timestamp()
+    # Keep a plain DatetimeIndex to avoid pandas Period freq limitations (e.g., 'MS').
+    df.index = pd.to_datetime(df.index).tz_localize(None)
     return df.sort_index(), keys
 
 
