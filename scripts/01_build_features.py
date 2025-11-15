@@ -39,6 +39,37 @@ ROLE_ENV = {
 }
 
 
+def worldbank_series(country: str = "JPN", indicator: str = "NY.GDP.MKTP.CN") -> pd.DataFrame:
+    cache_dir = os.path.join(ROOT, "data")
+    fallback_patterns = [
+        os.path.join("data", f"{indicator}.csv"),
+        os.path.join("data", f"{indicator}@2000-01-01.csv"),
+        os.path.join(cache_dir, f"{indicator}.csv"),
+        os.path.join(cache_dir, f"{indicator}@2000-01-01.csv"),
+        os.path.join("data", f"{indicator}@*.csv"),
+        os.path.join(cache_dir, f"{indicator}@*.csv"),
+    ]
+    fallback_csvs: list[str] = []
+    for pattern in fallback_patterns:
+        if "*" in pattern:
+            fallback_csvs.extend(glob.glob(pattern))
+        else:
+            fallback_csvs.append(pattern)
+    unique_fallbacks: list[str] = []
+    seen: set[str] = set()
+    for path in fallback_csvs:
+        if path not in seen:
+            unique_fallbacks.append(path)
+            seen.add(path)
+
+    return fetch_worldbank_series(
+        country,
+        indicator,
+        cache_dir=cache_dir,
+        fallback_csvs=unique_fallbacks,
+    )
+
+
 def _persist_series(series_id: str, df: pd.DataFrame) -> None:
     if df is None or df.empty:
         return
