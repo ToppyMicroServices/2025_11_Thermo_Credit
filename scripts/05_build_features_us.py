@@ -3,6 +3,7 @@ import json
 import time
 import argparse
 from typing import Optional
+import glob
 
 import pandas as pd
 import requests
@@ -61,10 +62,37 @@ def fred_series(series_id: str, start: str = DEFAULT_START, retries: int = 3, ba
 
 
 def worldbank_series(country: str = "USA", indicator: str = "NY.GDP.MKTP.CN") -> pd.DataFrame:
-    return fetch_worldbank_series(country, indicator, fallback_csvs=[
-        os.path.join("data", "gdp_us.csv"),
-        os.path.join("data", "worldbank_gdp_us.csv"),
-    ])
+    cache_dir = os.path.join(ROOT, "data")
+    # Prefer explicit indicator files and cache JSONs, but fall back to any
+    # "indicator@start" CSV the repo already ships.
+    fallback_patterns = [
+        os.path.join("data", f"{indicator}.csv"),
+        os.path.join("data", f"{indicator}@2000-01-01.csv"),
+        os.path.join(cache_dir, f"{indicator}.csv"),
+        os.path.join(cache_dir, f"{indicator}@2000-01-01.csv"),
+        os.path.join("data", f"{indicator}@*.csv"),
+        os.path.join(cache_dir, f"{indicator}@*.csv"),
+    ]
+    fallback_csvs: list[str] = []
+    for pattern in fallback_patterns:
+        if "*" in pattern:
+            fallback_csvs.extend(glob.glob(pattern))
+        else:
+            fallback_csvs.append(pattern)
+    # Deduplicate while preserving order
+    unique_fallbacks: list[str] = []
+    seen: set[str] = set()
+    for path in fallback_csvs:
+        if path not in seen:
+            unique_fallbacks.append(path)
+            seen.add(path)
+
+    return fetch_worldbank_series(
+        country,
+        indicator,
+        cache_dir=cache_dir,
+        fallback_csvs=unique_fallbacks,
+    )
 
 
 def _log_selection(role: str, info: dict) -> None:

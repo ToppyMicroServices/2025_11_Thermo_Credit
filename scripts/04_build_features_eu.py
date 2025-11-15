@@ -1,6 +1,7 @@
 import os, json, time
 import argparse
 from typing import Optional
+import glob
 import pandas as pd
 import requests
 import sys
@@ -58,10 +59,35 @@ def fred_series(series_id: str, start: str = DEFAULT_START, retries: int = 3, ba
                 raise
 
 def worldbank_series(country: str = "EMU", indicator: str = "NY.GDP.MKTP.CN") -> pd.DataFrame:
-    return fetch_worldbank_series(country, indicator, fallback_csvs=[
-        os.path.join("data", "gdp_eu.csv"),
-        os.path.join("data", "eurostat_gdp_eu.csv"),
-    ])
+    cache_dir = os.path.join(ROOT, "data")
+    # Prefer explicit indicator files and cache JSONs, then any indicator@start CSVs.
+    fallback_patterns = [
+        os.path.join("data", f"{indicator}.csv"),
+        os.path.join("data", f"{indicator}@2000-01-01.csv"),
+        os.path.join(cache_dir, f"{indicator}.csv"),
+        os.path.join(cache_dir, f"{indicator}@2000-01-01.csv"),
+        os.path.join("data", f"{indicator}@*.csv"),
+        os.path.join(cache_dir, f"{indicator}@*.csv"),
+    ]
+    fallback_csvs: list[str] = []
+    for pattern in fallback_patterns:
+        if "*" in pattern:
+            fallback_csvs.extend(glob.glob(pattern))
+        else:
+            fallback_csvs.append(pattern)
+    unique_fallbacks: list[str] = []
+    seen: set[str] = set()
+    for path in fallback_csvs:
+        if path not in seen:
+            unique_fallbacks.append(path)
+            seen.add(path)
+
+    return fetch_worldbank_series(
+        country,
+        indicator,
+        cache_dir=cache_dir,
+        fallback_csvs=unique_fallbacks,
+    )
 
 
 def _log_selection(role: str, info: dict) -> None:
