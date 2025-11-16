@@ -75,10 +75,20 @@ jobs:
 
       - name: Sanity check site outputs
         run: |
+          set -e
           test -f site/report.html
           test -s site/indicators.csv
-          test -s site/indicators_eu.csv
-          test -s site/indicators_us.csv
+          # EU/US are optional depending on data availability/API keys.
+          if [ -f site/indicators_eu.csv ]; then
+            test -s site/indicators_eu.csv
+          else
+            echo "[info] EU indicators not built; skipping check"
+          fi
+          if [ -f site/indicators_us.csv ]; then
+            test -s site/indicators_us.csv
+          else
+            echo "[info] US indicators not built; skipping check"
+          fi
 
       - name: Commit changes
         run: |
