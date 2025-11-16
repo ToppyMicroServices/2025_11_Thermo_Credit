@@ -1,4 +1,5 @@
 import os, sys
+import numpy as np
 import pandas as pd
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -7,7 +8,23 @@ if ROOT not in sys.path:
 from lib.indicators import build_indicators_core, compute_diagnostics, DEFAULT_HEADROOM_COLS
 from lib.config_loader import load_config
 
-REGION = os.getenv("REGION", "jp").strip().lower()
+DEFAULT_REGIONS = ("jp", "us", "eu")
+MULTI_REGION_TOKENS = {"all", "*", "multi", "all_regions"}
+
+
+def _output_path_for_region(region: str) -> str:
+    region = region.strip().lower()
+    return "site/indicators.csv" if region == "jp" else f"site/indicators_{region}.csv"
+
+
+def _bootstrap_region_env() -> str:
+    raw = os.getenv("REGION", "").strip().lower()
+    if not raw or raw in MULTI_REGION_TOKENS or "," in raw:
+        return "jp"
+    return raw
+
+
+REGION = _bootstrap_region_env()
 
 HEADROOM_DECAY = dict(zip(DEFAULT_HEADROOM_COLS, (0.04, 0.05, 0.06)))
 
@@ -118,6 +135,110 @@ def _ensure_minimal_inputs() -> None:
         ["date", "p_R", "V_R"],
         [["2023-01-01", 0.5, 80.0]],
     )
+
+
+def _prepare_yield_fallback(yield_df: pd.DataFrame) -> pd.DataFrame:
+    if yield_df is None or yield_df.empty:
+        return pd.DataFrame()
+    try:
+        y = yield_df.copy()
+        y["date"] = pd.to_datetime(y["date"])
+    except Exception:
+        return pd.DataFrame()
+    value_cols = [c for c in y.columns if c != "date"]
+    if not value_cols:
+        return pd.DataFrame()
+    col = value_cols[0]
+    try:
+        y[col] = pd.to_numeric(y[col], errors="coerce")
+    except Exception:
+        pass
+    y["quarter"] = y["date"].dt.to_period("Q-DEC")
+    out = (
+        y.groupby("quarter")[col]
+        .mean()
+        .reset_index()
+        .rename(columns={col: "spread_fallback"})
+    )
+    return out
+
+
+def _ensure_credit_inputs(cred: pd.DataFrame, yield_df: pd.DataFrame) -> pd.DataFrame:
+    if cred is None or cred.empty:
+        return cred
+    df = cred.copy()
+    try:
+        df["date"] = pd.to_datetime(df["date"])
+    except Exception:
+        pass
+
+    if "spread" not in df.columns:
+        df["spread"] = np.nan
+    df["spread"] = pd.to_numeric(df["spread"], errors="coerce")
+    df["quarter"] = df["date"].dt.to_period("Q-DEC")
+    y_fallback = _prepare_yield_fallback(yield_df)
+    if not y_fallback.empty:
+        df = df.merge(y_fallback, on="quarter", how="left")
+        df["spread"] = df["spread"].combine_first(df["spread_fallback"])
+        df = df.drop(columns=["spread_fallback"])
+
+    if "U" not in df.columns:
+        df["U"] = np.nan
+    u_series = pd.to_numeric(df["U"], errors="coerce")
+    for fallback in ("U_gdp_only", "Y", "L_real"):
+        if fallback in df.columns:
+            u_series = u_series.combine_first(pd.to_numeric(df[fallback], errors="coerce"))
+    df["U"] = u_series
+
+    if "Y" not in df.columns:
+        df["Y"] = np.nan
+    y_series = pd.to_numeric(df["Y"], errors="coerce")
+    for fallback in ("U", "U_gdp_only", "L_real"):
+        if fallback in df.columns:
+            y_series = y_series.combine_first(pd.to_numeric(df[fallback], errors="coerce"))
+    df["Y"] = y_series
+
+    return df.drop(columns=["quarter"], errors="ignore")
+
+
+def _tokenize_regions(values) -> list[str]:
+    tokens: list[str] = []
+    if not values:
+        return tokens
+    if isinstance(values, str):
+        chunks = values.split(",")
+    else:
+        chunks = []
+        for item in values:
+            chunks.extend(str(item).split(","))
+    for chunk in chunks:
+        name = chunk.strip().lower()
+        if name:
+            tokens.append(name)
+    return tokens
+
+
+def _consume_regions(preferred: list[str]) -> list[str]:
+    if not preferred:
+        return list(DEFAULT_REGIONS)
+    if any(tok in MULTI_REGION_TOKENS for tok in preferred):
+        return list(DEFAULT_REGIONS)
+    deduped: list[str] = []
+    for token in preferred:
+        if token not in DEFAULT_REGIONS:
+            continue
+        if token not in deduped:
+            deduped.append(token)
+    return deduped or list(DEFAULT_REGIONS)
+
+
+def _resolve_requested_regions(argv: list[str]) -> list[str]:
+    cli_tokens = _tokenize_regions(argv)
+    if cli_tokens:
+        return _consume_regions(cli_tokens)
+    env_value = os.getenv("REGION", "").strip().lower()
+    env_tokens = _tokenize_regions(env_value)
+    return _consume_regions(env_tokens)
 
 cfg = load_config(REGION)
 
@@ -275,8 +396,37 @@ def compute_region(region: str) -> str:
             q = pd.concat([q_ext, q], ignore_index=True).sort_values("date").reset_index(drop=True)
 
     cred  = pd.read_csv("data/credit.csv", parse_dates=["date"]).sort_values("date")
+    cred  = _ensure_credit_inputs(cred, yld)
     reg   = pd.read_csv("data/reg_pressure.csv", parse_dates=["date"]).sort_values("date")
     reg   = _ensure_headrooms(reg)
+
+    # Normalize all inputs to quarter-end frequency to ensure inner-join alignment
+    def _to_quarterly(df: pd.DataFrame) -> pd.DataFrame:
+        if df is None or df.empty or "date" not in df.columns:
+            return df
+        dd = df.copy()
+        try:
+            dd["date"] = pd.to_datetime(dd["date"])
+        except Exception:
+            return df
+        num_cols = [c for c in dd.columns if c != "date"]
+        if not num_cols:
+            return dd
+        try:
+            out = (
+                dd.set_index("date")[num_cols]
+                .resample("QE-DEC")
+                .mean()
+                .reset_index()
+            )
+            return out
+        except Exception:
+            return dd
+
+    money = _to_quarterly(money)
+    q = _to_quarterly(q)
+    cred = _to_quarterly(cred)
+    reg = _to_quarterly(reg)
 
     df = build_indicators_core(money, q, cred, reg, cfg)
     df = compute_diagnostics(df)
@@ -289,11 +439,25 @@ def compute_region(region: str) -> str:
         df["turnover_toy"] = 1.0
 
     os.makedirs("site", exist_ok=True)
-    out_path = "site/indicators.csv" if region == "jp" else f"site/indicators_{region}.csv"
+    out_path = _output_path_for_region(region)
     df.to_csv(out_path, index=False)
     print(f"Wrote {out_path}")
     return out_path
 
+def _build_regions_with_cache(targets: list[str]) -> None:
+    for region_code in targets:
+        out_path = _output_path_for_region(region_code)
+        preexisting = os.path.exists(out_path)
+        print(f"[info] Building indicators for {region_code}")
+        try:
+            compute_region(region_code)
+        except Exception as exc:
+            if preexisting:
+                print(f"[warn] Failed to rebuild {region_code}: {exc}. Keeping cached {out_path}")
+                continue
+            raise
+
+
 if __name__ == "__main__":
-    # If called directly, compute the requested region (default jp)
-    compute_region(REGION)
+    targets = _resolve_requested_regions(sys.argv[1:])
+    _build_regions_with_cache(targets)

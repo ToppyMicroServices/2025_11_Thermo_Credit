@@ -104,11 +104,11 @@ def _ensure_placeholders():
             money = m_in.merge(m_out, on="date", how="outer").sort_values("date").dropna()
             if not money.empty:
                 money = (
-                    money.set_index("date")
-                    .resample("Q")
-                    .mean()
-                    .reset_index()
-                )
+                        money.set_index("date")
+                        .resample("QE-DEC")
+                        .mean()
+                        .reset_index()
+                    )
                 money.to_csv(money_csv, index=False)
                 print("[US] Placeholder money_us.csv built from raw series.")
 
@@ -150,7 +150,7 @@ def _ensure_placeholders():
         ydf = _load_raw(yield_id)
         if ydf is not None:
             try:
-                yq = ydf.resample("Q", on="date").mean().reset_index().rename(columns={"value": "spread"})
+                yq = ydf.resample("QE-DEC", on="date").mean().reset_index().rename(columns={"value": "spread"})
                 yq["U"] = yq["spread"] * 12.0
                 yq["Y"] = yq["U"]
                 yq["depth"] = 900
@@ -176,7 +176,7 @@ def _ensure_placeholders():
                 if not reg.empty:
                     reg = (
                         reg.set_index("date")
-                        .resample("Q")
+                        .resample("QE-DEC")
                         .mean()
                         .reset_index()
                     )
@@ -202,6 +202,29 @@ def main() -> None:
     q = _load_csv(os.path.join(DATA_DIR, "allocation_q_us.csv"))
     cred = _load_csv(os.path.join(DATA_DIR, "credit_us.csv"))
     reg = _with_headrooms(_load_csv(os.path.join(DATA_DIR, "reg_pressure_us.csv")))
+
+    # Normalize to quarterly frequency to ensure inner-joins align.
+    def _to_quarterly(df: Optional[pd.DataFrame]) -> Optional[pd.DataFrame]:
+        if df is None or df.empty or "date" not in df.columns:
+            return df
+        dd = df.copy()
+        try:
+            dd["date"] = pd.to_datetime(dd["date"])
+        except Exception:
+            return df
+        num_cols = [c for c in dd.columns if c != "date"]
+        if not num_cols:
+            return dd
+        try:
+            out = dd.set_index("date")[num_cols].resample("QE-DEC").mean().reset_index()
+            return out
+        except Exception:
+            return dd
+
+    money = _to_quarterly(money)
+    q = _to_quarterly(q)
+    cred = _to_quarterly(cred)
+    reg = _to_quarterly(reg)
 
     missing = []
     if money is None:

@@ -32,13 +32,32 @@ env/
 # Project outputs (regenerated locally)
 site/
 data/*.csv
+!data/credit.csv
+!data/credit_eu.csv
+!data/credit_us.csv
+!data/money.csv
+!data/money_eu.csv
+!data/money_us.csv
+!data/reg_pressure.csv
+!data/reg_pressure_eu.csv
+!data/reg_pressure_us.csv
+!data/allocation_q.csv
+!data/allocation_q_eu.csv
+!data/allocation_q_us.csv
 !data/gdp_eu.csv
 !data/gdp_us.csv
+!data/series_selected.json
+!data/series_selected_eu.json
+!data/series_selected_us.json
+!data/sources.json
 data/worldbank_cache_*.json
 !data/worldbank_cache_USA_NY.GDP.MKTP.CN.json
 !data/worldbank_cache_JPN_NY.GDP.MKTP.CN.json
 !data/worldbank_cache_EMU_NY.GDP.MKTP.CN.json
 data/external_coupling_*.csv
+!data/external_coupling_jp.csv
+!data/external_coupling_eu.csv
+!data/external_coupling_us.csv
 data/series_selected_*.json.backup
 
 # Logs and scratch files

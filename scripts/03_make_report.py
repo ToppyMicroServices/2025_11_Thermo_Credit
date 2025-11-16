@@ -786,10 +786,12 @@ def main() -> None:
 
     diag_window = _resolve_diag_window()
 
-    # Prefer deterministic JP path if present, fallback to legacy
+    # Prefer deterministic JP path if present, fallback to legacy dump when empty
     jp_df = _load_csv(os.path.join(SITE_DIR, "indicators_jp.csv"))
-    if jp_df is None:
-        jp_df = _load_csv(os.path.join(SITE_DIR, "indicators.csv"))
+    if jp_df is None or (isinstance(jp_df, pd.DataFrame) and jp_df.empty):
+        legacy_jp = _load_csv(os.path.join(SITE_DIR, "indicators.csv"))
+        if isinstance(legacy_jp, pd.DataFrame) and not legacy_jp.empty:
+            jp_df = legacy_jp
     eu_df = _load_csv(os.path.join(SITE_DIR, "indicators_eu.csv"))
     us_df = _load_csv(os.path.join(SITE_DIR, "indicators_us.csv"))
     if eu_df is None:

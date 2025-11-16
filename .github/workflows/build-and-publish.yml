@@ -60,6 +60,23 @@ jobs:
           # EU/US indicators are required (deterministic via CI prep)
           test -s site/indicators_eu.csv
           test -s site/indicators_us.csv
+      - name: Artifact size thresholds
+        run: |
+          set -e
+          # Minimum sizes to catch truncated/empty artifacts without being brittle
+          min_report=100000   # 100 KB
+          min_jp=500          # 0.5 KB
+          min_eu=5000         # 5 KB
+          min_us=200          # 0.2 KB
+          sz_report=$(wc -c < site/report.html | tr -d ' ')
+          sz_jp=$(wc -c < site/indicators.csv | tr -d ' ')
+          sz_eu=$(wc -c < site/indicators_eu.csv | tr -d ' ')
+          sz_us=$(wc -c < site/indicators_us.csv | tr -d ' ')
+          echo "Sizes: report.html=$sz_report, JP=$sz_jp, EU=$sz_eu, US=$sz_us"
+          if [ "$sz_report" -lt "$min_report" ]; then echo "report.html too small"; exit 1; fi
+          if [ "$sz_jp" -lt "$min_jp" ]; then echo "indicators.csv (JP) too small"; exit 1; fi
+          if [ "$sz_eu" -lt "$min_eu" ]; then echo "indicators_eu.csv too small"; exit 1; fi
+          if [ "$sz_us" -lt "$min_us" ]; then echo "indicators_us.csv too small"; exit 1; fi
       - name: Sanity check archive/feed/sitemap
         run: |
           test -f site/archive.json
