@@ -10,6 +10,14 @@
 				"$python"
 			],
 			"group": "build"
+		},
+		{
+			"label": "install-reqs",
+			"type": "shell",
+			"command": "pip install -r requirements.txt",
+			"args": [],
+			"isBackground": false,
+			"group": "build"
 		}
 	]
 }
