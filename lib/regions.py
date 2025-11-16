@@ -129,7 +129,15 @@ def compute_region(region: str) -> str:
     df = compute_diagnostics(df)
 
     os.makedirs("site", exist_ok=True)
-    out_path = "site/indicators.csv" if region == "jp" else f"site/indicators_{region}.csv"
-    df.to_csv(out_path, index=False)
-    print(f"Wrote {out_path}")
-    return out_path
+    # Deterministic per-region output path. Also keep JP legacy alias.
+    out_path_region = f"site/indicators_{region}.csv"
+    df.to_csv(out_path_region, index=False)
+    print(f"Wrote {out_path_region}")
+    if region == "jp":
+        legacy = "site/indicators.csv"
+        try:
+            df.to_csv(legacy, index=False)
+            print(f"Wrote {legacy}")
+        except Exception:
+            pass
+    return out_path_region

@@ -786,7 +786,10 @@ def main() -> None:
 
     diag_window = _resolve_diag_window()
 
-    jp_df = _load_csv(os.path.join(SITE_DIR, "indicators.csv"))
+    # Prefer deterministic JP path if present, fallback to legacy
+    jp_df = _load_csv(os.path.join(SITE_DIR, "indicators_jp.csv"))
+    if jp_df is None:
+        jp_df = _load_csv(os.path.join(SITE_DIR, "indicators.csv"))
     eu_df = _load_csv(os.path.join(SITE_DIR, "indicators_eu.csv"))
     us_df = _load_csv(os.path.join(SITE_DIR, "indicators_us.csv"))
     if eu_df is None:

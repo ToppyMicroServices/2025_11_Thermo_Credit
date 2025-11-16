@@ -9,10 +9,15 @@ when the expected input files are missing:
   - data/credit.csv (JP) with enrichment-required columns
   - data/credit_us.csv (US) with enrichment-required columns
   - data/credit_eu.csv (EU) with enrichment-required columns
-  - data/allocation_q.csv (if missing) with MECE categories used by config.yml
+    - data/allocation_q.csv (if missing) with MECE categories used by config.yml
+    - EU/US equivalents for CI-only minimal runs:
+            * data/money_eu.csv, data/reg_pressure_eu.csv, data/allocation_q_eu.csv, data/credit_eu.csv
+            * data/money_us.csv, data/reg_pressure_us.csv, data/allocation_q_us.csv, data/credit_us.csv
 
 After seeding inputs, it invokes scripts/02_compute_indicators.py to produce
-site/indicators.csv required by entropy and enrichment tests.
+site/indicators.csv required by entropy and enrichment tests, and also ensures
+site/indicators_eu.csv and site/indicators_us.csv are produced so workflows can
+rely on them without network access.
 """
 from __future__ import annotations
 
@@ -112,6 +117,61 @@ def ensure_credit_generic(path: str):
     write_csv(path, header, rows)
 
 
+def ensure_money_region(region: str):
+    suffix = region.lower()
+    assert suffix in ("eu", "us")
+    path = os.path.join(DATA, f"money_{suffix}.csv")
+    if os.path.exists(path):
+        return
+    # Simple quarterly series matching JP placeholder shape
+    rows = [
+        ["2023-01-01", 200.0, 160.0],
+        ["2023-04-01", 210.0, 162.0],
+        ["2023-07-01", 220.0, 164.0],
+        ["2023-10-01", 230.0, 166.0],
+        ["2024-01-01", 240.0, 168.0],
+    ]
+    write_csv(path, ["date", "M_in", "M_out"], rows)
+
+
+def ensure_reg_pressure_region(region: str):
+    suffix = region.lower()
+    assert suffix in ("eu", "us")
+    path = os.path.join(DATA, f"reg_pressure_{suffix}.csv")
+    if os.path.exists(path):
+        return
+    # Mirror JP logic with region-specific filename
+    base_rows = [
+        ["2023-01-01", 0.5, 160.0],
+        ["2023-04-01", 0.6, 162.0],
+        ["2023-07-01", 0.55, 164.0],
+        ["2023-10-01", 0.65, 166.0],
+        ["2024-01-01", 0.7, 168.0],
+    ]
+    enriched = []
+    for date, p_r, v_r in base_rows:
+        cap = v_r * (1 - 0.04 * p_r)
+        lcr = v_r * (1 - 0.05 * p_r)
+        nsfr = v_r * (1 - 0.06 * p_r)
+        enriched.append([date, p_r, v_r, cap, lcr, nsfr])
+    write_csv(path, ["date", "p_R", "V_R", "capital_headroom", "lcr_headroom", "nsfr_headroom"], enriched)
+
+
+def ensure_allocation_q_region(region: str):
+    suffix = region.lower()
+    assert suffix in ("eu", "us")
+    path = os.path.join(DATA, f"allocation_q_{suffix}.csv")
+    if os.path.exists(path):
+        return
+    # Keep it minimal with the four core q_* columns expected by regional scripts
+    rows = [
+        ["2023-01-01", 0.25, 0.25, 0.25, 0.25],
+        ["2023-04-01", 0.25, 0.25, 0.25, 0.25],
+    ]
+    header = ["date", "q_pay", "q_firm", "q_asset", "q_reserve"]
+    write_csv(path, header, rows)
+
+
 def ensure_allocation_q():
     path = os.path.join(DATA, "allocation_q.csv")
     if os.path.exists(path):
@@ -146,6 +206,14 @@ def main():
     ensure_credit_generic(os.path.join(DATA, "credit_eu.csv"))
     ensure_allocation_q()
 
+    # EU/US minimal inputs for their regional indicator scripts
+    ensure_money_region("eu")
+    ensure_money_region("us")
+    ensure_reg_pressure_region("eu")
+    ensure_reg_pressure_region("us")
+    ensure_allocation_q_region("eu")
+    ensure_allocation_q_region("us")
+
     # Build indicators (JP default) so that site/indicators.csv exists
     import importlib.util
     ind_path = os.path.join(SITE, "indicators.csv")
@@ -161,6 +229,32 @@ def main():
             compute_region("jp")
         else:
             raise RuntimeError("compute_region function not found in 02_compute_indicators.py")
+
+    # Build EU/US indicators so that site/indicators_{eu,us}.csv exist in CI
+    def _run_indicator_script(script_name: str):
+        sp = importlib.util.spec_from_file_location(
+            script_name.replace(".py", ""), os.path.join(ROOT, "scripts", script_name)
+        )
+        mod2 = importlib.util.module_from_spec(sp)
+        assert sp and sp.loader is not None
+        sp.loader.exec_module(mod2)  # type: ignore[attr-defined]
+        main_fn = getattr(mod2, "main", None)
+        if callable(main_fn):
+            main_fn()
+
+    eu_out = os.path.join(SITE, "indicators_eu.csv")
+    if not os.path.exists(eu_out):
+        try:
+            _run_indicator_script("02_compute_indicators_eu.py")
+        except Exception as e:
+            print(f"[ci-prepare] EU indicators build failed: {e}")
+
+    us_out = os.path.join(SITE, "indicators_us.csv")
+    if not os.path.exists(us_out):
+        try:
+            _run_indicator_script("02_compute_indicators_us.py")
+        except Exception as e:
+            print(f"[ci-prepare] US indicators build failed: {e}")
 
     print("[ci-prepare] Minimal data prepared for tests.")
 
