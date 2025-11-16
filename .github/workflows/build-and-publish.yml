@@ -57,17 +57,9 @@ jobs:
           set -e
           test -f site/report.html
           test -s site/indicators.csv
-          # EU/US indicators may not be built if external data unavailable; allow skip.
-          if [ -f site/indicators_eu.csv ]; then
-            test -s site/indicators_eu.csv
-          else
-            echo "[info] EU indicators not built; skipping check"
-          fi
-          if [ -f site/indicators_us.csv ]; then
-            test -s site/indicators_us.csv
-          else
-            echo "[info] US indicators not built; skipping check"
-          fi
+          # EU/US indicators are required (deterministic via CI prep)
+          test -s site/indicators_eu.csv
+          test -s site/indicators_us.csv
       - name: Sanity check archive/feed/sitemap
         run: |
           test -f site/archive.json

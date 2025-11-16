@@ -57,17 +57,9 @@ jobs:
           set -e
           test -f site/report.html
           test -s site/indicators.csv
-          # EU/US indicators are optional in JP-focused builds; skip if not produced.
-          if [ -f site/indicators_eu.csv ]; then
-            test -s site/indicators_eu.csv
-          else
-            echo "[info] EU indicators not built; skipping check"
-          fi
-          if [ -f site/indicators_us.csv ]; then
-            test -s site/indicators_us.csv
-          else
-            echo "[info] US indicators not built; skipping check"
-          fi
+          # EU/US indicators are now required (deterministic via CI prep)
+          test -s site/indicators_eu.csv
+          test -s site/indicators_us.csv
 
       - name: Upload site artifact
         uses: actions/upload-artifact@v4
