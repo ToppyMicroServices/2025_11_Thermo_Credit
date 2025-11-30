@@ -11,3 +11,12 @@ S0: 5.0e5      # Baseline entropy of allocations in JP (model scale).
 external_coupling:
   alpha: 0.2   # Strength of external pressure coupling into JP indicators (E_p).
   delta: 0.0   # Strength of external temperature coupling (E_T); 0.0 = disabled.
+
+# Internal energy detrending (U -> U_star). No-lookahead rolling mean by default.
+U_detrend:
+  enabled: true
+  method: rolling   # or "ema"
+  window: 12
+  min_periods: 6
+
+U_energy_mode: detrended

@@ -177,7 +177,31 @@ def build_features(series_prefs: dict, project_config: dict) -> None:
 
     leverage_ratio = leverage_share(project_config, "jp", 0.4)
     credit_q["L_asset"] = credit_q["L_asset_real"].fillna(credit_q["L_real"] * leverage_ratio)
-    credit_q["U"] = credit_q["U_energy"].fillna(credit_q["Y"])
+
+    # Construct an internal-energy proxy U as a mix of (i) energy-like series,
+    # (ii) credit volume (assets), and (iii) GDP. Each component is normalized
+    # so that no single series dominates purely by scale.
+    def _norm_series(s: pd.Series) -> pd.Series:
+        s = s.astype(float)
+        m = s.mean()
+        if not np.isfinite(m) or m == 0.0:
+            return s * 0.0
+        return s / m
+
+    energy_component = _norm_series(credit_q["U_energy"].fillna(credit_q["Y"]))
+    credit_component = _norm_series(credit_q["L_asset"].fillna(credit_q["L_real"]))
+    gdp_component = _norm_series(credit_q["Y"])
+
+    w_energy = 0.5
+    w_credit = 0.3
+    w_gdp = 0.2
+
+    # Scale back to a GDP-like magnitude so U stays in a familiar range.
+    U_scale = credit_q["Y"].mean()
+    credit_q["U"] = (w_energy * energy_component +
+                     w_credit * credit_component +
+                     w_gdp * gdp_component) * U_scale
+
     # Shared enrichment (merge real depth/turnover if present; else heuristic)
     warnings: list[str] = []
     # Provide depth/turnover sources if present as Series aligned by date

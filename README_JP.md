@@ -64,6 +64,7 @@ open [report.html](http://_vscodecontentref_/4)  #
   - `enabled` / `alpha` / `delta`
   - `pressure_components` / `temperature_components`（FRED の series_id や transform など）
 - `enrichment` : depth / turnover などの拡張指標の係数・フォールバック値
+- `F_C_baseline_*` : F_C / X_C を系列の最小値や分位点でシフトして常に正に保つための基準（`mode` は `min` / `quantile` / `value` / `first`、`eps` でゼロよりわずかに持ち上げ）
 - `exergy_floor_zero` / `exergy_floor_mode` : X_C の負値をどう扱うか（0 クリップかシフトか）
 
 運用的には:
@@ -154,4 +155,3 @@ pytest -q
 研究やレポートなどで本リポジトリを利用する場合は、次の DOI を引用してください:
 
 - DOI: https://doi.org/10.5281/zenodo.17563221
-

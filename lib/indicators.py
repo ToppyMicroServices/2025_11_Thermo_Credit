@@ -143,6 +143,58 @@ def _apply_vc_formula(df: pd.DataFrame, cfg: Dict[str, Any]) -> pd.DataFrame:
     return df
 
 
+def _apply_free_energy_baseline(df: pd.DataFrame, cfg: Dict[str, Any]) -> pd.DataFrame:
+    if "F_C" not in df.columns or not isinstance(cfg, dict):
+        return df
+    mode = str(cfg.get("F_C_baseline_mode", "none") or "").strip().lower()
+    if mode in ("", "none", "raw"):
+        return df
+    fnum = pd.to_numeric(df["F_C"], errors="coerce")
+    if fnum.dropna().empty:
+        return df
+
+    ref = None
+    if mode == "min":
+        ref = fnum.min()
+    elif mode == "quantile":
+        try:
+            q = float(cfg.get("F_C_baseline_quantile", 0.05))
+        except Exception:
+            q = 0.05
+        q = min(max(q, 0.0), 1.0)
+        ref = fnum.quantile(q)
+    elif mode == "first":
+        idx = fnum.first_valid_index()
+        ref = fnum.loc[idx] if idx is not None else np.nan
+    elif mode == "value":
+        ref = cfg.get("F_C_baseline_value")
+    else:
+        return df
+    try:
+        ref_val = float(ref)
+    except Exception:
+        return df
+    if not np.isfinite(ref_val):
+        return df
+    try:
+        eps = float(cfg.get("F_C_baseline_eps", 0.0) or 0.0)
+    except Exception:
+        eps = 0.0
+
+    offset = max(0.0, -ref_val + eps)
+    df["F_C_baseline"] = ref_val
+    df["F_C_baseline_mode"] = mode
+    df["F_C_baseline_offset"] = offset
+    if offset:
+        df["F_C"] = fnum + offset
+        if "X_C" in df.columns:
+            try:
+                df["X_C"] = pd.to_numeric(df["X_C"], errors="coerce") + offset
+            except Exception:
+                pass
+    return df
+
+
 def _apply_external_coupling(df: pd.DataFrame, cfg: Dict[str, Any]) -> pd.DataFrame:
     ext_cfg = cfg.get("external_coupling") if isinstance(cfg, dict) else None
     if not isinstance(ext_cfg, dict) or not ext_cfg.get("enabled"):
@@ -270,20 +322,47 @@ def build_indicators_core(money: pd.DataFrame,
     df = _apply_vc_formula(df, cfg)
     df = _apply_u_detrend(df, cfg)
 
-    if all(c in df.columns for c in ["U", "S_M"]):
-        df["F_C"] = df["U"].astype(float) - T0 * df["S_M"].astype(float)
+    # Choose which U-series to use for free energy / exergy.
+    # Default: raw U. If cfg["U_energy_mode"] asks for a detrended series and
+    # U_star (cycle) or U_trend exist, use those instead.
+    u_eff_col = "U"
+    if "U" not in df.columns:
+        # If U is missing but detrended variants exist, fall back to U_star.
+        if "U_star" in df.columns:
+            u_eff_col = "U_star"
+        elif "U_trend" in df.columns:
+            u_eff_col = "U_trend"
+    else:
+        mode_u = str(cfg.get("U_energy_mode", "") or "").strip().lower()
+        if mode_u in ("detrended", "cycle", "star") and "U_star" in df.columns:
+            u_eff_col = "U_star"
+        elif mode_u in ("trend", "baseline") and "U_trend" in df.columns:
+            u_eff_col = "U_trend"
+
+    df["U_used_for_energy"] = u_eff_col
+
+    if all(c in df.columns for c in [u_eff_col, "S_M"]):
+        u_series = pd.to_numeric(df[u_eff_col], errors="coerce")
+        s_series = pd.to_numeric(df["S_M"], errors="coerce")
+        df["F_C"] = u_series - T0 * s_series
     else:
         df["F_C"] = np.nan
 
     p0 = cfg.get("p0"); V0 = cfg.get("V0"); U0 = cfg.get("U0"); S0 = cfg.get("S0")
-    if all(v is not None for v in (p0, V0, U0, S0)) and "V_C" in df.columns and "S_M" in df.columns and "U" in df.columns:
+    if all(v is not None for v in (p0, V0, U0, S0)) and "V_C" in df.columns and "S_M" in df.columns and u_eff_col in df.columns:
         try:
             p0f, V0f, U0f, S0f = float(p0), float(V0), float(U0), float(S0)
-            df["X_C"] = (df["U"].astype(float) - U0f) + p0f * (df["V_C"].astype(float) - V0f) - T0 * (df["S_M"].astype(float) - S0f)
+            u_series = pd.to_numeric(df[u_eff_col], errors="coerce")
+            v_series = pd.to_numeric(df["V_C"], errors="coerce")
+            s_series = pd.to_numeric(df["S_M"], errors="coerce")
+            df["X_C"] = (u_series - U0f) + p0f * (v_series - V0f) - T0 * (s_series - S0f)
         except Exception:
             df["X_C"] = df["F_C"]
     else:
         df["X_C"] = df["F_C"]
+
+    # Shift F_C/X_C upward using a configurable baseline (e.g., min or quantile)
+    df = _apply_free_energy_baseline(df, cfg)
 
     # Enforce non-negative exergy by baseline adjustment or clipping.
     # Default behavior: clip negatives at 0 (shift, if used, is for visualization only).

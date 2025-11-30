@@ -73,3 +73,36 @@ def test_exergy_floor_can_be_disabled():
     xc = pd.to_numeric(df["X_C"], errors="coerce")
     assert np.allclose(xc.values, fc.values, equal_nan=True)
     assert (xc < 0).any(), "Expect at least one negative exergy when floor disabled"
+
+
+def test_free_energy_baseline_min_shifts_upward():
+    money, q, cred, reg = _inputs()
+    raw_df = build_indicators_core(
+        money,
+        q,
+        cred,
+        reg,
+        _base_cfg({
+            "exergy_floor_zero": False,
+            "F_C_baseline_mode": "none",
+        }),
+    )
+    raw_fc = pd.to_numeric(raw_df["F_C"], errors="coerce")
+    raw_xc = pd.to_numeric(raw_df["X_C"], errors="coerce")
+
+    shifted_cfg = _base_cfg({
+        "exergy_floor_zero": False,  # isolate the baseline shift from clipping
+        "F_C_baseline_mode": "min",
+        "F_C_baseline_eps": 0.1,
+    })
+    shifted_df = build_indicators_core(money, q, cred, reg, shifted_cfg)
+    fc_shift = pd.to_numeric(shifted_df["F_C"], errors="coerce")
+    xc_shift = pd.to_numeric(shifted_df["X_C"], errors="coerce")
+
+    offset = max(0.0, -float(raw_fc.min()) + 0.1)
+    np.testing.assert_allclose(fc_shift.values, raw_fc.values + offset)
+    np.testing.assert_allclose(xc_shift.values, raw_xc.values + offset)
+    assert (fc_shift > 0).all()
+    assert (xc_shift > 0).all()
+    assert shifted_df["F_C_baseline_mode"].iloc[0] == "min"
+    assert np.isclose(float(shifted_df["F_C_baseline_offset"].iloc[0]), offset)

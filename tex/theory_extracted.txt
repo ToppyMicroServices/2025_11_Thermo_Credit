@@ -1,0 +1,387 @@
+Thermo-Credit Theory: A Credit-First Thermodynamic Mapping
+
+
+
+
+                                      1
+                                        ToppyMicroServices OÜ
+
+                                   Version 1.0 – November 6, 2025
+
+
+                                                  Abstract
+          We recast the Quantity Theory of Credit (QTC) in a thermodynamic-style state space to
+      separate scale, dispersion, and capacity in modern credit systems. The key step is an entropy-
+      like dispersion index that factors money-in-circulation and its allocation, combined with an
+      explicit capacity variable for bank balance sheets. This mapping is an analytic isomorphism,
+      not a physical identity: it is designed for structured bookkeeping, stress diagnostics, and early-
+      warning indicators, not for importing physical laws into economics. Withn this framework
+      we define an internal potential U (SM , VC , . . . ), derive a first-law-like decomposition of credit
+      creation, introduce a Helmholtz-style free energy FC and an exergy-like measure XC , and
+      obtain a Maxwell-like integrability condition that makes the mapping empirically falsifiable.
+      The construction is deliberately practice-first: all quantities are intended to be computable
+      from public data and to support decision-useful monitoring for investors, risk managers, and
+      policymakers.
+
+
+1     Introduction
+Classical money-first views such as the Quantity Theory of Money (QTM) explain nominal
+dynamics in terms of a money stock, its velocity, and shocks or policy actions [1, 2, 3]. More
+recent credit-first views, notably the Quantity Theory of Credit (QTC), emphasize that banks
+create deposits when they lend and that the use of credit (real vs. financial, productive vs.
+speculative) matters for macro-financial outcomes [4, 5]. In parallel, both information theory and
+statistical mechanics have inspired analogies for income and wealth distributions [6, 7, 8, 9, 10].
+    This note takes a minimal and operational step: we build a thermodynamic-style state
+description that (i) separates scale and dispersion of monetary/credit uses, (ii) introduces an
+explicit capacity variable for bank balance sheets, and (iii) yields testable constraints and early-
+warning gauges. The aim is not to claim that macro data obey physical laws, but to provide
+a disciplined bookkeeping analogy useful for supervision, stress testing K18 , and systematic
+monitoring.
+
+
+2     Setup and Definitions
+We work over a chosen system (jurisdiction, sector set) and time aggregation (e.g. monthly).
+Let Min denote money-in-circulation K10 over this domain, and let {qi } be a stable, MECE
+(Mutually Exclusive, Collectively Exhaustive)    K15 partition of its uses (real activity, housing
+                                      P
+credit, securities margin, etc.), with i qi = 1.
+
+2.1   Monetary dispersion entropy
+We define an entropy-like extensive index
+                                                                      X
+                            SM = k Min H(q),               H(q) ≡ −        qi log qi ,                        (1)
+                                                                       i
+
+where k > 0 is a conventional scaling constant. This mirrors ideal mixing entropy ∆Smix ∝ N H(x)
+and follows the information-theoretic form of Shannon [9]. SM grows with both scale and
+
+                                                       2
+ Variable                Thermodynamics         QTM (money-first)                QTC (credit-first)
+ Mixing entropy          ∆Smix                  SM = kMin H(q)                   SM = kMin H(q)
+ Temperature             T                      TL (liquidity proxy)             TL (liquidity proxy)
+ Internal energy         U                      UM (SM ) (auxiliary)             U (SM , VC , . . . )
+ Volume                  V                      –                                VC (capacity/headroom)
+ Pressure                p                      –                                pC = −(∂U/∂VC )SM
+ Heat-like term          δQrev = T dS           QM ∼ T0 ∆SM                      QC ∼ T̄L ∆SM
+ Work-like term          δW = p dV              WM ≡ Wpolicy                     WC ≡ −p̄C ∆VC + Wpolicy
+ First law               ∆U = T ∆S + W          ∆UM = T0 ∆SM + W + ε             ∆U = T̄L ∆SM + W + ε
+ Second-law tendency     ∆S ≥ 0                 ∆SM ≥ 0 (mixing)                 ∆SM ≥ 0 (mixing)
+ Helmholtz free energy   F = U − TS             FM ≡ UM − T0 SM                  FC ≡ U − T0 SM
+ Exergy/availability     X                      ≈ UM − T0 SM                     XC = ∆U + p0 ∆VC − T0 ∆SM
+
+            Table 1: Thermodynamic–QTM–QTC correspondence (analogy-level).
+
+
+dispersion; concentration (reallocation into fewer uses) reduces H(q) and can reduce SM even at
+fixed Min .
+
+2.2   Capacity and conjugate variables
+We introduce:
+
+ • VC : an effective credit capacity or headroom K4 (e.g. CET1/RWA K3 slack, HQLA (High
+   Quality Liquid Assets) K6 -based lending space, liquidity buffers K7 ).
+
+ • TL : a liquidity-intensity index (a “temperature-like” proxy from spreads, turnover, depth).
+
+ • pC : a “credit pressure K5 ” (shadow price of capacity).
+
+    We postulate an analytic potential
+
+                                        U = U (SM , VC , . . .),                                       (2)
+
+and define conjugate quantities
+                                                                          
+                                       ∂U                              ∂U
+                          TL ≡                   ,       pC ≡ −                   .                    (3)
+                                      ∂SM   VC                         ∂VC   SM
+
+Here U is not a physical internal energy; it is a bookkeeping potential chosen so that a first-law-
+like decomposition holds. Classical QTM/QTC do not name U ; we introduce it as an analytic
+device.
+
+
+3     Thermodynamic Correspondence (QTM vs. QTC)
+Table 1 summarizes the analogy. Thermodynamic quantities are literal on the left column;
+QTM/QTC entries are analogy-level constructs. Heat- and work-like pieces are defined for
+bookkeeping only.
+   The construction is chosen so that: (i) SM is extensive and sensitive to dispersion; (ii)
+VC carries explicit capacity/headroom information; (iii) QTC—unlike classic QTM—naturally
+admits a pressure-like channel pC .
+
+
+
+
+                                                     3
+4    Bank Credit Creation and the Energy-Like Balance
+When a bank grants a new loan, it simultaneously creates a matching deposit. On the joint
+bank–customer system, this is a pure accounting operation (loans create deposits). Within our
+mapping, the associated change in the potential U is decomposed as
+
+                         ∆U ≈ T̄L ∆SM − p̄C ∆VC + Wpolicy + ε,                                 (4)
+
+where:
+
+ • ∆SM : change in dispersion entropy from scale and allocation shifts (typically ∆SM > 0 in
+   net expansion);
+
+ • ∆VC : change in effective capacity (∆VC < 0 when headroom is used up; then −p̄C ∆VC > 0);
+
+ • Wpolicy : structured policy work K14 from regulation, guarantees, central bank operations, and
+   other deliberate interventions;
+
+ • ε: residual term capturing model error and omitted channels.
+
+   Credit creation phases (new lending > repayments) and contraction phases (repayments >
+new lending) then exhibit characteristic sign patterns for (∆Min , ∆SM , ∆VC , −p̄C ∆VC ), which
+can be tabulated and compared with data. The value of (4) is diagnostic: it forces us to attribute
+changes either to dispersion, capacity use, or policy work K14 , rather than conflating them.
+
+
+5    Free Energy, Exergy, and Early-Warning Gauges
+We seek a scalar gauge that (i) decreases as dispersion rises under a fixed environment, and (ii)
+upper-bounds structured work extractable over a cycle. A Helmholtz-style free energy provides
+this.
+    For a fixed reference environment (T0 ), define
+
+                                        FC ≡ U − T0 SM .                                       (5)
+
+Then, under suitable regularity conditions,
+
+                                  dFC = − pC dVC + δWother ,                                   (6)
+
+so that FC plays the role of an available-potential measure. As ∆FC → 0 under chosen boundaries,
+policy headroom for structured adjustments is effectively exhausted.
+    When an ambient pressure-like parameter p0 is also relevant, an exergy-like functional is
+
+                       XC = (U − U0 ) + p0 (VC − VC0 ) − T0 (SM − SM 0 ),                      (7)
+
+which reduces to −∆FC if VC is fixed and p0 effects are negligible. Because XC depends on
+boundary choices (T0 , p0 ), we treat it as an optional, environment-dependent gauge.
+   A Gibbs-style free energy
+                                      GC ≡ U + p0 VC − T0 SM                           (8)
+can be used when (T0 , p0 ) are the natural controls. In applications, we typically monitor FC
+(fixed environment) and compare with XC or GC when capacity constraints are explicit (cf.
+exergy notions in [11]).
+
+
+
+
+                                                4
+ 6    Maxwell-Like Relation and Falsifiability
+ Since U is assumed to be a bona fide state potential, mixed partial derivatives commute. Using
+ the definitions of TL and pC , we obtain a Maxwell-like condition:
+                                                       
+                                      ∂TL            ∂pC
+                                              =−               .                             (9)
+                                      ∂VC SM         ∂SM VC
+
+ Empirically, one can estimate TL (SM , VC ) and pC (SM , VC ) from proxies and test whether (9)
+ approximately holds. Systematic violations indicate that the chosen variables are not state-like
+ or that proxies and specifications are inadequate. In this sense, the analogy is falsifiable: it is
+ not mere rhetoric.
+
+
+ 7    Insights and Practical Tests
+ The mapping yields several operational diagnostics:
+
+ (i) Integrability test. Estimate TL and pC as functions of (SM , VC ) and test (9). Failure
+     suggests mis-specification of capacity or dispersion metrics.
+
+(ii) Work vs. dispersion decomposition. Use (4) to decompose changes in U into heat-like
+     dispersion (T̄L ∆SM ), capacity use (−p̄C ∆VC ), and policy work (Wpolicy ).
+
+(iii) Free-energy and exergy ceilings. Monitor FC or XC as early-warning gauges: sustained
+      proximity to zero under stress scenarios flags limited room for non-disruptive adjustment.
+
+(iv) Loop area and hysteresis K17 . Compute loop areas in (SM , VC ) over policy cycles. Non-
+     zero areas capture dissipative stress and irreversibility in credit allocation dynamics.
+
+    All of these rely on observable or reconstructible quantities from public balance-sheet and
+ market data. Implementation details (exact proxy choices, normalization, robustness checks) are
+ part of ongoing empirical work and should be reported alongside results.
+
+
+ 8    Limitations and Scope
+ This construction is intentionally modest. Key limitations include:
+
+  • Category dependence. SM depends on the chosen partition of uses. Robustness across
+    reasonable partitions must be checked.
+
+  • Proxy noise. TL , VC , pC are built from noisy proxies. Measurement error can break (9) and
+    distort the decomposition (4).
+
+  • Quasi-static approximation. Fast crises and regime shifts violate smooth state-variable
+    assumptions; the mapping is best seen as quasi-static or coarse-grained.
+
+  • Non-physical. We do not assume microscopic “money particles” or claim that macro-
+    financial data obey physical first/second laws. The mapping is analogy-level and judged only
+    by empirical usefulness.
+
+  • Identification challenges. Policy, expectations, and shocks act jointly. Causal claims
+    require careful research design beyond the bookkeeping framework presented here.
+
+  • Scaling conventions. Constants such as k are conventional. Report normalized metrics
+    and sensitivity checks.
+
+
+                                                 5
+9     Notes on Reproducibility and AI Assistance
+This note is designed to accompany code and data (e.g. monthly reports computed from public
+sources). A typical implementation:
+ • computes SM from Min and a stable MECE (Mutually Exclusive, Collectively Exhaustive) K15
+   partition of flows;
+ • constructs VC from capital ratios, liquidity metrics, and headroom;
+ • builds TL from market microstructure indicators;
+ • estimates pC via regressions or event-study style differentials;
+ • evaluates the decompositions and tests described above.
+    Drafting and editing of the present text used a GPT-based large language model as a tool at
+low randomness. All equations, definitions, and claims are curated and are the responsibility of
+the authors. Readers should rely on the archived PDF and associated repository for the citable
+version and reproducible code.
+
+
+Disclaimer
+This material is part of an ongoing research program. It is provided “as is” without any warranty
+of accuracy, completeness, or fitness for a particular purpose. It does not constitute investment,
+legal, tax, or policy advice, and does not create a client relationship or any regulated financial
+service. Users are responsible for compliance with applicable laws in their jurisdiction.
+
+
+Appendix: Glossary (For Physicists New to Finance)
+extitNumbering: Each term is assigned a unique K-number (K1, K2, . . . ) in the order it is first
+referenced in the main text. Use the superscript K# markers to jump back here; headings show
+the same inline K#.
+    This glossary explains the main banking, credit, and regulatory terms used in this note for
+readers with a physics background. Definitions are informal and intuition-friendly. When helpful,
+we include analogies to thermodynamics or dynamical systems. These are aids to intuition, not
+strict identities.
+
+1. Regulation and Bank Balance Sheets
+ K1 CET1 (Common Equity Tier 1) 1 Core equity capital of a bank (common shares,
+ retained earnings). It absorbs losses and underpins solvency. Analogy: the bank’s fundamental
+“energy reserve”.
+
+K2 RWA (Risk-Weighted Assets) Total assets weighted by regulatory risk factors. Riskier
+exposures receive higher weights. The ratio CET1/RWA is a key prudential metric. Analogy: an
+effective load or mass adjusted for fragility.
+
+K3 CET1/RWA ratio and slack CET1/RWA indicates how much high-quality capital
+backs risk-weighted assets. Regulation sets a minimum. The slack is the excess above this
+minimum and represents capacity to expand or absorb shocks. Analogy: safety margin or unused
+headroom in a constrained system.
+    1
+      Glossary terms carry a superscript K-number (K1, K2, . . . ) at their first appearance. K# indexes the ordered
+list in the Appendix Glossary for fast lookup.
+
+
+                                                         6
+K4 Credit capacity / Headroom (VC ) Effective room for additional lending, given capital,
+liquidity, and internal limits. In this note VC is the state-like variable capturing this remaining
+capacity. Analogy: effective volume available before hitting hard walls.
+
+K5 Credit pressure (pC ) Shadow price of capacity: the marginal cost or value of relaxing or
+tightening VC . Defined in analogy to pC = −(∂U/∂VC )SM or −∂F/∂VC . Analogy: thermodynamic
+pressure; tighter constraints ⇒ higher pC .
+
+K6 HQLA (High Quality Liquid Assets) Very liquid, low-risk assets (e.g. government
+bonds) that can be sold quickly in stress. They support liquidity ratios and crisis resilience.
+Analogy: high-grade stored energy that can be tapped on demand.
+
+K7 Liquidity buffer Cash plus HQLA held as an emergency reserve to withstand sudden
+outflows or market stress. Analogy: a backup battery or safety reservoir.
+
+K8 LCR (Liquidity Coverage Ratio) Regulatory ratio: HQLA divided by projected net
+cash outflows over a 30-day stress scenario. It tests short-term liquidity robustness. Analogy:
+can the system run for 30 days under worst-case load?
+
+K9 NSFR (Net Stable Funding Ratio) Regulatory ratio over a one-year horizon: stable
+funding relative to required stable funding. It limits excessive maturity mismatch. Analogy:
+ensuring long-lived assets are backed by sufficiently slow-decaying sources.
+
+2. Money, Credit, and Flow Concepts
+K10 Money-in-circulation An operational measure of money that is actually circulating in
+the selected system and horizon (e.g. deposits used in payments), not merely base money on the
+central bank balance sheet. Analogy: active particles taking part in interactions.
+
+K11 Credit stocks and flows Stocks: outstanding amounts of loans or credit at a given
+time. Flows: changes per period (new lending, repayments, net issuance). Analogy: internal
+energy vs. power / energy flux.
+
+K12 Margin credit / Securities financing Credit used to finance positions in securities
+(e.g. margin loans, certain repos). It amplifies leverage in financial markets and is often separated
+from credit to the real economy.
+
+K13 Commercial Paper (CP) Short-term unsecured debt issued by firms. Provides funding
+outside traditional bank loans. Analogy: an alternative branch in the credit circuit.
+
+K14 Policy work (Wpolicy ) Deliberate interventions by central banks, regulators, or gov-
+ernments: interest rate changes, asset purchases, guarantees, capital rule adjustments, and
+similar actions. In our decomposition this is the structured, intentional part of “work”. Analogy:
+externally applied work on the system.
+
+3. Structural and Analytical Concepts
+K15 MECE (Mutually Exclusive, Collectively Exhaustive) A rule for defining
+categories: (i) no overlaps between categories, (ii) no gaps in coverage. For the entropy
+SM = kMin H(q), the allocation shares qi should be MECE, otherwise SM is distorted by
+double counting or omissions.
+
+
+                                                  7
+K16 State variable and proxy A state variable is determined by the current state, not by
+the detailed path. In practice, finance uses observable proxies (e.g. ratios, indices) to approximate
+such variables. Our Maxwell-like relation tests whether chosen proxies behave as if they came
+from a consistent potential U (SM , VC , . . . ).
+
+K17 Hysteresis and loop area If trajectories in the (SM , VC ) plane form loops with non-zero
+area over policy or credit cycles, this indicates irreversibility or dissipation-like effects (e.g. stress,
+misallocation, or path dependence). Analogy: magnetic hysteresis, frictional cycles, or inelastic
+processes.
+
+K18 Stress testing and early-warning indicators Stress tests simulate severe but plausible
+scenarios to see whether banks or systems survive. Early-warning indicators attempt to flag
+fragility in advance. Within this framework, quantities like FC , XC , and loop areas are intended
+as structured candidates to complement such tools.
+
+K19 Money vs. credit (QTM vs. QTC perspective) In traditional Quantity Theory of
+Money (QTM), money is primary and credit is often treated as derived. In the Quantity Theory
+of Credit (QTC) and in this note, credit creation is primary: bank lending creates deposits, and
+money is an accounting outcome of credit decisions. This shift motivates tracking credit capacity
+and dispersion as state-like objects.
+
+
+
+
+ [1] Irving Fisher. The Purchasing Power of Money. Macmillan, 1911.
+
+ [2] Milton Friedman. The quantity theory of money – a restatement. In Milton Friedman,
+     editor, Studies in the Quantity Theory of Money. University of Chicago Press, 1956.
+
+ [3] David Laidler. The Demand for Money: Theories, Evidence, and Problems. Harper & Row,
+     3 edition, 1985.
+
+ [4] Richard A. Werner. Quantity theory of credit and empirical evidence on bank money
+     creation. International Review of Financial Analysis, 2012.
+
+ [5] Michael McLeay, Amar Radia, and Ryland Thomas. Money creation in the modern economy.
+     Bank of England Quarterly Bulletin, 2014.
+
+ [6] Henri Theil. Economics and Information Theory. North-Holland, 1967.
+
+ [7] Duncan K. Foley. A statistical equilibrium theory of markets. Journal of Economic Theory,
+     1994.
+
+ [8] Adrian Drăgulescu and Victor M. Yakovenko. Statistical mechanics of money. European
+     Physical Journal B, 2000.
+
+ [9] Claude E. Shannon. A mathematical theory of communication. Bell System Technical
+     Journal, 1948.
+
+[10] Edwin T. Jaynes. Information theory and statistical mechanics. Physical Review, 1957.
+
+[11] Goran Wall. Exergy – a useful concept. Technical report, Chalmers University, 1977.
+
+
+
+
+                                                    8
+

@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Thermo-Credit theory — entropy, CET1 slack, and AI reliability</title>
+  <meta name="description" content="Thermo-Credit (QTC) notebook linking CET1 slack, credit allocation entropy, Maxwell-style relations, and AI reliability controls with derivations, glossary, and data notes.">
+  <link rel="canonical" href="https://toppymicros.com/theory.html">
+
+  <!-- Performance: speed up MathJax fetch -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preload" as="script" href="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" crossorigin>
+
+  <!-- Open Graph / Twitter -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="ToppyMicroServices">
+  <meta property="og:title" content="ToppyMicroServices — Thermo-Credit & AI Reliability">
+  <meta property="og:description" content="Open math + dashboards for credit allocation (Thermo-Credit) and AI reliability.">
+  <meta property="og:url" content="https://toppymicros.com/theory.html">
+  <meta property="og:image" content="https://toppymicros.com/og-brand-clean.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="ToppyMicroServices — Thermo-Credit & AI Reliability">
+  <meta name="twitter:description" content="Open math + dashboards for credit allocation (Thermo-Credit) and AI reliability.">
+  <meta name="twitter:image" content="https://toppymicros.com/og-brand-clean.png">
+
+  <!-- Typography -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=STIX+Two+Text:wght@400;500;600;700&display=swap">
+
+  <!-- Styles (lightweight, relies on site variables if present) -->
+  <style>
+    :root {
+      --bg: #0b1221;
+      --fg: #e6e9f2;
+      --muted: #a7b0c3;
+      --border: #1b2540;
+      --link: #5aa7ff;
+    }
+    @media (prefers-color-scheme: light){
+      :root{
+        --bg: #ffffff;
+        --fg: #0b1221;
+        --muted: #5b667a;
+        --border: #e6e9f2;
+        --link: #0056cc;
+      }
+    }
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);font:17px/1.6 "STIX Two Text","Times New Roman",serif}
+  strong,b{font-weight:700 !important}
+  .def-label{font-weight:700;display:inline-block;margin-right:6px}
+    header,main,footer{max-width:880px;margin:0 auto;padding:16px}
+    header{padding-top:20px}
+    a{color:var(--link);text-decoration:none}
+    a:hover{text-decoration:underline}
+    .crumbs{font-size:14px;color:var(--muted);margin-bottom:8px}
+    .crumbs a{color:inherit}
+    h1{font-size:28px;margin:6px 0 14px}
+    h2{font-size:20px;margin:18px 0 10px}
+    h3{font-size:16px;margin:12px 0 8px}
+    .card{border:1px solid var(--border);border-radius:10px;padding:14px;background:transparent}
+    .grid{display:grid;gap:12px}
+    .toc{border:1px dashed var(--border);border-radius:8px;padding:12px;background:transparent}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:6px 4px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+    code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+    pre{background:transparent;border:1px dashed var(--border);padding:8px;border-radius:6px}
+  .eqref { font-variant-numeric: tabular-nums }
+    .muted{color:var(--muted)}
+    .callout{border:1px solid var(--border);border-left:4px solid var(--link);background:rgba(11,95,255,.06);border-radius:10px;padding:14px}
+    .container.nav{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:6px 0 10px}
+    .brand{display:flex;align-items:center;gap:8px;font-weight:600}
+    .brand-logo{border-radius:6px;display:block}
+    .links{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .btn{border:1px solid var(--border);padding:4px 10px;border-radius:8px}
+    .gh-link svg{width:18px;height:18px;fill:currentColor}
+  .footnotes{font-size:12px;color:var(--muted);margin-top:16px}
+  .footnotes ol{margin:0;padding-left:18px}
+  .footnotes a{color:inherit}
+  .small-print{font-size:12px;color:var(--muted);line-height:1.5}
+  /* De-emphasize specific sections */
+  #refs { color: var(--muted); }
+  #refs h2 { color: var(--muted); }
+  #refs a { color: var(--muted); }
+  h2.section-caption{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.4px;text-transform:uppercase;margin:0 0 8px}
+    .tagline{margin:4px 0 10px;color:var(--muted);font-weight:600;letter-spacing:.2px;font-style:italic;font-size:18px}
+    .mjx-container[jax='SVG']{font-size:105%;line-height:1.2}
+    /* tighten MathJax spacing inside tables and standardize row height */
+    .tight-math .mjx-container { margin: 0 !important; }
+    .tight-math .mjx-container[display="true"] { display: inline-block !important; }
+
+    /* correspondence table layout */
+    table.qtmqtc { width:100%; border-collapse: collapse; table-layout: fixed; }
+    .qtmqtc th, .qtmqtc td { padding: 8px 10px; line-height: 1.35; vertical-align: top; }
+    .qtmqtc thead tr { border-bottom: 2px solid var(--border); }
+    .qtmqtc tbody tr + tr { border-top: 1px solid var(--border); }
+    /* stacked equations helper */
+    .qtmqtc .stack-eq { display: block; }
+    /* Notes column: keep width reasonable and clamp lines to reduce row height */
+    /* robust wrapping for all cells */
+    .qtmqtc td { word-break: break-word; overflow-wrap: anywhere; }
+
+    /* Notes column header: narrow, centered */
+    .qtmqtc th:nth-child(5) {
+      width: 2.4rem;
+      text-align: center;
+    }
+
+    /* Notes cells: show only an info icon, full text on hover via tooltip */
+    .qtmqtc td.notes-cell {
+      position: relative;
+      width: 2.4rem;
+      text-align: center;
+      cursor: help;
+      padding: 8px 4px;
+    }
+    .qtmqtc td.notes-cell::after {
+      content: "i";
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      line-height: 16px;
+      font-size: 11px;
+      border-radius: 50%;
+      border: 1px solid var(--muted);
+      color: var(--muted);
+    }
+    .qtmqtc td.notes-cell:hover::before {
+      content: attr(data-note);
+      position: absolute;
+      z-index: 20;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 125%;
+      width: 260px;
+      max-width: 260px;
+      padding: 8px 10px;
+      background: var(--bg);
+      color: var(--fg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+      font-size: 12px;
+      line-height: 1.4;
+      white-space: normal;
+    }
+
+    @media (max-width: 820px) {
+      .qtmqtc th:nth-child(5),
+      .qtmqtc td.notes-cell {
+        width: 2.4rem;
+      }
+    }
+  </style>
+
+  <script defer data-domain="toppymicros.com" data-auto="false" src="https://plausible.io/js/script.tag"></script>
+  <script defer src="/assets/global.js"></script>
+
+  <!-- MathJax for equations (SVG output, slightly enlarged for LaTeX-like readability) -->
+  <script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['\\(','\\)'], ['$', '$']],
+    displayMath: [['\\[','\\]'], ['$$','$$']],
+    tags: 'ams'
+  },
+  svg: {
+    fontCache: 'global',
+    scale: 1.04
+  },
+  options: { renderActions: { addMenu: [] } }
+};
+</script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+</head>
+<body>
+  <header>
+    <div class="container nav" role="navigation" aria-label="Main">
+      <a href="index.html" class="brand" aria-label="Home">
+        <img src="216722720.png" alt="ToppyMicroServices logo" class="brand-logo" width="28" height="28" decoding="async" fetchpriority="high">
+        <span>ToppyMicroServices OÜ</span>
+      </a>
+      <div class="links">
+        <a href="index.html#vision">Vision</a>
+        <a href="index.html#research">Research</a>
+        <a href="index.html#projects">Projects</a>
+        <a href="index.html#applications">Applications</a>
+        <a href="index.html#services">Services</a>
+        <a href="index.html#about">About</a>
+        <a href="index.html#contact" class="btn">Contact</a>
+        <a class="gh-link" href="https://github.com/ToppyMicroServices" aria-label="GitHub — ToppyMicroServices (opens in new tab)" title="GitHub — ToppyMicroServices" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.22 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38C13.71 14.53 16 11.54 16 8c0-4.42-3.58-8-8-8z"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+    <nav class="crumbs" aria-label="Breadcrumb" itemscope itemtype="https://schema.org/BreadcrumbList">
+      <span itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <a itemprop="item" href="/"><span itemprop="name">Home</span></a>
+        <meta itemprop="position" content="1" />
+      </span>
+      <span aria-hidden="true">›</span>
+      <span itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+        <span itemprop="name">Thermo-Credit Theory</span>
+        <meta itemprop="position" content="2" />
+      </span>
+    </nav>
+    <p class="tagline" role="doc-subtitle">Credit-First Macroeconomics for the AI Era</p>
+    <h1>Thermo-Credit Theory (QTC ↔ Thermodynamics)</h1>
+    <p class="muted">QTM = Quantity Theory of Money (money-first). QTC = Quantity Theory of Credit (credit-first).</p>
+    <p class="muted">We use an <em>entropy-like</em>, <em>extensive</em> index to separate <strong>scale</strong> and <strong>dispersion</strong>. This is an <strong>isomorphism</strong>, not a physical identity, because the real economy we study does not obey physical laws in the first place. We are deliberately practice-first: what matters is decision-useful performance in real economies; academic formalization is welcome but strictly secondary.</p>
+    <p style="margin:12px 0 0">
+      <a class="btn" href="https://doi.org/10.5281/zenodo.17563221" target="_blank" rel="noopener noreferrer">Download Technical Notes: (Zenodo)</a>
+    </p>
+
+    <section class="card" id="abstract" style="margin-top:12px">
+      <h2>Plain-English abstract</h2>
+      <p><strong>Thermo-Credit Theory</strong> reinterprets the Quantity Theory of Credit (QTC) through the lens of thermodynamics. It treats <strong>credit expansion and repayment</strong> as energy-like flows within a financial system that has measurable capacity, pressure, and dispersion. This mapping is not physics—it is a structured bookkeeping analogy designed for decision support and early-warning analytics.</p>
+      <p>QTC extends the classic <strong>Quantity Theory of Money (QTM)</strong> by adding an explicit capacity term, \(V_C\), for the banking system. Just as physical systems have pressure–volume interactions, credit systems respond to changes in balance-sheet headroom and regulatory constraints. This allows us to separate random liquidity diffusion from intentional policy work, and to test whether data behave like state variables.</p>
+      <p>The theory introduces <strong>entropy-like dispersion</strong>, <strong>credit potential</strong>, and <strong>free-energy measures</strong> (\(F_C, X_C\)) to monitor stress and policy space. These quantities can be calculated from public balance-sheet and market data, producing falsifiable indicators. <strong>Thermo-Credit</strong> therefore serves as both a conceptual bridge between money and information, and a practical framework for quantitative supervision.</p>
+    </section>
+  </header>
+
+  <main>
+    <!-- Page structure: TOC block -->
+    <!-- Table of contents -->
+    <section class="toc" aria-label="Table of contents">
+      <strong>Contents</strong>
+      <ol>
+        <li><a href="#plain-en">Plain-English summary</a></li>
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#correspondence">Correspondence table</a></li>
+        <li><a href="#bank-credit">Bank credit creation</a></li>
+        <li><a href="#free-vs-exergy">Free energy (F_C) & optional exergy (X_C)</a></li>
+        <li><a href="#maxwell">Maxwell-like relations</a></li>
+        <li><a href="#rephrasing">Is it merely a rephrasing?</a></li>
+        <li><a href="#insights">What the analogy adds (insights & tests)</a></li>
+        <li><a href="#limits">Limitations & scope</a></li>
+        <li><a href="#refs">Minimal references</a></li>
+        <li><a href="#disclaimer">Disclaimer & status</a></li>
+        <li><a href="#app">App behavior</a></li>
+      </ol>
+      <div class="muted" style="margin-top:6px">Key equations: <a href="#eq1" class="eqref">(1)</a> <a href="#eq2" class="eqref">(2)</a> <a href="#eq3" class="eqref">(3)</a> <a href="#eq4" class="eqref">(4)</a> <a href="#eq5" class="eqref">(5)</a></div>
+    </section>
+
+    <section id="plain-en" class="card" style="margin-top:12px">
+      <h2>Plain-English summary (QTM vs QTC & the first/second laws)</h2>
+      <p><strong>What we compare.</strong> Two stories about money/credit: the classic Quantity Theory of Money (QTM) [3,4,6] and Werner’s Quantity Theory of Credit (QTC) [9].</p>
+      <ul>
+        <li><strong>QTM — Quantity Theory of Money (money-first):</strong> more money → higher prices, if money moves fast enough.</li>
+        <li><strong>QTC — Quantity Theory of Credit (credit-first) [9]:</strong> banks create deposits when they lend; what credit is used for matters.</li>
+      </ul>
+      <p><strong>First law (bookkeeping idea).</strong></p>
+      <ul>
+        <li><strong>QTM:</strong> in the classic quantity-theory view [3, 4, 6], changes are explained via money stock, velocity, and policy shocks, without an explicit “capacity” state variable. Here we restate that as a split between (a) policy work and (b) extra mixing of money across uses.</li>
+        <li><strong>QTC:</strong> same split, but now we also track <em>capacity/headroom</em> on bank balance sheets. Using up headroom shows up like a pressure × volume term (work from constraints).</li>
+      </ul>
+      <p><strong>Second law (one-way tendency).</strong></p>
+      <ul>
+        <li><strong>Both:</strong> random mixing tends to raise our entropy-like index. To reverse it (make it more concentrated) you need structure—policy, rules, guidance.</li>
+        <li><strong>Only in QTC:</strong> tightening or relaxing capacity shifts the “pressure” of constraints, which changes how hard it is to concentrate or relax the system.</li>
+      </ul>
+      <p><strong>Why QTC adds value.</strong> QTC makes the hidden capacity/pressure channel explicit. That lets us distinguish “more random dispersion” from “intentional work by policy or rules” — which is exactly what you want for audit trails and early-warning dashboards.</p>
+    </section>
+
+    <!-- Primer -->
+
+    <!-- Overview -->
+    <section id="overview" class="card" style="margin-top:12px">
+      <h2>Overview</h2>
+      The index we informally described above is made precise as follows.
+      <p><span class="def-label">Definition.</span> Monetary dispersion entropy (entropy-like, extensive):
+      <span id="eq1"></span>
+      \[
+        S_M \;=\; k\,M_{\mathrm{in}}\,H(q),\quad H(q)\equiv -\sum_i q_i\,\log q_i \tag{1}
+      \]
+      where <code>M_in</code> is the actual money-in-circulation over a chosen period/system and <code>q</code> are composition shares (MECE, stable).</p>
+      <p class="muted">Entropy form follows Shannon [12]. Economic applications of entropy/dispersion include Theil’s information-theoretic index [7]. We map ideal mixing \(\Delta S_{mix}=k_B N H(x)\) to money shares \(q\) and scale \(M_{in}\).</p>
+    </section>
+
+    <!-- Correspondence -->
+    <section id="correspondence" class="card tight-math" style="margin-top:12px">
+      <h2>Correspondence table</h2>
+      <p class="muted">Thermodynamics column is literal; QTM/QTC columns are analogy-level correspondences. Heat/Work entries are “-like” bookkeeping splits, not physical identities.</p>
+      <p class="muted">Notes are hidden behind the ⓘ icons; hover (or tap) to read.</p>
+      <table class="qtmqtc">
+        <colgroup>
+          <col style="width: 12rem">
+          <col style="width: 14rem"><!-- Thermodynamics slightly wider to avoid overlap -->
+          <col style="width: 15rem"><!-- QTM -->
+          <col style="width: 16rem"><!-- QTC -->
+          <col style="width: auto"><!-- Notes -->
+        </colgroup>
+        <thead>
+          <tr>
+            <th> Variable </th>
+            <th>Thermodynamics</th>
+            <th>QTM (money-first)</th>
+            <th>QTC (credit-first)</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td > Mixing entropy </td>
+            <td>\(\Delta S_{mix}=k_B N H(x)\)</td>
+            <td>\( S_M = k\,M_{in}\,H(q) \)</td>
+            <td>\( S_M = k\,M_{in}\,H(q) \)</td>
+            <td class="notes-cell" data-note="Same form (scale × dispersion). Both use money-in-circulation and shares; QTC later links it to capacity."></td>
+          </tr>
+          <tr>
+            <td>Temperature</td>
+            <td>\( T \)</td>
+            <td> \( T_L \) </td>
+            <td> \( T_L \) </td>
+            <td class="notes-cell" data-note="In both QTM/QTC, temperature stands for a liquidity proxy."></td>
+          </tr>
+          <tr>
+            <td>Internal energy</td>
+            <td>\( U \)</td>
+            <td> \( U_M(S_M) \)</td>
+            <td> \( U(S_M,V_C,\dots) \)</td>
+            <td class="notes-cell" data-note="QTM omits explicit capacity. QTC treats U as a credit potential in (S_M, V_C)."></td>
+          </tr>
+          <tr>
+            <td>Volume</td>
+            <td>\( V \)</td>
+            <td>—</td>
+            <td>\( V_C \)</td>
+            <td class="notes-cell" data-note="QTM: no explicit capacity variable (often absorbed into velocity). QTC: explicit capacity V_C with headroom separated."></td>
+          </tr>
+          <tr>
+            <td>Pressure</td>
+            <td>\( p \)</td>
+            <td>—</td>
+            <td>\( p_C \equiv -\,(\partial U/\partial V_C)_{S_M} \)</td>
+            <td class="notes-cell" data-note="QTM: no pressure term. QTC: credit pressure p_C (shadow price of capacity) appears only in QTC."></td>
+          </tr>
+          <tr>
+            <td>Heat (heat-like)</td>
+            <td>\( \delta Q_{\mathrm{rev}} = T\,dS \)</td>
+            <td>\( Q_M \sim T_0\,\Delta S_M \)</td>
+            <td>\( Q_C \sim \bar T_L\,\Delta S_M \)</td>
+            <td class="notes-cell" data-note="Heat-like mixing term. QTM/QTC use T_0 or liquidity T̄_L times dispersion change; not literal physical heat."></td>
+          </tr>
+          <tr>
+            <td>Work (work-like)</td>
+            <td>\( \delta W = p\,dV \)</td>
+            <td>\( W_M \equiv W_{\mathrm{policy}} \)</td>
+            <td>\( W_C \equiv -\,\bar p_C\,\Delta V_C \;+\; W_{\mathrm{policy}} \)</td>
+            <td class="notes-cell" data-note="Work-like structured term. QTM: policy work only. QTC: constraint work -p̄_C ΔV_C plus policy work; analogy to p dV."></td>
+          </tr>
+          <tr>
+            <td>First law </td>
+            <td>
+              <span class="stack-eq">\( \Delta U \equiv T\,\Delta S + W \)</span>
+            </td>
+            <td>\( \Delta U_M = T_0\,\Delta S_M + W + \varepsilon \)</td>
+            <td>\( \Delta U = \bar T_L\,\Delta S_M + W + \varepsilon \)</td>
+            <td class="notes-cell" data-note="Unified bookkeeping: W collects work-like contributions. QTM: W = W_policy. QTC: W = W_C = -p̄_C ΔV_C + W_policy. Analogy-level, not a physical identity."></td>
+          </tr>
+        <tr>
+          <td>Second law (monotonicity)</td>
+          <td>\( \Delta S \ge 0 \) </td>
+          <td>\( \Delta S_M \ge 0 \)</td>
+          <td>\( \Delta S_M \ge 0 \)</td>
+          <td class="notes-cell" data-note=" Random mixing raises the dispersion index; concentration (ΔS_M &lt; 0) requires structured work/policy. This is an entropy-like tendency, not a strict physical second law."></td>
+        </tr>
+          <tr>
+            <td>Helmholtz free energy</td><td>\( F \)</td>
+            <td>\( F_M \equiv U_M - T_0 S_M \)</td>
+            <td>\( F_C \equiv U - T_0 S_M \)</td>
+            <td class="notes-cell" data-note="Early-warning gauge under fixed environment; QTC also allows Gibbs/exergy variants."></td>
+          </tr>
+          <tr>
+            <td>Exergy / availability</td>
+            <td>\( X \)</td>
+            <td>\(X_M \approx U_M - T_0 S_M\)</td>
+            <td>\( X_C = \Delta U + p_0\Delta V_C - T_0 \Delta S_M  \)</td>
+            <td class="notes-cell" data-note="Boundary-dependent; p_0 term requires an explicit capacity variable (QTC). In QTM, exergy lacks the p_0 term."></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="small-print muted" style="margin-top:8px" aria-label="Footnote: meaning of U in QTM/QTC">
+        <strong>Note — What does <em>U</em> mean here?</strong>
+        <ul style="margin:6px 0 0 16px">
+          <li><strong>QTM:</strong> <em>Bookkeeping potential</em> \(U_M(S_M)\) so that a first‑law‑like split holds: \(\Delta U_M = T_0\,\Delta S_M + W_{policy} + \varepsilon\). Not a standard variable in classic QTM.</li>
+          <li><strong>QTC:</strong> <em>Credit state potential</em> \(U(S_M,V_C,\dots)\) with conjugates \(T_L=(\partial U/\partial S_M)_{V_C}\), \(p_C=-(\partial U/\partial V_C)_{S_M}\).</li>
+        </ul>
+        <span>We use \(U\) as an analytic device; original QTM/QTC do not name \(U\).</span>
+      </div>
+    </section>
+
+    <!-- Laws & Carnot bound -->
+    <!-- Bank credit creation (moved above Free energy & Maxwell) -->
+    <section id="bank-credit" class="card" style="margin-top:12px">
+      <h2>Bank credit creation (within this mapping)</h2>
+
+      <h3>Balance-sheet identity (loans create deposits)</h3>
+      <p>When a bank grants a new loan, it books the loan as an asset and simultaneously creates a matching deposit as a liability. On the customer side, the new deposit is an asset and the loan is a liability. This standard identity is the only accounting ingredient we need.</p>
+      <span id="eq2"></span>
+      \[
+        \Delta U \;\approx\; \bar T_L\,\Delta S_M \;-
+        \; \bar p_C\,\Delta V_C \;+
+        \; W_{\mathrm{policy}} \;+
+        \; \varepsilon \tag{2}
+      \]
+      <p class="small-print muted" style="margin-top:-4px;margin-bottom:8px">This expresses the <strong>credit‑creation energy balance</strong> — the “ΔU of credit creation,” decomposing changes into liquidity (T̄<sub>L</sub> ΔS<sub>M</sub>), capacity (−p̄<sub>C</sub> ΔV<sub>C</sub>), and policy work (W<sub>policy</sub>).</p>
+      <ul>
+        <li><strong>\( \Delta S_M \)</strong>: with \( S_M = k\,M_{\mathrm{in}}\,H(q) \), credit creation typically raises \( M_{\mathrm{in}} \) (scale term) and, via allocation changes, may alter \( H(q) \), pushing \( S_M \) upward.</li>
+        <li><strong>\( \Delta V_C \)</strong>: new lending <em>uses</em> headroom so \( \Delta V_C < 0 \) (capacity declines). Hence the term \( -\bar p_C\, \Delta V_C > 0 \) contributes positively.</li>
+        <li><strong>\( W_{\mathrm{policy}} \)</strong>: includes structural work from regulation, capital injections, guarantees, purchases (QE/collateral ops), etc.</li>
+      </ul>
+
+      <h3>Creation vs repayment (sign conventions)</h3>
+      <p class="small-print muted" style="margin-top:-2px;margin-bottom:6px">Notation: \(\Delta M_{\mathrm{in}}\) = change in money-in-circulation over the period. Arrows ↑/↓ denote increase/decrease.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Variable</th>
+            <th>Credit creation (new lending &gt; repayments)</th>
+            <th>Credit contraction (repayments &gt; new lending)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>\(\Delta M_{\mathrm{in}}\)</td>
+            <td>&gt; 0</td>
+            <td>&lt; 0</td>
+          </tr>
+          <tr>
+            <td>\(\Delta S_M\)</td>
+            <td>increase (scale ↑; dispersion may also rise)</td>
+            <td>decrease (scale ↓; if concentration increases, fall is larger)</td>
+          </tr>
+          <tr>
+            <td>\(\Delta V_C\)</td>
+            <td>\(&lt; 0\) (headroom used)</td>
+            <td>\(&gt; 0\) (headroom restored)</td>
+          </tr>
+          <tr>
+            <td>\(-\,\bar p_C\, \Delta V_C\)</td>
+            <td>&gt; 0</td>
+            <td>&lt; 0</td>
+          </tr>
+          <tr>
+            <td>\(\Delta F_C = \Delta(U - T_0 S_M)\)</td>
+            <td>sign depends on \(T_0\), dispersion changes, and \(p_C\)</td>
+            <td>same (case by case)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Measurement proxies (practical)</h3>
+      <ul>
+        <li><strong>Credit flows/stocks</strong>: new loans, margin/credit for securities, corporate bonds/CP issuance (use stock series differences if needed).</li>
+        <li><strong>Shares \(q\)</strong>: use a stable MECE partition by use/sector/instrument and update monthly.</li>
+        <li><strong>Capacity \(V_C\)</strong>: CET1/RWA headroom, LCR/NSFR slack, HQLA-based lending capacity.</li>
+        <li><strong>Temperature \(T_L\)</strong>: composite intensity index from spreads, turnover, and order-book depth (z-scored).</li>
+        <li><strong>Pressure \(p_C\)</strong>: estimate via \(p_C \approx -\Delta U/\Delta V_C\) regressions or policy-shock differences.</li>
+      </ul>
+
+      <h3>Monthly algorithm (implementation steps)</h3>
+      <ol>
+        <li>Aggregate credit flows/stocks \(f_i\); compute shares as \(q_i = f_i/\sum_i f_i\).</li>
+        <li>Observe \(M_{\mathrm{in}}\) and compute \(S_M = k\,M_{\mathrm{in}}\,H(q)\).</li>
+        <li>Build \(V_C\) from RWA, LCR/NSFR, and HQLA metrics.</li>
+        <li>Compute \(T_L\) from market microstructure (spreads/turnover/depth).</li>
+        <li>Evaluate \(\Delta U = \bar T_L \Delta S_M - \bar p_C \Delta V_C + W_{policy} + \varepsilon\).</li>
+        <li>Detect events: label months with \(\Delta M_{\mathrm{in}}\) spikes (or net credit inflow if available) as credit-creation periods and decompose contributions.</li>
+      </ol>
+    </section>
+
+  <!-- Inserted: Free energy (F_C) and exergy (X_C) section -->
+    <section id="free-vs-exergy" class="card" style="margin-top:12px">
+  <h2>Free energy \(F_C\) — and optional exergy \(X_C\)</h2>
+  <p><strong>Why this exists.</strong> We want a single scalar potential for the QTC side that (i) decreases as dispersion <em>\(S_M\)</em> increases under a fixed environment, and (ii) provides an upper bound on structured work over a cycle. A Helmholtz-style free energy plays exactly this role.</p>
+      <p><strong>Definition.</strong> With a state potential \(U(S_M,V_C,\dots)\) and fixed environment \(T_0\): <span id="eq3"></span>
+      \[
+        F_C \equiv U - T_0 S_M,\qquad dF_C = -\,p_C\,dV_C + \delta W_{other} \tag{3}
+      \]
+      <p>It serves as an early-warning gauge: when \(\Delta F_C \to 0\), policy headroom for structured work dries up.</p>
+      <details><summary class="muted">Exergy \(X_C\) (optional, environment-dependent)</summary>
+        <p>When an ambient pressure-like term matters, use the exergy-like availability:
+        <span id="eq4"></span>
+        \[
+          X_C = (U-U_0) + p_0\,(V_C - V_{C0}) - T_0\,(S_M - S_{M0}) \tag{4}
+        \]
+        <p>It reduces to \(-\Delta F_C\) if \(p_0\) effects are negligible and \(V_C\) is fixed. Because \(X_C\) depends on boundary choices \((T_0, p_0)\), we treat it as an advanced/optional metric.</p>
+      </details>
+      <details><summary class="muted">Gibbs free energy \(G_C\) (optional, fixed \(p_0\) environment)</summary>
+        <p>When both temperature- and pressure-like environments are treated as fixed, the Gibbs free energy is convenient:
+        \[
+          G_C \equiv U + p_0\,V_C - T_0\,S_M,\qquad dG_C = V_C\,dp_0 - S_M\,dT_0 + \delta W_{other}
+        \]
+        In practice, we use \(F_C\) for fixed-volume analyses and \(G_C\) when an ambient pressure-like \(p_0\) is the natural control.</p>
+      </details>
+    </section>
+
+    <!-- Maxwell relations -->
+    <section id="maxwell" class="card" style="margin-top:12px">
+      <h2>Maxwell-like relations (integrability)</h2>
+      <p>Given the state potential \(U(S_M,V_C,\dots)\) implied by the correspondence table and the \(F_C\) definition above, mixed partials must commute, giving a Maxwell-like condition:</p>
+      <span id="eq5"></span>
+      \[
+        T_L = \left(\frac{\partial U}{\partial S_M}\right)_{V_C},\quad
+        p_C = -\left(\frac{\partial U}{\partial V_C}\right)_{S_M}
+        \;\Rightarrow\;
+        \left(\frac{\partial T_L}{\partial V_C}\right)_{S_M}
+        = -\left(\frac{\partial p_C}{\partial S_M}\right)_{V_C} \tag{5}
+      \]
+      <p>Violations in data falsify the mapping (i.e., chosen variables are not state-like or proxies are inadequate).</p>
+    </section>
+
+
+    <!-- Laws & Carnot bound -->
+
+
+    <!-- Thermodynamic laws: QTM vs QTC (side-by-side) -->
+
+    <!-- Rephrasing? -->
+    <section id="rephrasing" class="card" style="margin-top:12px">
+      <h2>Is this merely a rephrasing?</h2>
+  <p>Mathematically it is a change of coordinates that isolates <em>scale</em> and <em>dispersion</em>. It becomes non-trivial because it yields: (i) <strong>falsifiable integrability constraints</strong> (Maxwell-like), (ii) a <strong>clean separation</strong> of policy work vs dispersion, and (iii) an <strong>exergy/free-energy lens</strong> for early-warning ceilings via \(X_C\) or \(F_C\).</p>
+    </section>
+
+    <!-- Insights from the analogy -->
+    <section id="insights" class="card" style="margin-top:12px">
+      <h2>What the analogy adds (insights & tests)</h2>
+      <ul>
+        <li><strong>Integrability test (Maxwell-like):</strong> Estimate \(T_L(S_M,V_C)\), \(p_C(S_M,V_C)\); check
+          \((\partial T_L/\partial V_C)_{S_M} \approx - (\partial p_C/\partial S_M)_{V_C}\). Persistent failure ⇒ mapping/proxies are wrong.</li>
+        <li><strong>Work vs dispersion:</strong> Decompose
+          \(\Delta U = \bar T_L\,\Delta S_M - \bar p_C\,\Delta V_C + W_{policy}\)
+          to separate random mixing from structured/policy effects.</li>
+        <li><strong>Free-energy/exergy ceilings:</strong> Use \(F_C\) or \(X_C\) as early-warning gauges when they approach zero under chosen boundaries.</li>
+        <li><strong>Loop area (hysteresis):</strong> Non-zero loop area in \((S_M,V_C)\) over policy cycles measures dissipative stress.</li>
+      </ul>
+    </section>
+
+    <!-- Limitations -->
+    <section id="limits" class="card" style="margin-top:12px">
+      <h2>Limitations & scope</h2>
+      <ul>
+        <li><strong>Category dependence:</strong> \(S_M\) depends on how uses/sectors are binned; require robustness checks.</li>
+        <li><strong>Proxy noise:</strong> \(T_L, V_C, p_C\) are noisy proxies; mis-measurement can break Maxwell-like relations.</li>
+        <li><strong>Quasi-static only:</strong> Fast crises and regime shifts violate the smooth state-variable picture.</li>
+        <li><strong>Non-physical:</strong> No microscopic “money particles” are assumed; this is structured bookkeeping, not physics.</li>
+        <li><strong>Identification:</strong> Policy and shocks move terms jointly; causal claims need proper empirical design.</li>
+        <li><strong>Scaling conventions:</strong> Parameters like \(k\) are conventional; report normalized, sensitivity-tested metrics.</li>
+        <li><strong>No guarantee of physical laws.</strong> Nothing here asserts or guarantees that macro-financial data obey the physical first or second laws; all mappings are analogy-level and subject only to empirical testing.</li>
+      </ul>
+    </section>
+
+    <!-- Proxies & identification map -->
+
+    <!-- Analogy literature & conventions -->
+
+    <!-- Minimal references (selected) -->
+    <section id="refs" class="card" style="margin-top:12px">
+      <h2>Minimal references (selected)</h2>
+      <ul>
+        <li>[1] <strong>Kocherlakota, N. R.</strong> (1998). “Money is Memory.” <span class="muted">Journal of Economic Theory</span> 81(2): 232–251.</li>
+        <li>[2] <strong>Kocherlakota, N. R.</strong> (2002). “Money is Memory.” <span class="muted">Minneapolis Fed Quarterly Review</span> 26(1): 2–10.</li>
+        <li>[3] <strong>Fisher, I.</strong> (1911). <em>The Purchasing Power of Money</em>. <span class="muted">Macmillan.</span></li>
+        <li>[4] <strong>Friedman, M.</strong> (1956). “The Quantity Theory of Money—A Restatement.” In <em>Studies in the Quantity Theory of Money</em> (ed. Friedman). <span class="muted">University of Chicago Press.</span></li>
+        <li>[5] <strong>Friedman, M., & Schwartz, A. J.</strong> (1963). <em>A Monetary History of the United States, 1867–1960</em>. <span class="muted">Princeton University Press.</span></li>
+        <li>[6] <strong>Laidler, D.</strong> (1985, 3rd ed.). <em>The Demand for Money: Theories, Evidence, and Problems</em>. <span class="muted">Harper & Row.</span></li>
+        <li>[7] <strong>Theil, H.</strong> (1967). <em>Economics and Information Theory</em>. <span class="muted">North-Holland.</span></li>
+        <li>[8] <strong>Bank of England (McLeay, Radia, Thomas)</strong> (2014). “Money creation in the modern economy.” <span class="muted">Quarterly Bulletin.</span></li>
+        <li>[9] <strong>Werner, Richard A.</strong> (2011 keynote; 2012 journal; 2014 article). “Quantity Theory of Credit” program and bank money creation evidence. <span class="muted">International Review of Financial Analysis</span>.</li>
+        <li>[10] <strong>Borio & White</strong> (2004). “Whither monetary and financial stability?” <span class="muted">BIS Working Paper 147</span>.</li>
+        <li>[11] <strong>Fontana, G.</strong> (2004). “Rethinking endogenous money.” <span class="muted">Metroeconomica</span>.</li>
+        <li>[12] <strong>Shannon, C. E.</strong> (1948). “A Mathematical Theory of Communication.” <span class="muted">Bell System Technical Journal</span>.</li>
+        <li>[13] <strong>Jaynes, E. T.</strong> (1957). “Information Theory and Statistical Mechanics.” <span class="muted">Physical Review</span>.</li>
+        <li>[14] <strong>Callen, H. B.</strong> (1985, 2nd ed.). <em>Thermodynamics and an Introduction to Thermostatistics</em>. <span class="muted">Wiley.</span></li>
+        <li>[15] <strong>Zemansky, M. W., & Dittman, R. H.</strong> (1997, 7th ed.). <em>Heat and Thermodynamics</em>. <span class="muted">McGraw-Hill.</span></li>
+        <li>[16] <strong>Foley, D. K.</strong> (1994). “A statistical equilibrium theory of markets.” <span class="muted">Journal of Economic Theory</span>.</li>
+        <li>[17] <strong>Drăgulescu, A., & Yakovenko, V. M.</strong> (2000). “Statistical mechanics of money.” <span class="muted">European Physical Journal B</span>.</li>
+        <li>[18] <strong>Wall, G.</strong> (1977). “Exergy—a useful concept.” <span class="muted">Chalmers University preprint; later textbooks.</span></li>
+      </ul>
+    </section>
+    <!-- Footnotes -->
+    <section class="footnotes" aria-label="Footnotes">
+      <ol>
+        <li id="fn1">
+          <strong>Rigor & reproducibility.</strong> Text on this page was generated with a reasoning model (<em>GPT‑5 Thinking</em>) at low randomness (temperature ≈ 0.2; top‑p = 1.0). No external web browsing was used. Equations are rendered with MathJax v3 from a public CDN; minor layout differences may occur across browsers. Data outputs in <code>report.html</code> are reproducible with Python 3.11 and the packages listed in <code>requirements.txt</code>. The GitHub Actions workflow pins versions and uses <code>FRED_API_KEY</code> for online fetch, or local CSVs if not set. <span aria-hidden="true">↩</span>
+        </li>
+      </ol>
+    </section>
+    <!-- Disclaimer & status -->
+    <section id="disclaimer" class="card" style="margin-top:12px">
+      <div class="small-print">
+        <p><strong>Disclaimer & status.</strong> This material is part of an ongoing research program. Findings are preliminary and may change. Our approach is pragmatic and engineering-led, with priority on decision-useful results.</p>
+<ul>
+  <li><strong>No warranties.</strong> Provided as-is without any warranty of accuracy, completeness, or fitness for a particular purpose.</li>
+  <li><strong>No liability.</strong> ToppyMicroServices OÜ and the authors disclaim liability for any loss or damage arising from use of this material.</li>
+  <li><strong>No advice.</strong> For information purposes only; not investment, legal, tax, or policy advice.</li>
+  <li><strong>Research only.</strong> Not an offer to sell or a solicitation to buy any security, product, or service.</li>
+  <li><strong>No client relationship.</strong> Using this site does not create a client relationship, fiduciary duty, or duty of care.</li>
+  <li><strong>Jurisdiction.</strong> Users are responsible for compliance with applicable local laws and regulations.</li>
+  <li><strong>Independence.</strong> Independent research; views are solely those of the authors.</li>
+  <li><strong>Forward-looking statements.</strong> Forward-looking statements are uncertain and actual outcomes may differ materially.</li>
+  <li><strong>Regulatory status.</strong> This content is not a regulated financial service (e.g., investment adviser, broker-dealer) and should not be treated as such.</li>
+</ul>
+        <p class="muted">Rationale: Economics here is treated at the limit of pragmatism—tools must earn their keep in real operations before being formalized in journals. Empirical validation and falsification are ongoing.</p>
+      </div>
+    </section>
+    <!-- App behavior -->
+    <section id="app" class="card" style="margin-top:12px">
+      <h2>App behavior</h2>
+      <ul>
+        <li>Monthly build computes \(S_M\), \(T_L\), loop_area (PLD), and \(X_C\) from public data.</li>
+        <li>Interactive report (with PNG fallbacks): <a href="/2025_11_Thermo_Credit/report.html" target="_blank" rel="noopener noreferrer">Open report</a></li>
+        <li>Repository: <a href="https://github.com/ToppyMicroServices/2025_11_Thermo_Credit" target="_blank" rel="noopener noreferrer">GitHub repo</a></li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>
+    <p class="muted">Last updated: 2025-11-06 (JST)</p>
+    <p>© 2025 ToppyMicroServices OÜ</p>
+    <p>Legal address: Karamelli tn 2, 11317 Tallinn, Harju County, Estonia</p>
+    <p>Registry code: 16551297</p>
+    <p class="muted">Legal: Independent research. Views are those of the authors and not of any affiliated organization.</p>
+  </footer>
+</body>
+</html>

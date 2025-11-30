@@ -159,6 +159,10 @@ Notes
   - `depth_proxy_eu`, `turnover_proxy_eu` (Euro area overrides)
   - `depth_proxy_us`, `turnover_proxy_us` (US overrides)
   - Scripts select these roles (env > config > defaults). Depth/turnover currently computed with heuristic scaling when real series absent; tests guard column presence per region.
+  - Free-energy baseline (keeps `F_C` / `X_C` above zero without flattening):
+    - `F_C_baseline_mode` (default `min`): `none`/`raw` to disable, or choose `min`/`quantile`/`value`/`first` to set the baseline reference.
+    - `F_C_baseline_quantile` (default `0.05`): lower-tail quantile when `mode=quantile`.
+    - `F_C_baseline_eps` (default `1e-6`): tiny lift added after shifting so the minimum is strictly positive.
   - Exergy floor controls (optional):
     - `exergy_floor_zero` (bool, default true): enforce non‑negative X_C.
     - `exergy_floor_mode` (string, `clip`|`shift`, default `clip`):

@@ -4,6 +4,10 @@
 T0: 1.0              # Global reference temperature (dimensionless). Regional configs can override.
 k: 1.0               # Boltzmann-like scaling constant for translating energy to temperature.
 loop_forgetting: 0.98  # Exponential forgetting factor for loop area / hysteresis (0.98 ~ 2-year memory).
+# Free-energy baseline: raise F_C / X_C by the series minimum so they stay > 0 without hard clipping.
+F_C_baseline_mode: min          # Options: none/raw, min, quantile, value, first
+F_C_baseline_quantile: 0.05     # Only used when mode=quantile
+F_C_baseline_eps: 1.0e-06       # Small lift above zero after the shift
 
 # Internal energy detrending (U -> U_star). No-lookahead rolling mean by default.
 U_detrend:
