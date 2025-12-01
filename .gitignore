@@ -72,3 +72,6 @@ data/series_selected_*.json.backup
 !.vscode/settings.json
 !.vscode/launch.json
 !.vscode/tasks.json
+tex/*
+.DS_Store
+tex/theory.tex
