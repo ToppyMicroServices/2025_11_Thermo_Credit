@@ -35,7 +35,7 @@
 
 \title{Thermo-Credit Theory: A Credit-First Thermodynamic Mapping}
 \author{ToppyMicroServices O\"U}
-\date{Version 1.0 -- November 6, 2025}
+\date{Version 2.0 -- December 2025 (theory \& implementation update)}
 
 \begin{document}
 \maketitle
@@ -45,7 +45,7 @@ We recast the Quantity Theory of Credit (QTC) in a thermodynamic-style state
 space to separate scale, dispersion, and capacity in modern credit systems.
 The key step is an entropy-like dispersion index that factors
 money-in-circulation\K{10} and its allocation, combined with an explicit capacity
-variable for bank balance sheets. This mapping is an analytic isomorphism,
+variable for bank balance sheets. This mapping is an analytic bookkeeping correspondence,
 not a physical identity: it is designed for structured bookkeeping, stress
 diagnostics, and early-warning indicators, not for importing physical laws
 into economics. Within this framework we define an internal potential
@@ -70,6 +70,7 @@ outcomes \cite{Werner2012,BoE2014}. In parallel, both information theory and
 statistical mechanics have inspired analogies for income and wealth
 distributions \cite{Theil1967,Foley1994,DragulescuYakovenko2000,Shannon1948,Jaynes1957}.
 
+
 This note takes a minimal and operational step: we build a thermodynamic-style
 state description that (i) separates scale and dispersion of
 monetary/credit uses, (ii) introduces an explicit capacity variable for bank
@@ -77,6 +78,21 @@ balance sheets, and (iii) yields testable constraints and early-warning
 gauges. The aim is not to claim that macro data obey physical laws, but to
 provide a disciplined bookkeeping analogy useful for supervision, stress
 testing\K{18}, and systematic monitoring.
+
+\subsection*{Related Work}
+
+Several strands of research motivate the thermodynamic-style mapping used in this note.  
+First, high-frequency microstructure studies have explored temperature- and entropy-like summaries of order-book dynamics.  
+For example, Li et al.\ (2024) define “market temperature’’ and “market entropy’’ from depth, imbalance, and turnover in limit-order books, showing that these quantities track short-term liquidity conditions and stress episodes.  
+These approaches remain at the micro (tick-by-tick) level and do not involve credit allocation or regulatory constraints.
+
+Second, Feng (2019) develops a thermodynamic representation of model risk using entropy flows and worst-case expectations.  
+This work treats market uncertainty as an information-theoretic source of dissipation within pricing models.  
+It is conceptually related through the shared use of temperature- and energy-like ideas, but it does not address credit capacity, bank balance sheets, or sectoral allocation.
+
+The present note differs in scope: we apply a coarse-grained, macro-credit state description aimed at supervision and early-warning applications.  
+Our variables $(S_M, V_C, T_L, p_C)$ are built from balance-sheet aggregates and dispersion measures, not from high-frequency order-book dynamics or pricing-model uncertainty.  
+Loop area in the $(p_C, V_C)$ plane plays the role of dissipation at the macro-credit level, and the quality-factor construction introduced here has no direct analogue in existing microstructure or model-risk thermodynamic papers.
 
 \section{Setup and Definitions}
 
@@ -89,6 +105,7 @@ securities margin, etc.), with
   \sum_i q_i = 1.
 \]
 
+% (Section break remains unchanged)
 \subsection{Monetary dispersion entropy}
 
 We define an entropy-like extensive index
@@ -118,6 +135,13 @@ ${q_{\text{productive}},q_{\text{housing}},q_{\text{consumption}},
 q_{\text{financial}},q_{\text{government}}}$); regional variants use
 analogous coarse splits in their allocation tables, always normalised so
 that $\sum_i q_i = 1$.
+
+\paragraph{Energy and entropy conventions.}
+The internal potential $U(S_{\mathrm{M}},V_{\mathrm{C}},\ldots)$ is a bookkeeping scalar in currency units, 
+and the derived quantities $F_{\mathrm{C}}$, $X_{\mathrm{C}}$, and $G_{\mathrm{C}}$ are free-energy- and 
+exergy-like gauges constructed from $(U,S_{\mathrm{M}},V_{\mathrm{C}})$ and fixed environmental parameters $(T_0,p_0)$. 
+They are interpreted as indicators of usable credit capacity and policy room, not as literal physical energies; 
+general caveats on the analogy are collected in Section~\ref{sec:limitations}.
 
 \subsection{Capacity and conjugate variables}
 
@@ -156,20 +180,13 @@ and regulatory headroom; they are chosen to be interpretable and to track
 the intended directions, but they are not literally defined by
 finite-difference approximations to \eqref{eq:conjugate} in the code.
 
-Empirically, $U(t)$ is instantiated as a scalar credit-capacity gauge
-constructed from the credit table (nominal credit or GDP-like quantities).
-For JP, $U(t)$ is taken from a GDP-like ``energy'' series
-($U_{\text{energy}}$, derived from nominal GDP) and falls back to nominal
-GDP $Y(t)$ when that series is unavailable.
-For EU and US, $U(t)$ is set equal to nominal GDP $Y(t)$ by default.
-In all regions, if neither an explicit $U$ nor a $Y$ column is present,
-the implementation falls back to real credit stocks $L_{\mathrm{real}}(t)$
-as a last resort so that the first-law decomposition remains defined.
-An optional detrended version $U^\star$ is produced by subtracting a
-no-lookahead rolling mean; this $U^\star$ is used only in diagnostics and
-visualisation (to study fluctuations around a slowly varying baseline),
-while the core potentials $\FC$ and $\XC$ are computed from the undetrended
-$U$.
+Empirically, $U(t)$ is instantiated as a scalar credit-capacity gauge constructed 
+from GDP-like or credit aggregates. When a dedicated $U$ series is not available, 
+the implementation fills it using a conservative fallback order over available GDP-like 
+and credit-stock series (see Appendix, Internal-energy gauge). 
+An optional detrended version $U^\star$ is used only for diagnostics and visualisation 
+(to study fluctuations around a slowly varying baseline), 
+while the core potentials $\FC$ and $\XC$ are computed from the undetrended $U$.
 
 \subsection{Depth and turnover proxies}
 
@@ -209,8 +226,7 @@ These choices emphasise the interpretation of $\TL$ as a relative index
 rather than an absolute physical temperature.
 
 \paragraph{Design of the liquidity temperature.}
-The liquidity temperature is designed to be high when spreads are narrow,
-markets are deep, and turnover is brisk, and to fall sharply when any one
+The liquidity temperature is designed to be high when spreads are narrow, markets are deep, and turnover is brisk, and to fall sharply when any one
 of these ingredients becomes stressed.
 To this end we combine standardized components
 $(z_s,z_d,z_t)$---the z-scores of inverse spreads, inverse depth, and
@@ -219,6 +235,7 @@ turnover---into a composite
   \hat T_{\mathrm{mult}}(t) = z_s(t)\,z_d(t)\,\bigl(1 + \tfrac{1}{2} z_t(t)\bigr),
 \]
 and then rescale to $T_{\mathrm{L}} \in [0,1]$ by min--max normalisation.
+In what follows we use this multiplicative construction as the baseline and denote it simply by $\hat T$ when no confusion arises.
 An additive alternative would be
 \[
   \hat T_{\mathrm{add}}(t)
@@ -235,7 +252,7 @@ dominating it.
 Appendix-style robustness checks with $\hat T_{\mathrm{add}}$ and other
 variants are natural next steps; empirically we treat the present
 construction as a deliberately simple, economically interpretable starting
-point rather than a uniquely correct functional form.
+point rather than a uniquely correct functional form, and we do not use the additive alternative in baseline indicators.
 
 \subsection{Units and scaling conventions}
 
@@ -418,7 +435,7 @@ $(\Delta \Min,\Delta \SM,\Delta \VC)$ can be compared, and can be refined
 or extended in empirical work.
 
 In addition to these pointwise diagnostics, we can study the \emph{loop
-area} traced out by trajectories in the $(\VC,\pC)$ plane over policy or
+area} traced out by trajectories in the $(\pC,\VC)$ plane over policy or
 credit cycles.
 In the reversible limit the line integral
 \[
@@ -435,8 +452,60 @@ an exponentially weighted version of this integral via
 \]
 with forgetting factor $\lambda$ chosen so that old cycles gradually lose
 influence.
+
 Large or persistent values of $W_t$ therefore flag regimes where policy
-paths in $(\SM,\VC)$ space exhibit pronounced hysteresis and stress.
+paths in $(\pC,\VC)$ space exhibit pronounced hysteresis and stress.
+
+\subsection{Dissipation and a credit quality factor $Q$}
+
+In the data, irreversibility shows up as non-zero loop area in the
+$(p_{\mathrm{C}},V_{\mathrm{C}})$ plane.
+In physics, a similar idea is captured by the quality factor $Q$ of an
+oscillator: it compares the energy stored in the system with the energy
+lost in one cycle. Here we define an analogous quality factor for the
+credit system.
+
+Let $\mathrm{loop\_area}(t)$ be the dissipative part of the policy or
+credit cycle in period $t$ and let $X_{\mathrm{C}}(t)$ be the
+exergy-like ``usable credit capacity'' at time $t$.
+We first define a simple loss ratio
+\begin{equation}
+  \phi(t) = \frac{\mathrm{loop\_area}(t)}{X_{\mathrm{C}}(t-1)},
+\end{equation}
+whenever $X_{\mathrm{C}}(t-1) > 0$.
+When $X_{\mathrm{C}}(t-1) \le 0$, $\phi(t)$ and $Q_{\mathrm{C}}(t)$ are left undefined (treated as missing) in the baseline implementation.
+This tells us what fraction of available exergy is lost through policy
+hysteresis in that period.
+We then define the credit quality factor
+\begin{equation}
+  Q_{\mathrm{C}}(t)
+    = \frac{2\pi}{\phi(t)}
+    = 2\pi \, \frac{X_{\mathrm{C}}(t-1)}{\mathrm{loop\_area}(t)}.
+\end{equation}
+
+A large $Q_{\mathrm{C}}$ means that the system loses only a small share of
+its usable credit capacity in each cycle: policy loops move credit around
+with limited long-run damage.
+A small $Q_{\mathrm{C}}$ means that even modest policy loops destroy a
+non-trivial part of $X_{\mathrm{C}}$, which is consistent with a fragile
+or strongly path-dependent credit structure.
+
+For mechanical oscillators, a standard first-order approximation is
+\(
+  \Delta E / E \approx -2\pi/Q.
+\)
+By analogy, we can write
+\begin{equation}
+  \frac{\Delta X_{\mathrm{C}}(t)}{X_{\mathrm{C}}(t-1)}
+    \approx - \frac{2\pi}{Q_{\mathrm{C}}(t)}
+    + \mathrm{external\_injection}(t) + \varepsilon_t,
+\end{equation}
+where the external-injection term collects net additions of usable
+credit capacity (for example, through large-scale asset purchases or
+recapitalisation episodes).
+In this way $Q_{\mathrm{C}}$ acts as a simple, dimensionless summary of
+how much hysteresis the credit system can tolerate before its usable
+capacity is eroded.
 
 \paragraph{Interpreting $W_{\mathrm{policy}}$.}
 In the abstract decomposition \eqref{eq:first_law}, $W_{\mathrm{policy}}$
@@ -677,9 +746,10 @@ relation is not enforced by construction; instead it functions as an
 integrability diagnostic. Persistent, large violations indicate that the
 chosen variables are not behaving in a state-like way or that the proxy
 mapping is misspecified. In this sense, the analogy is falsifiable rather
-than purely rhetorical.
+than purely rhetorical, and Section~\ref{sec:insights} summarizes a simple
+set of operational diagnostics built from this condition.
 
-\section{Insights and Practical Tests}
+\section{Insights and Practical Tests}\label{sec:insights}
 
 The mapping yields several operational diagnostics:
 \begin{enumerate}
@@ -697,7 +767,7 @@ The mapping yields several operational diagnostics:
         early-warning gauges: sustained proximity to zero under stress
         scenarios flags limited room for non-disruptive adjustment.
 
-  \item \textbf{Loop area and hysteresis.} Compute loop areas in $(\SM,\VC)$
+  \item \textbf{Loop area and hysteresis.} Compute loop areas in $(\pC,\VC)$
         over policy cycles. Non-zero areas capture dissipative stress and
         irreversibility in credit allocation dynamics\K{17}.
 \end{enumerate}
@@ -707,8 +777,7 @@ balance-sheet and market data. Implementation details (exact proxy choices,
 normalization, robustness checks) are part of ongoing empirical work and
 should be reported alongside results.
 
-\section{Limitations and Scope}
-
+\section{Limitations and Scope}\label{sec:limitations}
 This construction is intentionally modest. Key limitations include:
 \begin{itemize}
   \item \textbf{Category dependence.} $\SM$ depends on the chosen partition
@@ -738,6 +807,9 @@ This construction is intentionally modest. Key limitations include:
   \item \textbf{Scaling conventions.} Constants such as $k$ are
         conventional. Report normalized metrics and sensitivity checks.
 \end{itemize}
+
+This version is primarily a theory-and-implementation note; a more systematic
+empirical evaluation for the JP configuration will follow in a later revision.
 
 \section{Notes on Reproducibility and AI Assistance}
 
@@ -842,8 +914,9 @@ It is not required for understanding the theoretical sections.
         $\VC$ and $\pC$, and, when configured with the ``min\_headroom''
         formula, sets
         $\VC(t) = \min_j H_j(t)$ over headroom components.
-        External pressure/temperature drivers are aggregated in
-        \texttt{lib/external\_coupling.py} into $E_p$ and $E_T$; when the
+        External pressure/temperature drivers are aggregated in\\
+        \texttt{lib/external\_coupling.py}
+        into $E_p$ and $E_T$; when the
         coupling coefficients $\alpha,\delta$ are non-zero the code applies
         the affine shifts
         $p_{\mathrm{C}} \leftarrow p_{\mathrm{C}}^{\text{baseline}} +
@@ -853,8 +926,8 @@ It is not required for understanding the theoretical sections.
         The same module computes $\FC$, $\XC$, and the Gibbs-style $\GC$
         and streams the loop-area estimator in $(\pC,\VC)$.
   \item \textbf{Diagnostics.}
-        The diagnostics routine in \texttt{lib/indicators.py} estimates
-        $\partial S_{\mathrm{M}}/\partial V_{\mathrm{C}}|_{T_{\mathrm{L}}}$
+        The diagnostics routine in \texttt{lib/indicators.py} 
+        estimates $\partial S_{\mathrm{M}}/\partial V_{\mathrm{C}}|_{T_{\mathrm{L}}}$
         and $\partial p_{\mathrm{C}}/\partial T_{\mathrm{L}}|_{V_{\mathrm{C}}}$
         via rolling least squares, and constructs finite-difference versions
         of the first-law decomposition by computing
@@ -862,8 +935,8 @@ It is not required for understanding the theoretical sections.
         $\bar T_{\mathrm{L}}$, $\bar p_{\mathrm{C}}$, and the implied
         $Q_{\text{like}}$ and $W_{\text{like}}$ series.
   \item \textbf{Per-region orchestration.}
-        Scripts \texttt{scripts/02\_compute\_indicators.py},
-        \texttt{scripts/02\_compute\_indicators\_eu.py},
+        Scripts \texttt{scripts/02\_compute\_indicators.py},\\
+        \texttt{scripts/02\_compute\_indicators\_eu.py},\\
         \texttt{scripts/02\_compute\_indicators\_us.py}, and the helper
         \texttt{lib/regions.py} assemble the inputs for JP/EU/US and write
         \texttt{site/indicators*.csv} used by the dashboard and tests.
@@ -983,7 +1056,7 @@ to approximate such variables. Our Maxwell-like relation
 a consistent potential $U(\SM,\VC,\ldots)$.
 
 \paragraph{K17 Hysteresis and loop area.}
-If trajectories in the $(\SM,\VC)$ plane form loops with non-zero area over
+If trajectories in the $(\pC,\VC)$ plane form loops with non-zero area over
 policy or credit cycles, this indicates irreversibility or
 dissipation-like effects (e.g.\ stress, misallocation, or path dependence).
 Analogy: magnetic hysteresis, frictional cycles, or inelastic processes.
@@ -1001,7 +1074,7 @@ this note, credit creation is primary: bank lending creates deposits, and
 money is an accounting outcome of credit decisions. This shift motivates
 tracking credit capacity and dispersion as state-like objects.
 
-\begin{thebibliography}{11}
+\begin{thebibliography}{13}
 
 \bibitem{Fisher1911}
 Irving Fisher.
@@ -1059,6 +1132,16 @@ Edwin~T. Jaynes.
 G{\"o}ran Wall.
 \newblock Exergy -- a useful concept.
 \newblock Technical report, Chalmers University, 1977.
+
+\bibitem{Li2024}
+Wei Li, Jingyi Yang, and Jian Chen.
+\newblock Market temperature and entropy: A microstructure-based view of liquidity.
+\newblock \emph{Entropy}, 2024.
+
+\bibitem{Feng2019}
+Jean Feng.
+\newblock A thermodynamic picture of financial market and model risk.
+\newblock \emph{arXiv preprint arXiv:1909.XXXXX}, 2019.
 
 \end{thebibliography}
 

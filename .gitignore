@@ -75,3 +75,6 @@ data/series_selected_*.json.backup
 tex/*
 .DS_Store
 tex/theory.tex
+theory.aux
+theory.out
+theory.pdf
