@@ -1,5 +1,9 @@
 name: Manual Build
-on: { workflow_dispatch: {} }
+on:
+  workflow_dispatch:
+
 jobs:
   run:
     uses: ./.github/workflows/build-and-publish.yml
+    secrets: inherit
+    

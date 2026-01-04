@@ -3,6 +3,8 @@ on:
   schedule:
     - cron: '0 19 1 * *'   # Monthly on day 1 at 04:00 JST (UTC 19:00)
   workflow_dispatch: {}
+  workflow_call: {}
+
 
 permissions:
   contents: write
@@ -15,7 +17,7 @@ concurrency:
 
 jobs:
   build:
-    if: ${{ github.ref == 'refs/heads/main' && github.repository == 'ToppyMicroServices/2025_11_Thermo_Credit' }}
+    if: ${{ github.ref == 'refs/heads/main'  }}
     runs-on: ubuntu-latest
     env:
       PYTHONPATH: "${{ github.workspace }}"
