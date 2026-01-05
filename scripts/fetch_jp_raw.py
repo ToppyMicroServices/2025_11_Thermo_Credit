@@ -1,7 +1,6 @@
 import os
 import sys
 import time
-from typing import Tuple
 
 import pandas as pd
 import requests
@@ -20,7 +19,7 @@ FRED_API_URL = "https://api.stlouisfed.org/fred/series/observations"
 
 os.makedirs(DATA, exist_ok=True)
 
-def fetch_and_save(sid: str, start: str = "2012-01-01", sleep_sec: float = 0.6) -> Tuple[bool, str]:
+def fetch_and_save(sid: str, start: str = "2012-01-01", sleep_sec: float = 0.6) -> tuple[bool, str]:
     if not FRED_API_KEY:
         return False, "FRED_API_KEY not set"
     params = {

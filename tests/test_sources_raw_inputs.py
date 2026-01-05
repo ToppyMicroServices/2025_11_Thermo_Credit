@@ -1,5 +1,6 @@
-import os
 import json
+import os
+
 import pandas as pd
 
 
@@ -28,7 +29,7 @@ def test_raw_inputs_normalization(tmp_path):
     # Import helper and run
     import sys
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-    from lib.raw_inputs import load_sources, enabled_sources, load_and_normalize
+    from lib.raw_inputs import enabled_sources, load_and_normalize, load_sources
 
     srcs = load_sources(str(d_data / "sources.json"))
     df = load_and_normalize(enabled_sources(srcs))
@@ -38,9 +39,6 @@ def test_raw_inputs_normalization(tmp_path):
     row0 = df.iloc[0]
     assert abs(float(row0["SER_A"]) - 100.0) < 1e-6
     assert abs(float(row0["SER_B"]) - 100.0) < 1e-6
-import json
-import os
-import pandas as pd
 
 from pathlib import Path
 

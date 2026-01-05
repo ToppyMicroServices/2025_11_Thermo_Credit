@@ -1,4 +1,5 @@
 import pandas as pd
+
 from lib.credit_enrichment import compute_enrichment
 
 

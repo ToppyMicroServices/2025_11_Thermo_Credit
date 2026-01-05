@@ -8,18 +8,17 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Dict, List, Optional, Tuple
 
 import pandas as pd
 
 
-def load_sources(path: str = "data/sources.json") -> List[Dict]:
+def load_sources(path: str = "data/sources.json") -> list[dict]:
     base_dir = os.path.dirname(os.path.abspath(path))
     try:
-        with open(path, "r", encoding="utf-8") as fp:
+        with open(path, encoding="utf-8") as fp:
             data = json.load(fp)
         if isinstance(data, list):
-            entries: List[Dict] = []
+            entries: list[dict] = []
             for e in data:
                 if isinstance(e, dict):
                     rec = dict(e)
@@ -31,11 +30,11 @@ def load_sources(path: str = "data/sources.json") -> List[Dict]:
     return []
 
 
-def enabled_sources(sources: List[Dict]) -> List[Dict]:
+def enabled_sources(sources: list[dict]) -> list[dict]:
     return [s for s in sources if s.get("enabled") is True]
 
 
-def _series_csv_path(entry: Dict) -> Optional[str]:
+def _series_csv_path(entry: dict) -> str | None:
     sid = entry.get("id")
     if not sid:
         return None
@@ -58,9 +57,9 @@ def _series_csv_path(entry: Dict) -> Optional[str]:
     return None
 
 
-def load_and_normalize(enabled: List[Dict]) -> Optional[pd.DataFrame]:
-    frames: List[pd.DataFrame] = []
-    meta: List[Tuple[str, str]] = []  # (series_id, country)
+def load_and_normalize(enabled: list[dict]) -> pd.DataFrame | None:
+    frames: list[pd.DataFrame] = []
+    meta: list[tuple[str, str]] = []  # (series_id, country)
     for e in enabled:
         path = _series_csv_path(e)
         if not path:

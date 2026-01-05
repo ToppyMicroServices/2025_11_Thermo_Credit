@@ -1,7 +1,8 @@
 import html as html_lib
 import json
 import os
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from collections.abc import Iterable
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -22,13 +23,13 @@ CATEGORY_LABELS = {
     "q_government": "Government",
 }
 
-ChartSpec = Tuple[Any, str, str, Optional[str]]
+ChartSpec = tuple[Any, str, str, str | None]
 
 
 class CompareData:
     """Structured container for compare-tab inputs (test friendly)."""
 
-    def __init__(self, latest_rows: pd.DataFrame, raw_figs: List[ChartSpec], std_figs: List[ChartSpec]):
+    def __init__(self, latest_rows: pd.DataFrame, raw_figs: list[ChartSpec], std_figs: list[ChartSpec]):
         self.latest_rows = latest_rows
         self.raw_figs = raw_figs
         self.std_figs = std_figs
@@ -37,11 +38,11 @@ class CompareData:
 class CompareBuilder:
     """Build reusable compare data for JP/EU/US dashboards."""
 
-    def __init__(self, region_ctxs: Iterable[Dict[str, Any]], *, start_date: Optional[pd.Timestamp] = None):
+    def __init__(self, region_ctxs: Iterable[dict[str, Any]], *, start_date: pd.Timestamp | None = None):
         self.region_ctxs = [ctx for ctx in region_ctxs if isinstance(ctx.get("frame"), pd.DataFrame)]
         self.start_date = start_date or _plot_start_date()
 
-    def build(self) -> Optional[CompareData]:
+    def build(self) -> CompareData | None:
         data = self._collect()
         if data is None:
             return None
@@ -51,11 +52,11 @@ class CompareBuilder:
         latest_df = pd.DataFrame(latest_rows)
         return CompareData(latest_df, raw_figs, std_figs)
 
-    def _collect(self) -> Optional[Tuple[List[Dict[str, Any]], List[Tuple[str, pd.DataFrame]]]]:
+    def _collect(self) -> tuple[list[dict[str, Any]], list[tuple[str, pd.DataFrame]]] | None:
         if not self.region_ctxs:
             return None
-        items: List[Tuple[str, pd.DataFrame]] = []
-        latest_rows: List[Dict[str, Any]] = []
+        items: list[tuple[str, pd.DataFrame]] = []
+        latest_rows: list[dict[str, Any]] = []
         metric_specs = [
             ("S_M", "S_M"),
             ("T_L", "T_L"),
@@ -68,7 +69,7 @@ class CompareBuilder:
             if not isinstance(label, str) or not isinstance(frame, pd.DataFrame) or frame.empty:
                 continue
             items.append((label, frame))
-            row: Dict[str, Any] = {"Region": label}
+            row: dict[str, Any] = {"Region": label}
             if "date" in frame.columns:
                 dlast = pd.to_datetime(frame["date"], errors="coerce").dropna()
                 row["Latest date"] = dlast.iloc[-1].strftime("%Y-%m-%d") if not dlast.empty else ""
@@ -85,16 +86,16 @@ class CompareBuilder:
             return None
         return latest_rows, items
 
-    def _build_raw_figs(self, items: List[Tuple[str, pd.DataFrame]]) -> List[ChartSpec]:
+    def _build_raw_figs(self, items: list[tuple[str, pd.DataFrame]]) -> list[ChartSpec]:
         metric_specs = [
             ("S_M", "Compare – S_M", "Money entropy"),
             ("T_L", "Compare – T_L", "Liquidity temperature"),
             ("loop_area", "Compare – Policy Loop Dissipation", "Loop area"),
             ("X_C", "Compare – Credit Exergy Ceiling", "X_C"),
         ]
-        raw_figs: List[ChartSpec] = []
+        raw_figs: list[ChartSpec] = []
         for met, title, alt in metric_specs:
-            long_parts: List[pd.DataFrame] = []
+            long_parts: list[pd.DataFrame] = []
             for label, df in items:
                 if "date" not in df.columns:
                     continue
@@ -143,10 +144,10 @@ class CompareBuilder:
             raw_figs.append((fig, short_label, alt, interp))
         return raw_figs
 
-    def _build_std_figs(self, items: List[Tuple[str, pd.DataFrame]]) -> List[ChartSpec]:
-        std_figs: List[ChartSpec] = []
+    def _build_std_figs(self, items: list[tuple[str, pd.DataFrame]]) -> list[ChartSpec]:
+        std_figs: list[ChartSpec] = []
 
-        def _z_of(series: pd.Series) -> Optional[pd.Series]:
+        def _z_of(series: pd.Series) -> pd.Series | None:
             s = pd.to_numeric(series, errors="coerce").dropna()
             if s.empty:
                 return None
@@ -156,7 +157,7 @@ class CompareBuilder:
                 return None
             return (series.astype(float) - m) / sd
 
-        long_parts_hat: List[pd.DataFrame] = []
+        long_parts_hat: list[pd.DataFrame] = []
         for label, df in items:
             if "date" not in df.columns or "S_M_hat" not in df.columns:
                 continue
@@ -193,7 +194,7 @@ class CompareBuilder:
             ("F_C", "Compare – Free Energy (standardized)", "F_C z"),
             ("X_C", "Compare – X_C (standardized)", "X_C z"),
         ]:
-            long_parts_z: List[pd.DataFrame] = []
+            long_parts_z: list[pd.DataFrame] = []
             for label, df in items:
                 if "date" not in df.columns or met not in df.columns:
                     continue
@@ -242,22 +243,22 @@ def _style_figure(fig) -> None:
     fig.update_layout(
         template="plotly_white",
         hovermode="x unified",
-        legend=dict(orientation="h", y=1.02, yanchor="bottom", x=1.0, xanchor="right"),
-        margin=dict(t=60, b=40, l=40, r=20),
+        legend={"orientation": "h", "y": 1.02, "yanchor": "bottom", "x": 1.0, "xanchor": "right"},
+        margin={"t": 60, "b": 40, "l": 40, "r": 20},
     )
     fig.update_xaxes(showgrid=False)
     fig.update_yaxes(showgrid=True, zeroline=True)
-    fig.update_layout(font=dict(
-        family="STIX Two Text, Times New Roman, Times, Georgia, serif",
-        size=12,
-    ))
+    fig.update_layout(font={
+        "family": "STIX Two Text, Times New Roman, Times, Georgia, serif",
+        "size": 12,
+    })
 
 
 def _apply_hover(fig, fmt: str) -> None:
     fig.update_traces(hovertemplate="%{x|%Y-%m-%d}<br>%{y:" + fmt + "}<extra>%{fullData.name}</extra>")
 
 
-def _latest_numeric(frame: Optional[pd.DataFrame], column: str) -> Optional[float]:
+def _latest_numeric(frame: pd.DataFrame | None, column: str) -> float | None:
     if frame is None or not isinstance(frame, pd.DataFrame) or column not in frame.columns:
         return None
     try:
@@ -270,7 +271,7 @@ def _latest_numeric(frame: Optional[pd.DataFrame], column: str) -> Optional[floa
     return val if np.isfinite(val) else None
 
 
-def _series_bucket(series: Optional[pd.Series], value: Optional[float] = None) -> Optional[str]:
+def _series_bucket(series: pd.Series | None, value: float | None = None) -> str | None:
     if series is None:
         return None
     try:
@@ -292,7 +293,7 @@ def _series_bucket(series: Optional[pd.Series], value: Optional[float] = None) -
     return "mid-range"
 
 
-def _series_trend(series: Optional[pd.Series]) -> Optional[str]:
+def _series_trend(series: pd.Series | None) -> str | None:
     if series is None:
         return None
     try:
@@ -328,7 +329,7 @@ def _metric_phrase(metric: str) -> str:
     return mapping.get(key, metric)
 
 
-def _compare_interpretation(short_label: str, frame: Optional[pd.DataFrame]) -> Optional[str]:
+def _compare_interpretation(short_label: str, frame: pd.DataFrame | None) -> str | None:
     if frame is None or not isinstance(frame, pd.DataFrame):
         return "Cross-region view; tighter clustering implies similar regimes."
     if not {"value", "Region"}.issubset(frame.columns):
@@ -356,7 +357,7 @@ def _compare_interpretation(short_label: str, frame: Optional[pd.DataFrame]) -> 
     )
 
 
-def _chart_interpretation(short_label: str, frame: Optional[pd.DataFrame]) -> Optional[str]:
+def _chart_interpretation(short_label: str, frame: pd.DataFrame | None) -> str | None:
     label = (short_label or "").strip()
     if not label:
         return None
@@ -367,7 +368,7 @@ def _chart_interpretation(short_label: str, frame: Optional[pd.DataFrame]) -> Op
     if frame is None or not isinstance(frame, pd.DataFrame) or frame.empty:
         return None
 
-    def _bucket_text(col: str, val: Optional[float]) -> Optional[str]:
+    def _bucket_text(col: str, val: float | None) -> str | None:
         bucket = _series_bucket(frame.get(col), val)
         return f"{val:.2f} ({bucket})" if val is not None and bucket else (f"{val:.2f}" if val is not None else None)
 
@@ -376,7 +377,7 @@ def _chart_interpretation(short_label: str, frame: Optional[pd.DataFrame]) -> Op
         tl = _latest_numeric(frame, "T_L")
         if sm is None and tl is None:
             return None
-        parts: List[str] = []
+        parts: list[str] = []
         sm_txt = _bucket_text("S_M", sm)
         if sm_txt:
             parts.append(f"S_M≈{sm_txt}")
@@ -397,7 +398,7 @@ def _chart_interpretation(short_label: str, frame: Optional[pd.DataFrame]) -> Op
         if latest.empty:
             return "Category stacking shows which lending blocks drive dispersion."
         row = latest.iloc[0]
-        contribs: List[Tuple[str, float]] = []
+        contribs: list[tuple[str, float]] = []
         total = 0.0
         for col, val in row.items():
             if pd.isna(val):
@@ -498,7 +499,7 @@ def _chart_interpretation(short_label: str, frame: Optional[pd.DataFrame]) -> Op
     return None
 
 
-def _load_csv(path: str) -> Optional[pd.DataFrame]:
+def _load_csv(path: str) -> pd.DataFrame | None:
     if not os.path.exists(path):
         return None
     try:
@@ -511,11 +512,11 @@ def _load_csv(path: str) -> Optional[pd.DataFrame]:
     return df
 
 
-def _load_json(path: str) -> Optional[Dict[str, Any]]:
+def _load_json(path: str) -> dict[str, Any] | None:
     if not os.path.exists(path):
         return None
     try:
-        with open(path, "r", encoding="utf-8") as fp:
+        with open(path, encoding="utf-8") as fp:
             data = json.load(fp)
     except Exception:
         return None
@@ -534,7 +535,7 @@ def _resolve_diag_window(default: int = 24) -> int:
     return default
 
 
-def _calc_effective_window(frame: pd.DataFrame, requested: int) -> Tuple[int, str]:
+def _calc_effective_window(frame: pd.DataFrame, requested: int) -> tuple[int, str]:
     if not all(c in frame.columns for c in REQUIRED_THERMO_COLS):
         return 0, ""
     available = frame[REQUIRED_THERMO_COLS].dropna().shape[0]
@@ -566,7 +567,7 @@ def make_dual_axis_sm_tl(plot_df: pd.DataFrame, title: str) -> go.Figure:
                 y=pd.to_numeric(df["S_M"], errors="coerce"),
                 name="S_M (dispersion)",
                 mode="lines",
-                line=dict(color=col_sm, width=2.0),
+                line={"color": col_sm, "width": 2.0},
             ),
             secondary_y=False,
         )
@@ -577,11 +578,11 @@ def make_dual_axis_sm_tl(plot_df: pd.DataFrame, title: str) -> go.Figure:
                 y=pd.to_numeric(df["T_L"], errors="coerce"),
                 name="T_L (liquidity temperature)",
                 mode="lines",
-                line=dict(color=col_tl, width=2.0, dash="solid"),
+                line={"color": col_tl, "width": 2.0, "dash": "solid"},
             ),
             secondary_y=True,
         )
-    fig.update_layout(title=title, legend=dict(orientation="h", y=1.02, yanchor="bottom", x=1.0, xanchor="right"))
+    fig.update_layout(title=title, legend={"orientation": "h", "y": 1.02, "yanchor": "bottom", "x": 1.0, "xanchor": "right"})
     fig.update_xaxes(title_text="Date")
     fig.update_yaxes(title_text="S_M (dispersion)", secondary_y=False)
     fig.update_yaxes(title_text="T_L (liquidity temperature)", secondary_y=True)
@@ -621,13 +622,13 @@ def _out_of_spec_mask(df: pd.DataFrame) -> pd.Series:
     return mask
 
 
-def _mask_to_ranges(dates: pd.Series, mask: pd.Series) -> List[Tuple[pd.Timestamp, pd.Timestamp]]:
-    ranges: List[Tuple[pd.Timestamp, pd.Timestamp]] = []
+def _mask_to_ranges(dates: pd.Series, mask: pd.Series) -> list[tuple[pd.Timestamp, pd.Timestamp]]:
+    ranges: list[tuple[pd.Timestamp, pd.Timestamp]] = []
     if dates.empty or mask.empty or len(dates) != len(mask):
         return ranges
     current_start = None
     prev_dt = None
-    for dt_val, flag in zip(dates, mask):
+    for dt_val, flag in zip(dates, mask, strict=False):
         if flag and current_start is None:
             current_start = dt_val
         elif not flag and current_start is not None:
@@ -639,7 +640,7 @@ def _mask_to_ranges(dates: pd.Series, mask: pd.Series) -> List[Tuple[pd.Timestam
     return ranges
 
 
-def _augment_region_frame(frame: pd.DataFrame, effective_window: int, has_thermo: bool) -> Tuple[pd.DataFrame, bool]:
+def _augment_region_frame(frame: pd.DataFrame, effective_window: int, has_thermo: bool) -> tuple[pd.DataFrame, bool]:
     local = frame.copy()
     for col in local.columns:
         if col != "date":
@@ -655,8 +656,8 @@ def _augment_region_frame(frame: pd.DataFrame, effective_window: int, has_thermo
     return local, has_derivatives
 
 
-def _figs_html(specs: List[ChartSpec]) -> str:
-    parts: List[str] = []
+def _figs_html(specs: list[ChartSpec]) -> str:
+    parts: list[str] = []
     for fig, title, alt, interp in specs:
         html = fig.to_html(full_html=False, include_plotlyjs="cdn")
         caption = f"<strong>{html_lib.escape(title)}</strong>"
@@ -668,10 +669,10 @@ def _figs_html(specs: List[ChartSpec]) -> str:
     return "".join(parts)
 
 
-def _selected_table(meta: Optional[Dict[str, Any]], header: str) -> str:
+def _selected_table(meta: dict[str, Any] | None, header: str) -> str:
     if not isinstance(meta, dict):
         return ""
-    rows: List[Dict[str, Any]] = []
+    rows: list[dict[str, Any]] = []
     for role, entry in meta.items():
         if isinstance(entry, dict):
             rows.append({

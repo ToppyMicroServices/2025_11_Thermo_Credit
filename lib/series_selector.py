@@ -1,14 +1,15 @@
 """Helpers for selecting economic series with preferences and fallbacks."""
 import logging
 import os
-from typing import Any, Callable, Dict, List, Optional
+from collections.abc import Callable
+from typing import Any
 
 import yaml
 
 logger = logging.getLogger(__name__)
 DEFAULT_START = "1990-01-01"
 
-DEFAULT_SERIES: Dict[str, List[Dict[str, Any]]] = {
+DEFAULT_SERIES: dict[str, list[dict[str, Any]]] = {
     "money_scale": [
         {"id": "MYAGM2JPM189S", "title": "Japan M2 (Monthly)", "start": DEFAULT_START},
         {"id": "JPNASSETS", "title": "Bank of Japan Total Assets", "start": DEFAULT_START},
@@ -57,9 +58,9 @@ DEFAULT_SERIES: Dict[str, List[Dict[str, Any]]] = {
 }
 
 
-def _read_config(config_path: str) -> Dict[str, Any]:
+def _read_config(config_path: str) -> dict[str, Any]:
     try:
-        with open(config_path, "r", encoding="utf-8") as fh:
+        with open(config_path, encoding="utf-8") as fh:
             content = yaml.safe_load(fh) or {}
     except FileNotFoundError:
         return {}
@@ -75,19 +76,19 @@ def _read_config(config_path: str) -> Dict[str, Any]:
     return content
 
 
-def load_project_config(config_path: str) -> Dict[str, Any]:
+def load_project_config(config_path: str) -> dict[str, Any]:
     """Load the full project config as a dictionary (missing/invalid -> empty dict)."""
     return _read_config(config_path)
 
 
-def load_series_preferences(config_path: str) -> Dict[str, List[Any]]:
+def load_series_preferences(config_path: str) -> dict[str, list[Any]]:
     """Load per-role series preferences from a YAML config file if available."""
     content = _read_config(config_path)
     raw_series = content.get("series", {})
     if not isinstance(raw_series, dict):
         return {}
 
-    prefs: Dict[str, List[Any]] = {}
+    prefs: dict[str, list[Any]] = {}
     for role, spec in raw_series.items():
         if isinstance(spec, dict) and "preferred" in spec:
             entries = spec.get("preferred")
@@ -100,7 +101,7 @@ def load_series_preferences(config_path: str) -> Dict[str, List[Any]]:
     return prefs
 
 
-def _normalize_candidate(entry: Any) -> Optional[Dict[str, Any]]:
+def _normalize_candidate(entry: Any) -> dict[str, Any] | None:
     if isinstance(entry, str):
         raw = entry.strip()
         if not raw:
@@ -114,7 +115,7 @@ def _normalize_candidate(entry: Any) -> Optional[Dict[str, Any]]:
             start = None
         if not series_id:
             return None
-        result: Dict[str, Any] = {"id": series_id}
+        result: dict[str, Any] = {"id": series_id}
         if start:
             result["start"] = start
         return result
@@ -136,17 +137,17 @@ def _normalize_candidate(entry: Any) -> Optional[Dict[str, Any]]:
 
 def candidate_queue(
     role: str,
-    env_var: Optional[str],
-    preferences: Optional[Dict[str, List[Any]]],
-    defaults: Optional[Dict[str, List[Dict[str, Any]]]],
-) -> List[Dict[str, Any]]:
+    env_var: str | None,
+    preferences: dict[str, list[Any]] | None,
+    defaults: dict[str, list[dict[str, Any]]] | None,
+) -> list[dict[str, Any]]:
     preferences = preferences or {}
     defaults = defaults or DEFAULT_SERIES
 
-    queue: List[Dict[str, Any]] = []
+    queue: list[dict[str, Any]] = []
     seen: set = set()
 
-    def _append(candidate: Dict[str, Any], source: str) -> None:
+    def _append(candidate: dict[str, Any], source: str) -> None:
         series_id = candidate.get("id")
         if not series_id:
             return
@@ -190,12 +191,12 @@ def candidate_queue(
 
 def select_series(
     role: str,
-    env_var: Optional[str],
+    env_var: str | None,
     fetcher: Callable[[str, str], Any],
     *,
-    preferences: Optional[Dict[str, List[Any]]] = None,
-    defaults: Optional[Dict[str, List[Dict[str, Any]]]] = None,
-) -> Dict[str, Any]:
+    preferences: dict[str, list[Any]] | None = None,
+    defaults: dict[str, list[dict[str, Any]]] | None = None,
+) -> dict[str, Any]:
     """
     Pick a series for a given role using environment overrides, config preferences,
     and built-in defaults. Returns metadata plus fetched data.
@@ -204,7 +205,7 @@ def select_series(
     if not queue:
         raise RuntimeError(f"No candidate series configured for role '{role}'.")
 
-    errors: List[str] = []
+    errors: list[str] = []
     for candidate in queue:
         series_id = candidate["id"]
         start = candidate.get("start") or DEFAULT_START
@@ -216,7 +217,7 @@ def select_series(
 
         is_empty = False
         if hasattr(data, "empty"):
-            is_empty = bool(getattr(data, "empty"))
+            is_empty = bool(data.empty)
         elif isinstance(data, (list, tuple, set, dict)):
             is_empty = len(data) == 0
 

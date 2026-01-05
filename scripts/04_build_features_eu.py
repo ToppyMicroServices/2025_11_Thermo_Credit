@@ -4,7 +4,6 @@ import json
 import logging
 import os
 import sys
-from typing import Optional
 
 import pandas as pd
 
@@ -99,7 +98,7 @@ def _log_selection(role: str, info: dict) -> None:
     print(f"[EU series] {role}: {info['id']}{suffix} (source={source}, start={start})")
 
 
-def list_series(series_prefs: dict, roles: Optional[list] = None) -> None:
+def list_series(series_prefs: dict, roles: list | None = None) -> None:
     roles_to_show = roles or ["money_scale_eu", "base_proxy_eu", "yield_proxy_eu"]
     for role in roles_to_show:
         env_var = ROLE_ENV_EU.get(role)
@@ -117,7 +116,7 @@ def list_series(series_prefs: dict, roles: Optional[list] = None) -> None:
             print(f"  - {item['id']}{suffix} [{item['source']}, start={start}]")
 
 
-def _external_series_fetcher(series_id: str, start: Optional[str] = None) -> pd.DataFrame:
+def _external_series_fetcher(series_id: str, start: str | None = None) -> pd.DataFrame:
     df = fred_series(series_id, start or DEFAULT_START)
     df = df.copy()
     df["date"] = pd.to_datetime(df["date"])
@@ -203,7 +202,7 @@ def build_eu(series_prefs: dict, project_config: dict) -> None:
             bis = fred_series("CRDQEZAPABIS")  # BIS credit (private non-financial), Euro Area
         except Exception:
             # Fallback candidate (long-term series) - adjust if not available
-            bis = fred_series("QUSN628BIS")  # Placeholder: will likely differ; user should replace
+            bis = fred_series("QUSN628BIS")  # Placeholder: may require regional adjustment
         bis["date"] = pd.to_datetime(bis["date"])  # quarterly or monthly depending on source
         bis["date"] = pd.to_datetime(bis["date"])  # quarterly
         bis = bis.rename(columns={"value": "L_real"})

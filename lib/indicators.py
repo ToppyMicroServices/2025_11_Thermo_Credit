@@ -14,7 +14,9 @@ Missing optional pieces (e.g., U or S_M for F_C) will result in NaNs instead of 
 """
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Tuple
+import contextlib
+import logging
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -22,6 +24,8 @@ import pandas as pd
 from lib.entropy import money_entropy
 from lib.loop_area import LoopArea
 from lib.temperature import liquidity_temperature
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_HEADROOM_COLS = ("capital_headroom", "lcr_headroom", "nsfr_headroom")
 
@@ -33,7 +37,7 @@ def _sanitize_numeric(series: pd.Series) -> pd.Series:
 def _detrend_no_lookahead(series: pd.Series,
                            method: str = "rolling",
                            window: int = 12,
-                           min_periods: Optional[int] = None) -> Tuple[pd.Series, pd.Series]:
+                           min_periods: int | None = None) -> tuple[pd.Series, pd.Series]:
     """Return (trend, detrended) using only past observations.
 
     Supported methods:
@@ -54,7 +58,7 @@ def _detrend_no_lookahead(series: pd.Series,
     return trend, detrended
 
 
-def _apply_u_detrend(df: pd.DataFrame, cfg: Dict[str, Any]) -> pd.DataFrame:
+def _apply_u_detrend(df: pd.DataFrame, cfg: dict[str, Any]) -> pd.DataFrame:
     if "U" not in df.columns:
         return df
     u_cfg = cfg.get("U_detrend", {}) if isinstance(cfg, dict) else {}
@@ -65,32 +69,35 @@ def _apply_u_detrend(df: pd.DataFrame, cfg: Dict[str, Any]) -> pd.DataFrame:
         return df
     try:
         window = int(u_cfg.get("window", 12))
-    except Exception:
+    except (ValueError, TypeError) as e:
+        logger.warning("Invalid window in U_detrend config, using default 12: %s", e)
         window = 12
     try:
         min_periods = u_cfg.get("min_periods")
         min_periods = int(min_periods) if min_periods is not None else None
-    except Exception:
+    except (ValueError, TypeError) as e:
+        logger.warning("Invalid min_periods in U_detrend config, using None: %s", e)
         min_periods = None
     method = str(u_cfg.get("method", "rolling")).strip().lower()
     try:
         trend, detrended = _detrend_no_lookahead(df["U"], method=method, window=window, min_periods=min_periods)
         df["U_trend"] = trend
         df["U_star"] = detrended
-    except Exception:
+    except (KeyError, ValueError) as e:
+        logger.warning("Failed to detrend U column: %s. Setting U_trend and U_star to NaN", e)
         df["U_trend"] = np.nan
         df["U_star"] = np.nan
     return df
 
 
-def _headroom_columns(cfg: Dict[str, Any]) -> Tuple[str, ...]:
+def _headroom_columns(cfg: dict[str, Any]) -> tuple[str, ...]:
     cols = cfg.get("V_C_headroom_cols") if isinstance(cfg, dict) else None
     if cols and isinstance(cols, (list, tuple)):
         return tuple(str(c) for c in cols)
     return DEFAULT_HEADROOM_COLS
 
 
-def _derive_headroom(df: pd.DataFrame, cfg: Dict[str, Any]) -> Tuple[pd.DataFrame, Tuple[str, ...]]:
+def _derive_headroom(df: pd.DataFrame, cfg: dict[str, Any]) -> tuple[pd.DataFrame, tuple[str, ...]]:
     base = None
     for cand in ("V_C", "V_R"):
         if cand in df.columns:
@@ -99,7 +106,7 @@ def _derive_headroom(df: pd.DataFrame, cfg: Dict[str, Any]) -> Tuple[pd.DataFram
                 base = ser
                 break
     if base is None:
-        return df, tuple()
+        return df, ()
     scales = cfg.get("V_C_headroom_scales") if isinstance(cfg, dict) else None
     if not scales or not isinstance(scales, (list, tuple)):
         scales = (1.0, 1.0, 1.0)
@@ -113,7 +120,7 @@ def _derive_headroom(df: pd.DataFrame, cfg: Dict[str, Any]) -> Tuple[pd.DataFram
     return df, tuple(derived_cols)
 
 
-def _apply_vc_formula(df: pd.DataFrame, cfg: Dict[str, Any]) -> pd.DataFrame:
+def _apply_vc_formula(df: pd.DataFrame, cfg: dict[str, Any]) -> pd.DataFrame:
     mode = str(cfg.get("V_C_formula", "legacy")).strip().lower() if isinstance(cfg, dict) else "legacy"
     if mode != "min_headroom":
         return df
@@ -144,7 +151,7 @@ def _apply_vc_formula(df: pd.DataFrame, cfg: Dict[str, Any]) -> pd.DataFrame:
     return df
 
 
-def _apply_free_energy_baseline(df: pd.DataFrame, cfg: Dict[str, Any]) -> pd.DataFrame:
+def _apply_free_energy_baseline(df: pd.DataFrame, cfg: dict[str, Any]) -> pd.DataFrame:
     if "F_C" not in df.columns or not isinstance(cfg, dict):
         return df
     mode = str(cfg.get("F_C_baseline_mode", "none") or "").strip().lower()
@@ -189,14 +196,12 @@ def _apply_free_energy_baseline(df: pd.DataFrame, cfg: Dict[str, Any]) -> pd.Dat
     if offset:
         df["F_C"] = fnum + offset
         if "X_C" in df.columns:
-            try:
+            with contextlib.suppress(Exception):
                 df["X_C"] = pd.to_numeric(df["X_C"], errors="coerce") + offset
-            except Exception:
-                pass
     return df
 
 
-def _apply_external_coupling(df: pd.DataFrame, cfg: Dict[str, Any]) -> pd.DataFrame:
+def _apply_external_coupling(df: pd.DataFrame, cfg: dict[str, Any]) -> pd.DataFrame:
     ext_cfg = cfg.get("external_coupling") if isinstance(cfg, dict) else None
     if not isinstance(ext_cfg, dict) or not ext_cfg.get("enabled"):
         return df
@@ -222,8 +227,8 @@ def _apply_external_coupling(df: pd.DataFrame, cfg: Dict[str, Any]) -> pd.DataFr
 
 
 def _apply_chemical_potentials(df: pd.DataFrame,
-                               cfg: Dict[str, Any],
-                               q_cols: Optional[Tuple[str, ...]] = None) -> pd.DataFrame:
+                               cfg: dict[str, Any],
+                               q_cols: tuple[str, ...] | None = None) -> pd.DataFrame:
     if not q_cols:
         return df
     if "M_in" not in df.columns:
@@ -270,7 +275,7 @@ def build_indicators_core(money: pd.DataFrame,
                            q: pd.DataFrame,
                            cred: pd.DataFrame,
                            reg: pd.DataFrame,
-                           cfg: Dict[str, Any]) -> pd.DataFrame:
+                           cfg: dict[str, Any]) -> pd.DataFrame:
     """Merge sources and compute loop area, F_C, X_C.
     Expects money columns (M_in, M_out), q shares, cred columns (U, S_M inputs after entropy merge), reg (p_R,V_R).
     """
@@ -449,9 +454,9 @@ def compute_diagnostics(df: pd.DataFrame, window: int = 24) -> pd.DataFrame:
     if len(core_subset) < window:
         # not enough data; skip diagnostics
         return df
-    first_valid_date = core_subset.iloc[0]["S_M"], core_subset.index[0]
+    core_subset.iloc[0]["S_M"], core_subset.index[0]
     # where all required present
-    mask_valid = df[required].notna().all(axis=1)
+    df[required].notna().all(axis=1)
     # keep all rows but we only compute for rolling windows; early rows remain NaN
     n = len(df)
     def _rolling_partial_beta(y, x_main, x_cond):

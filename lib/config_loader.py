@@ -17,17 +17,17 @@ distinct exergy (X_C) computations.
 from __future__ import annotations
 
 import os
-from typing import Any, Dict
+from typing import Any
 
 import yaml
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
-def _read_yaml(path: str) -> Dict[str, Any]:
+def _read_yaml(path: str) -> dict[str, Any]:
     if not os.path.exists(path):
         return {}
     try:
-        with open(path, 'r', encoding='utf-8') as fp:
+        with open(path, encoding='utf-8') as fp:
             data = yaml.safe_load(fp)
         return data if isinstance(data, dict) else {}
     except yaml.YAMLError as exc:
@@ -39,7 +39,7 @@ def _read_yaml(path: str) -> Dict[str, Any]:
         logging.getLogger(__name__).warning("Failed to read %s: %s, using empty config", path, exc)
         return {}
 
-def _merge_series(base_series: Dict[str, Any], override_series: Dict[str, Any]) -> Dict[str, Any]:
+def _merge_series(base_series: dict[str, Any], override_series: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(base_series, dict):
         base_series = {}
     if not isinstance(override_series, dict):
@@ -49,7 +49,7 @@ def _merge_series(base_series: Dict[str, Any], override_series: Dict[str, Any]) 
         out[k] = v
     return out
 
-def load_config(region_code: str | None) -> Dict[str, Any]:
+def load_config(region_code: str | None) -> dict[str, Any]:
     """Load base config.yml and merge region-specific override if present.
 
     Region file pattern: config_<region>.yml (e.g., config_us.yml).

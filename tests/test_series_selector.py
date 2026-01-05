@@ -70,15 +70,14 @@ class SeriesSelectorTests(unittest.TestCase):
         def fake_fetch(series_id: str, start: str) -> pd.DataFrame:
             raise RuntimeError("fail")
 
-        with patch.dict("os.environ", {}, clear=True):
-            with self.assertRaises(RuntimeError):
-                selector.select_series(
-                    "money_scale",
-                    "MONEY_SERIES",
-                    fake_fetch,
-                    preferences={},
-                    defaults={"money_scale": []},
-                )
+        with patch.dict("os.environ", {}, clear=True), self.assertRaises(RuntimeError):
+            selector.select_series(
+                "money_scale",
+                "MONEY_SERIES",
+                fake_fetch,
+                preferences={},
+                defaults={"money_scale": []},
+            )
 
     def test_load_series_preferences_parses_yaml(self) -> None:
         yaml_content = (

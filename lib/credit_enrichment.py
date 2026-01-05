@@ -5,8 +5,6 @@ and warning diagnostics.
 """
 from __future__ import annotations
 
-from typing import Optional
-
 import numpy as np
 import pandas as pd
 
@@ -19,19 +17,19 @@ def _cal(value, default):
 
 def compute_enrichment(
     df: pd.DataFrame,
-    depth_source: Optional[pd.Series] = None,
-    turnover_source: Optional[pd.Series] = None,
+    depth_source: pd.Series | None = None,
+    turnover_source: pd.Series | None = None,
     l_real_col: str = "L_real",
     u_col: str = "U",
     depth_col: str = "depth",
     turnover_col: str = "turnover",
-    warnings: Optional[list] = None,
-    depth_scale: Optional[float] = None,
-    depth_fallback: Optional[float] = None,
-    turnover_min: Optional[float] = None,
-    turnover_max: Optional[float] = None,
-    turnover_fallback: Optional[float] = None,
-    clip_warn_threshold: Optional[float] = None,
+    warnings: list | None = None,
+    depth_scale: float | None = None,
+    depth_fallback: float | None = None,
+    turnover_min: float | None = None,
+    turnover_max: float | None = None,
+    turnover_fallback: float | None = None,
+    clip_warn_threshold: float | None = None,
 ) -> pd.DataFrame:
     """Compute depth & turnover columns with fallback and clipping diagnostics.
 
@@ -107,12 +105,12 @@ def compute_enrichment(
 
 def merge_depth_turnover(
     credit_df: pd.DataFrame,
-    depth_df: Optional[pd.DataFrame] = None,
-    turnover_df: Optional[pd.DataFrame] = None,
+    depth_df: pd.DataFrame | None = None,
+    turnover_df: pd.DataFrame | None = None,
     date_col: str = "date",
     depth_value_col: str = "value",
     turnover_value_col: str = "value",
-    warnings: Optional[list] = None,
+    warnings: list | None = None,
 ) -> pd.DataFrame:
     """Merge external depth/turnover raw series (already quarterly) if provided."""
     out = credit_df.copy()

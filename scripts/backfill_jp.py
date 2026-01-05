@@ -52,7 +52,7 @@ def backward_extrap(series_latest: float, n: int, step: float):
     # produce n values older, reverse chronological
     vals = []
     val = series_latest
-    for i in range(n):
+    for _i in range(n):
         val /= (1.0 + step)  # step growth forward so divide for backwards
         vals.append(val)
     return list(reversed(vals))
@@ -75,8 +75,8 @@ back_q_res    = [q_reserve0 for _ in range(nq)]
 def _norm_row(a,b,c,d):
     s=a+b+c+d
     return a/s, b/s, c/s, d/s
-norm_alloc = [ _norm_row(a,b,c,d) for a,b,c,d in zip(back_q_pay,back_q_firm,back_q_asset,back_q_res) ]
-back_q_pay, back_q_firm, back_q_asset, back_q_res = zip(*norm_alloc)
+norm_alloc = [ _norm_row(a,b,c,d) for a,b,c,d in zip(back_q_pay,back_q_firm,back_q_asset,back_q_res, strict=False) ]
+back_q_pay, back_q_firm, back_q_asset, back_q_res = zip(*norm_alloc, strict=False)
 
 # Credit: extrapolate U, Y, L_real, L_asset, spread, depth, turnover backwards similarly
 cred_row = cred.iloc[0]

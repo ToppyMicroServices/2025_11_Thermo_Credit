@@ -15,7 +15,6 @@ import json
 import os
 import sys
 import time
-from typing import List, Set
 
 import pandas as pd
 import requests
@@ -24,14 +23,14 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DATA_DIR = os.path.join(ROOT, "data")
 
 
-def _collect_ids(paths: List[str]) -> List[str]:
-    ids: Set[str] = set()
+def _collect_ids(paths: list[str]) -> list[str]:
+    ids: set[str] = set()
     for p in paths:
         fp = os.path.join(DATA_DIR, p)
         if not os.path.exists(fp):
             continue
         try:
-            meta = json.load(open(fp, "r", encoding="utf-8"))
+            meta = json.load(open(fp, encoding="utf-8"))
         except Exception:
             continue
         if isinstance(meta, dict):

@@ -1,4 +1,6 @@
-import os, sys
+import os
+import sys
+
 # Ensure project root (parent of tests/) is on sys.path so 'lib' and 'scripts' can be imported
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if ROOT not in sys.path:

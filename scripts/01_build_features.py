@@ -5,7 +5,6 @@ import json
 import logging
 import os
 import sys
-from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -91,8 +90,7 @@ def fred_series(series_id: str, start: str = DEFAULT_START) -> pd.DataFrame:
 
     if not FRED_KEY:
         if os.path.exists(cache_path):
-            df = pd.read_csv(cache_path)
-            return df
+            return pd.read_csv(cache_path)
         raise RuntimeError("FRED_API_KEY not set; cannot fetch online and no cached CSV found.")
 
     try:
@@ -107,12 +105,11 @@ def fred_series(series_id: str, start: str = DEFAULT_START) -> pd.DataFrame:
             logging.getLogger(__name__).warning(
                 "FRED fetch failed for %s: %s. Using cached CSV.", series_id, e
             )
-            df = pd.read_csv(cache_path)
-            return df
+            return pd.read_csv(cache_path)
         raise
 
 
-def _external_series_fetcher(series_id: str, start: Optional[str] = None) -> pd.DataFrame:
+def _external_series_fetcher(series_id: str, start: str | None = None) -> pd.DataFrame:
     df = fred_series(series_id, start or DEFAULT_START)
     df = df.copy()
     df["date"] = pd.to_datetime(df["date"])
@@ -314,7 +311,7 @@ def _log_selection(role: str, info: dict) -> None:
     print(f"[JP series] {role}: {info['id']}{suffix} (source={source}, start={start})")
 
 
-def list_series(series_prefs: dict, roles: Optional[list] = None) -> None:
+def list_series(series_prefs: dict, roles: list | None = None) -> None:
     roles_to_show = roles or sorted(set(list(DEFAULT_SERIES.keys()) + list(series_prefs.keys())))
     for role in roles_to_show:
         env_var = ROLE_ENV.get(role)

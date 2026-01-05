@@ -1,5 +1,7 @@
-import pandas as pd
 import os
+
+import pandas as pd
+
 
 def test_credit_enrichment_columns_present():
     path = os.path.join("site", "indicators.csv")

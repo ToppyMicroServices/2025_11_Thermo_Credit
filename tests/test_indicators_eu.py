@@ -1,9 +1,10 @@
 import os
+
 import pandas as pd
 import pytest
 
 
-@pytest.mark.parametrize("path", ["site/indicators.csv", "site/indicators_eu.csv"]) 
+@pytest.mark.parametrize("path", ["site/indicators.csv", "site/indicators_eu.csv"])
 def test_core_columns_if_present(path):
     if not os.path.exists(path):
         pytest.skip(f"{path} not present")

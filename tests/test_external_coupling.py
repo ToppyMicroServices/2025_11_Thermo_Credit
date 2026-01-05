@@ -1,9 +1,8 @@
 import numpy as np
 import pandas as pd
 
-from lib.indicators import build_indicators_core
 from lib.config_loader import load_config
-
+from lib.indicators import build_indicators_core
 
 MECE_COLS = [
     "q_productive",

@@ -1,6 +1,7 @@
 import logging
 import os
-from typing import Any, Dict, Optional, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 import pandas as pd
 
@@ -18,7 +19,7 @@ def _read_raw(sid: str) -> pd.DataFrame:
     return df.sort_values("date")
 
 
-def _pick_first_available(series_list: Optional[Sequence[Dict[str, Any]]]) -> pd.DataFrame:
+def _pick_first_available(series_list: Sequence[dict[str, Any]] | None) -> pd.DataFrame:
     if not series_list:
         return pd.DataFrame()
     for s in series_list:
@@ -40,8 +41,7 @@ def _apply_start(df: pd.DataFrame, start_ts: pd.Timestamp) -> pd.DataFrame:
 def _qe_dec(dfm: pd.DataFrame) -> pd.DataFrame:
     if dfm.empty:
         return dfm
-    dfm = dfm.set_index("date").resample("QE-DEC").last().reset_index()
-    return dfm
+    return dfm.set_index("date").resample("QE-DEC").last().reset_index()
 
 
 def compute_region(region: str) -> str:

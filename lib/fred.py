@@ -8,7 +8,6 @@ from __future__ import annotations
 import logging
 import os
 import time
-from typing import Optional
 
 import pandas as pd
 import requests
@@ -21,7 +20,7 @@ DEFAULT_TIMEOUT = 30.0
 
 def fetch_fred_series(
     series_id: str,
-    api_key: Optional[str] = None,
+    api_key: str | None = None,
     start: str = "1990-01-01",
     retries: int = 3,
     backoff: float = 1.0,

@@ -3,7 +3,6 @@ import pandas as pd
 
 from lib.indicators import build_indicators_core
 
-
 Q_COLS = ["q_a", "q_b"]
 
 

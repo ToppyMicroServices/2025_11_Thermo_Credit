@@ -6,13 +6,14 @@ averaging them with equal weights (skip NaNs so missing drivers do not backfill)
 from __future__ import annotations
 
 import logging
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from collections.abc import Callable
+from typing import Any
 
 import numpy as np
 import pandas as pd
 
 logger = logging.getLogger(__name__)
-SeriesFetcher = Callable[[str, Optional[str]], pd.DataFrame]
+SeriesFetcher = Callable[[str, str | None], pd.DataFrame]
 
 
 def _to_monthly(series_df: pd.DataFrame, freq: str) -> pd.Series:
@@ -24,8 +25,7 @@ def _to_monthly(series_df: pd.DataFrame, freq: str) -> pd.Series:
     df["date"] = pd.to_datetime(df["date"])
     values = pd.to_numeric(df["value"], errors="coerce")
     ser = pd.Series(values.values, index=df["date"])
-    monthly = ser.resample(freq).mean()
-    return monthly
+    return ser.resample(freq).mean()
 
 
 def _zscore(series: pd.Series) -> pd.Series:
@@ -41,7 +41,7 @@ def _zscore(series: pd.Series) -> pd.Series:
 def _transform_series(
     primary: pd.Series,
     transform: str,
-    secondary: Optional[pd.Series] = None,
+    secondary: pd.Series | None = None,
 ) -> pd.Series:
     transform = (transform or "value").strip().lower()
     ser = primary.copy()
@@ -61,10 +61,10 @@ def _transform_series(
 
 
 def _component_series(
-    spec: Dict[str, Any],
+    spec: dict[str, Any],
     fetcher: SeriesFetcher,
     freq: str,
-    cache: Dict[Tuple[str, Optional[str]], pd.DataFrame],
+    cache: dict[tuple[str, str | None], pd.DataFrame],
 ) -> pd.Series:
     series_id = spec.get("id")
     if not series_id:
@@ -100,13 +100,13 @@ def _component_series(
 
 
 def _build_group(
-    specs: List[Dict[str, Any]],
+    specs: list[dict[str, Any]],
     fetcher: SeriesFetcher,
     freq: str,
-    cache: Dict[Tuple[str, Optional[str]], pd.DataFrame],
-) -> Tuple[pd.DataFrame, List[str]]:
+    cache: dict[tuple[str, str | None], pd.DataFrame],
+) -> tuple[pd.DataFrame, list[str]]:
     frames = []
-    keys: List[str] = []
+    keys: list[str] = []
     for spec in specs or []:
         series = _component_series(spec, fetcher, freq, cache)
         if series.empty:
@@ -122,7 +122,7 @@ def _build_group(
 
 
 def build_external_coupling_indices(
-    ext_cfg: Dict[str, Any],
+    ext_cfg: dict[str, Any],
     fetcher: SeriesFetcher,
 ) -> pd.DataFrame:
     """Return monthly external pressure/temperature indices.
@@ -137,7 +137,7 @@ def build_external_coupling_indices(
     if not isinstance(ext_cfg, dict) or not ext_cfg.get("enabled"):
         return pd.DataFrame()
     freq = str(ext_cfg.get("frequency", "MS")).upper()
-    cache: Dict[Tuple[str, Optional[str]], pd.DataFrame] = {}
+    cache: dict[tuple[str, str | None], pd.DataFrame] = {}
     pressure_specs = ext_cfg.get("pressure_components", [])
     temperature_specs = ext_cfg.get("temperature_components", [])
     pressure_df, pressure_keys = _build_group(pressure_specs, fetcher, freq, cache)

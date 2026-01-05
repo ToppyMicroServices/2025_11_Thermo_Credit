@@ -1,7 +1,6 @@
 import os
 import sys
 from pathlib import Path
-from typing import List
 
 # Reuse the per-region compute function
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -9,7 +8,7 @@ if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 from lib.regions import compute_region  # type: ignore
 
-REGIONS: List[str] = ["jp", "eu", "us"]
+REGIONS: list[str] = ["jp", "eu", "us"]
 
 def main():
     # Ensure site directory exists

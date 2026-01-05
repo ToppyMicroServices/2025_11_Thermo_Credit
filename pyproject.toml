@@ -27,14 +27,19 @@ select = [
 ]
 ignore = [
     "E501",   # line too long (handled by formatter)
+    "E702",   # multiple statements on one line (intentional in some cases)
     "B008",   # do not perform function calls in argument defaults
     "B904",   # raise from None
+    "SIM102", # use single if (sometimes less readable)
     "SIM108", # use ternary operator (sometimes less readable)
+    "SIM115", # context manager for files (some uses are intentional)
+    "UP035",  # deprecated imports (gradual migration)
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["N802", "N806"]  # allow non-lowercase function/variable names in tests
-"scripts/*" = ["N802", "N806"]  # allow flexibility in scripts
+"scripts/*" = ["N802", "N806", "E402"]  # allow flexibility in scripts, E402 for sys.path modification
+"lib/entropy.py" = ["N802"]  # shannon_H functions are named to match mathematical notation
 
 [tool.ruff.lint.isort]
 known-first-party = ["lib"]

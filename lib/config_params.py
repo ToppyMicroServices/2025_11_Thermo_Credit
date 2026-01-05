@@ -1,6 +1,6 @@
 """Utilities for reading parameter defaults from the project config."""
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 def _coerce_float(value: Any, default: float) -> float:
@@ -10,7 +10,7 @@ def _coerce_float(value: Any, default: float) -> float:
         return default
 
 
-def leverage_share(config: Optional[Dict[str, Any]], region: str, default: float = 0.4) -> float:
+def leverage_share(config: dict[str, Any] | None, region: str, default: float = 0.4) -> float:
     """Return the leverage share multiplier for a region, clamped to non-negative values."""
     if not isinstance(config, dict):
         return default
@@ -27,10 +27,10 @@ def leverage_share(config: Optional[Dict[str, Any]], region: str, default: float
 
 
 def allocation_weights(
-    config: Optional[Dict[str, Any]],
+    config: dict[str, Any] | None,
     region: str,
-    defaults: Dict[str, float],
-) -> Dict[str, float]:
+    defaults: dict[str, float],
+) -> dict[str, float]:
     """Return allocation weights for a region with defaults applied per key."""
     weights = dict(defaults)
     if not isinstance(config, dict):

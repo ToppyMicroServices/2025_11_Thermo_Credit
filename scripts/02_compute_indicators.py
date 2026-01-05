@@ -7,6 +7,8 @@ import pandas as pd
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
+import contextlib
+
 from lib.config_loader import load_config
 from lib.indicators import DEFAULT_HEADROOM_COLS, build_indicators_core, compute_diagnostics
 
@@ -28,7 +30,7 @@ def _bootstrap_region_env() -> str:
 
 REGION = _bootstrap_region_env()
 
-HEADROOM_DECAY = dict(zip(DEFAULT_HEADROOM_COLS, (0.04, 0.05, 0.06)))
+HEADROOM_DECAY = dict(zip(DEFAULT_HEADROOM_COLS, (0.04, 0.05, 0.06), strict=False))
 
 
 def _ensure_headrooms(reg: pd.DataFrame) -> pd.DataFrame:
@@ -151,28 +153,23 @@ def _prepare_yield_fallback(yield_df: pd.DataFrame) -> pd.DataFrame:
     if not value_cols:
         return pd.DataFrame()
     col = value_cols[0]
-    try:
+    with contextlib.suppress(Exception):
         y[col] = pd.to_numeric(y[col], errors="coerce")
-    except Exception:
-        pass
     y["quarter"] = y["date"].dt.to_period("Q-DEC")
-    out = (
+    return (
         y.groupby("quarter")[col]
         .mean()
         .reset_index()
         .rename(columns={col: "spread_fallback"})
     )
-    return out
 
 
 def _ensure_credit_inputs(cred: pd.DataFrame, yield_df: pd.DataFrame) -> pd.DataFrame:
     if cred is None or cred.empty:
         return cred
     df = cred.copy()
-    try:
+    with contextlib.suppress(Exception):
         df["date"] = pd.to_datetime(df["date"])
-    except Exception:
-        pass
 
     if "spread" not in df.columns:
         df["spread"] = np.nan
@@ -310,8 +307,7 @@ if REGION == "jp" and _JP_START_ENV:
 def _qe_dec(dfm: pd.DataFrame) -> pd.DataFrame:
     if dfm.empty:
         return dfm
-    dfm = dfm.set_index("date").resample("QE-DEC").last().reset_index()
-    return dfm
+    return dfm.set_index("date").resample("QE-DEC").last().reset_index()
 
 # Money scale from M2 if present, else base proxy; base from base proxy
 money_scale = m2 if not m2.empty else boj
@@ -415,13 +411,12 @@ def compute_region(region: str) -> str:
         if not num_cols:
             return dd
         try:
-            out = (
+            return (
                 dd.set_index("date")[num_cols]
                 .resample("QE-DEC")
                 .mean()
                 .reset_index()
             )
-            return out
         except Exception:
             return dd
 

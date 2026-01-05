@@ -7,7 +7,7 @@ from __future__ import annotations
 import json
 import os
 import time
-from typing import Optional, Sequence
+from collections.abc import Sequence
 
 import pandas as pd
 import requests
@@ -23,7 +23,7 @@ def fetch_worldbank_series(
     per_page: int = 20000,
     retries: int = 4,
     backoff: float = 2.0,
-    fallback_csvs: Optional[Sequence[str]] = None,
+    fallback_csvs: Sequence[str] | None = None,
     timeout: float = 45.0,
 ) -> pd.DataFrame:
     cache_name = f"worldbank_cache_{country}_{indicator}.json".replace("/", "_")
@@ -33,7 +33,7 @@ def fetch_worldbank_series(
     # Cache hit
     if os.path.exists(cache_path):
         try:
-            payload = json.load(open(cache_path, "r", encoding="utf-8"))
+            payload = json.load(open(cache_path, encoding="utf-8"))
             df = _normalize_payload(payload)
             if not df.empty:
                 return df

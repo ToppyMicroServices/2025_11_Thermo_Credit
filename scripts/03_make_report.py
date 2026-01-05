@@ -6,7 +6,7 @@ import shutil
 import sys
 from datetime import datetime
 from io import BytesIO
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 from urllib.parse import urlparse
 
 import numpy as np
@@ -21,6 +21,8 @@ except Exception:
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
+
+import contextlib
 
 from lib.raw_inputs import enabled_sources, load_and_normalize, load_sources
 from lib.report_helpers import (
@@ -51,7 +53,7 @@ from lib.report_helpers import (
 SITE_DIR = os.path.join(ROOT, "site")
 DATA_DIR = os.path.join(ROOT, "data")
 DEFAULT_BASE_URL = "https://toppymicros.com/2025_11_Thermo_Credit"
-raw_inputs_df: Optional[pd.DataFrame] = None
+raw_inputs_df: pd.DataFrame | None = None
 
 # Try preloading normalized raw inputs so tests can assert against module state.
 try:
@@ -69,7 +71,7 @@ except Exception as exc:
     print("[report] raw_inputs preload failed:", exc)
 
 
-def _build_compare_context(region_ctxs: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+def _build_compare_context(region_ctxs: list[dict[str, Any]]) -> dict[str, Any] | None:
     builder = CompareBuilder(region_ctxs)
     compare_data = builder.build()
     if compare_data is None:
@@ -127,10 +129,10 @@ def _build_compare_context(region_ctxs: List[Dict[str, Any]]) -> Optional[Dict[s
     }
 
 
-def _selected_summary_line(prefix: str, meta: Optional[Dict[str, Any]]) -> Optional[str]:
+def _selected_summary_line(prefix: str, meta: dict[str, Any] | None) -> str | None:
     if not isinstance(meta, dict):
         return None
-    pieces: List[str] = []
+    pieces: list[str] = []
     for role, entry in meta.items():
         if isinstance(entry, dict):
             sid = entry.get("id", "")
@@ -163,14 +165,14 @@ def _role_label(role: str) -> str:
     return mapping.get(base, role)
 
 
-def _build_inputs_summary(region_ctxs: List[Dict[str, Any]]) -> str:
-    rows: List[str] = []
+def _build_inputs_summary(region_ctxs: list[dict[str, Any]]) -> str:
+    rows: list[str] = []
     for ctx in region_ctxs:
         label = ctx.get("label", "")
         meta = ctx.get("selected_meta")
         if not isinstance(meta, dict) or not meta:
             continue
-        pills: List[str] = []
+        pills: list[str] = []
         for role, entry in meta.items():
             if not isinstance(entry, dict):
                 continue
@@ -178,8 +180,8 @@ def _build_inputs_summary(region_ctxs: List[Dict[str, Any]]) -> str:
             provider = entry.get("provider") or entry.get("source") or ""
             start = entry.get("start") or ""
             start_y = start[:4] if isinstance(start, str) and len(start) >= 4 else ""
-            parts: List[str] = [f"<strong>{html_lib.escape(_role_label(role))}</strong>: {html_lib.escape(title)}"]
-            tail: List[str] = []
+            parts: list[str] = [f"<strong>{html_lib.escape(_role_label(role))}</strong>: {html_lib.escape(title)}"]
+            tail: list[str] = []
             if provider:
                 tail.append(html_lib.escape(provider))
             if start_y:
@@ -200,10 +202,10 @@ def _build_inputs_summary(region_ctxs: List[Dict[str, Any]]) -> str:
     return '<section class="inputs-summary"><h2>Inputs summary</h2>' + "".join(rows) + "</section>"
 
 
-def _selected_summary_sentence(prefix: str, meta: Optional[Dict[str, Any]]) -> Optional[str]:
+def _selected_summary_sentence(prefix: str, meta: dict[str, Any] | None) -> str | None:
     if not isinstance(meta, dict) or not meta:
         return None
-    def pick(keys: List[str]) -> Optional[Dict[str, Any]]:
+    def pick(keys: list[str]) -> dict[str, Any] | None:
         # allow *_jp/_eu/_us suffixes
         for k in keys:
             if k in meta and isinstance(meta[k], dict):
@@ -218,7 +220,7 @@ def _selected_summary_sentence(prefix: str, meta: Optional[Dict[str, Any]]) -> O
         ("base_proxy", "Base"),
         ("yield_proxy", "Long-term yield"),
     ]
-    parts: List[str] = []
+    parts: list[str] = []
     for key, label in roles:
         ent = pick([key])
         if ent:
@@ -255,8 +257,8 @@ def _definitions_table(ref_df: pd.DataFrame) -> str:
     return "<h2>Data &amp; Definitions</h2>" + table
 
 
-def _sources_table(sources_meta: List[Dict[str, Any]]) -> str:
-    rows: List[Dict[str, Any]] = []
+def _sources_table(sources_meta: list[dict[str, Any]]) -> str:
+    rows: list[dict[str, Any]] = []
     for entry in sources_meta:
         if not isinstance(entry, dict):
             continue
@@ -276,7 +278,7 @@ def _sources_table(sources_meta: List[Dict[str, Any]]) -> str:
     return "<details><summary>Data sources</summary>" + table + "</details>"
 
 
-def _build_raw_inputs_fig(raw_df: Optional[pd.DataFrame]):
+def _build_raw_inputs_fig(raw_df: pd.DataFrame | None):
     if raw_df is None or raw_df.empty or "date" not in raw_df.columns:
         return None
     value_cols = [c for c in raw_df.columns if c != "date"]
@@ -306,19 +308,19 @@ def _build_raw_inputs_fig(raw_df: Optional[pd.DataFrame]):
 def _build_region_context(
     key: str,
     label: str,
-    frame: Optional[pd.DataFrame],
+    frame: pd.DataFrame | None,
     *,
     diag_window: int,
-    selected_meta: Optional[Dict[str, Any]] = None,
+    selected_meta: dict[str, Any] | None = None,
     include_raw_inputs: bool = False,
     raw_inputs_fig=None,
-) -> Optional[Dict[str, Any]]:
+) -> dict[str, Any] | None:
     if frame is None:
         return None
     local = frame.copy()
-    def _empty_context() -> Dict[str, Any]:
+    def _empty_context() -> dict[str, Any]:
         summary_items = ["No indicator data available yet."]
-        plot_start = _plot_start_date()
+        _plot_start_date()
         summary_html = "<p class=\"note\">No indicator data available yet.</p>"
         selected_table_html = _selected_table(selected_meta, label)
         region_html = (
@@ -354,7 +356,7 @@ def _build_region_context(
     plot_start = _plot_start_date()
     plot_df = local[local["date"] >= plot_start].copy() if "date" in local.columns else local.copy()
 
-    fig_specs: List[ChartSpec] = []
+    fig_specs: list[ChartSpec] = []
     if {"S_M", "T_L"}.issubset(local.columns) and not plot_df.empty:
         # Dual-axis layout for very different scales
         fig = make_dual_axis_sm_tl(plot_df, title=f"{label} – S_M & T_L")
@@ -475,8 +477,7 @@ def _build_region_context(
                 fig_specs.append((fig_pm, "Surplus/Shortage (ΔF_C)", "X_C_plus / X_C_minus", interp))
 
     deriv_cols_present = [c for c in DERIVATIVE_COLS if c in local.columns]
-    out_of_spec_note = ""
-    out_of_spec_ranges: List[Tuple[pd.Timestamp, pd.Timestamp]] = []
+    out_of_spec_ranges: list[tuple[pd.Timestamp, pd.Timestamp]] = []
     if has_derivatives and effective_window >= 3 and deriv_cols_present and not plot_df.empty:
         title = f"{label} – Maxwell-like Relation"
         if eff_note:
@@ -535,8 +536,9 @@ def _build_region_context(
     last_row = local.iloc[-1]
     last_ts = pd.to_datetime(last_row.get("date"), errors="coerce")
     last_date = last_ts.to_pydatetime() if not pd.isna(last_ts) else datetime.utcnow()
-    fmt = lambda v: f"{float(v):.4g}" if pd.notna(v) else "n/a"
-    summary_items: List[str] = []
+    def fmt(v):
+        return f"{float(v):.4g}" if pd.notna(v) else "n/a"
+    summary_items: list[str] = []
     summary_items.append(f"Latest date: {last_date.strftime('%Y-%m-%d')}")
     if "S_M" in local.columns:
         summary_items.append(f"S_M: {fmt(last_row.get('S_M'))}")
@@ -589,7 +591,7 @@ def _build_region_context(
         else:
             xc_desc = "positive (some room remains)"
 
-    parts: List[str] = []
+    parts: list[str] = []
     if sm_bucket and tl_bucket:
         parts.append(f"{label} sits in a <strong>{sm_bucket}-dispersion, {tl_bucket}-temperature</strong> regime.")
     elif sm_bucket or tl_bucket:
@@ -603,9 +605,9 @@ def _build_region_context(
         parts.append(f"X<sub>C</sub> is <strong>{xc_desc}</strong>.")
     comment_html = ("<p>" + " ".join(parts) + "</p>") if parts else ""
 
-    chart_lines: List[Tuple[str, str]] = []
+    chart_lines: list[tuple[str, str]] = []
     if "S_M" in local.columns or "T_L" in local.columns:
-        msg_parts: List[str] = []
+        msg_parts: list[str] = []
         if "S_M" in local.columns and last_sm is not None:
             sm_desc = sm_bucket or f"{fmt(last_sm)}"
             msg_parts.append(f"S_M is {sm_desc}")
@@ -813,7 +815,7 @@ def main() -> None:
                 raw_inputs_df = load_and_normalize(enabled_sources(alt_sources))
     raw_inputs_fig = _build_raw_inputs_fig(raw_inputs_df)
 
-    regions: List[Dict[str, Any]] = []
+    regions: list[dict[str, Any]] = []
 
     jp_ctx = _build_region_context(
         "jp",
@@ -880,8 +882,8 @@ def main() -> None:
         regions_with_compare = regions
 
     if len(regions_with_compare) > 1:
-        buttons: List[str] = []
-        region_divs: List[str] = []
+        buttons: list[str] = []
+        region_divs: list[str] = []
         for idx, ctx in enumerate(regions_with_compare):
             active_cls = " active" if idx == 0 else ""
             buttons.append(f"<button class=\"tab{active_cls}\" data-target=\"{ctx['key']}\">{html_lib.escape(ctx['label'])}</button>")
@@ -903,7 +905,7 @@ def main() -> None:
 
     png_fallback_ok = False
     if jp_ctx:
-        png_targets: List[Tuple[Any, str]] = []
+        png_targets: list[tuple[Any, str]] = []
         for fig, short_label, _, _ in jp_ctx["fig_specs"]:
             filename = label_to_filename.get(short_label)
             if filename:
@@ -1022,10 +1024,8 @@ def main() -> None:
         for filename in label_to_filename.values():
             src = os.path.join(SITE_DIR, filename)
             if os.path.exists(src):
-                try:
+                with contextlib.suppress(Exception):
                     shutil.copyfile(src, os.path.join(month_dir, filename))
-                except Exception:
-                    pass
 
     month_head = ("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" "
                   f"content=\"width=device-width,initial-scale=1\"><title>Thermo-Credit Monitor – {month_key}</title><meta name=\"description\" "
@@ -1039,7 +1039,7 @@ def main() -> None:
 
     archive_path = os.path.join(SITE_DIR, "archive.json")
     try:
-        archive = json.load(open(archive_path, "r", encoding="utf-8")) if os.path.exists(archive_path) else []
+        archive = json.load(open(archive_path, encoding="utf-8")) if os.path.exists(archive_path) else []
     except Exception:
         archive = []
     if not isinstance(archive, list):
@@ -1059,7 +1059,7 @@ def main() -> None:
     with open(archive_path, "w", encoding="utf-8") as fp:
         json.dump(archive, fp, ensure_ascii=False, indent=2)
 
-    rss_items: List[str] = []
+    rss_items: list[str] = []
     for item in archive[:24]:
         try:
             pub = datetime.strptime(item["month"] + "-01", "%Y-%m-%d")

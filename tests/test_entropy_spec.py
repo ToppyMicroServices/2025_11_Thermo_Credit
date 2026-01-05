@@ -1,7 +1,10 @@
 # tests/test_entropy_spec.py
-import math, numpy as np, yaml
-from pathlib import Path
+import math
+
+import numpy as np
 import pandas as pd
+import yaml
+
 
 # --- 1) 仕様テスト（単調性・境界） ---
 def H_norm(p):
@@ -39,4 +42,3 @@ def test_matches_pipeline():
         assert True
     else:
         assert diff.max() < 1e-12
-    
