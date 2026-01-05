@@ -1,12 +1,14 @@
-import os, sys
+import os
+import sys
+
 import numpy as np
 import pandas as pd
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
-from lib.indicators import build_indicators_core, compute_diagnostics, DEFAULT_HEADROOM_COLS
 from lib.config_loader import load_config
+from lib.indicators import DEFAULT_HEADROOM_COLS, build_indicators_core, compute_diagnostics
 
 DEFAULT_REGIONS = ("jp", "us", "eu")
 MULTI_REGION_TOKENS = {"all", "*", "multi", "all_regions"}

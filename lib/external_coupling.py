@@ -5,11 +5,13 @@ averaging them with equal weights (skip NaNs so missing drivers do not backfill)
 """
 from __future__ import annotations
 
-from typing import Callable, Dict, Any, List, Optional, Tuple
+import logging
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
 
+logger = logging.getLogger(__name__)
 SeriesFetcher = Callable[[str, Optional[str]], pd.DataFrame]
 
 
@@ -73,7 +75,7 @@ def _component_series(
         try:
             cache[cache_key] = fetcher(series_id, start_override)
         except Exception as exc:
-            print(f"[external_coupling] failed to fetch {series_id}: {exc}")
+            logger.warning("Failed to fetch %s: %s", series_id, exc)
             cache[cache_key] = pd.DataFrame()
     primary_df = cache[cache_key]
     primary = _to_monthly(primary_df, freq)
@@ -85,7 +87,7 @@ def _component_series(
             try:
                 cache[sec_key] = fetcher(secondary_id, spec.get("start_b") or start_override)
             except Exception as exc:
-                print(f"[external_coupling] failed to fetch {secondary_id}: {exc}")
+                logger.warning("Failed to fetch %s: %s", secondary_id, exc)
                 cache[sec_key] = pd.DataFrame()
         secondary = _to_monthly(cache[sec_key], freq)
     transform = spec.get("transform", "value")

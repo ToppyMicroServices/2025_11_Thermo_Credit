@@ -3,10 +3,14 @@
 Normalizes responses to a DataFrame with columns [date, value] and quarterly-aligned dates (+ QuarterEnd(0)).
 """
 from __future__ import annotations
-import os, json, time
+
+import json
+import os
+import time
+from typing import Optional, Sequence
+
 import pandas as pd
 import requests
-from typing import Optional, Sequence
 
 USER_AGENT = "TQTC-Research/1.0 (+https://toppymicros.com)"
 BASE = "https://api.worldbank.org/v2"
@@ -33,8 +37,9 @@ def fetch_worldbank_series(
             df = _normalize_payload(payload)
             if not df.empty:
                 return df
-        except Exception:
-            pass
+        except (json.JSONDecodeError, OSError) as exc:
+            import logging
+            logging.getLogger(__name__).warning("Failed to load cache %s: %s", cache_path, exc)
 
     # Live request with jitter
     url = f"{BASE}/country/{country}/indicator/{indicator}?format=json&per_page={per_page}"
@@ -75,7 +80,9 @@ def fetch_worldbank_series(
                     out = df.dropna().sort_values("date")
                     if not out.empty:
                         return out
-                except Exception:
+                except (pd.errors.ParserError, OSError) as exc:
+                    import logging
+                    logging.getLogger(__name__).warning("Failed to load fallback CSV %s: %s", path, exc)
                     continue
 
     if last_exc:

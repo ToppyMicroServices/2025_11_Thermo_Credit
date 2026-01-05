@@ -1,8 +1,11 @@
 """Helpers for selecting economic series with preferences and fallbacks."""
+import logging
 import os
-from typing import Any, Callable, Dict, Iterable, List, Optional
+from typing import Any, Callable, Dict, List, Optional
+
 import yaml
 
+logger = logging.getLogger(__name__)
 DEFAULT_START = "1990-01-01"
 
 DEFAULT_SERIES: Dict[str, List[Dict[str, Any]]] = {
@@ -60,8 +63,11 @@ def _read_config(config_path: str) -> Dict[str, Any]:
             content = yaml.safe_load(fh) or {}
     except FileNotFoundError:
         return {}
-    except Exception as exc:
-        print(f"Warning: could not read {config_path}: {exc}")
+    except yaml.YAMLError as exc:
+        logger.warning("Could not parse YAML in %s: %s", config_path, exc)
+        return {}
+    except OSError as exc:
+        logger.warning("Could not read %s: %s", config_path, exc)
         return {}
 
     if not isinstance(content, dict):

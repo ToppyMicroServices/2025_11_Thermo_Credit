@@ -13,8 +13,8 @@ from __future__ import annotations
 
 import argparse
 import os
-from io import BytesIO
 import sys
+from io import BytesIO
 
 try:
     from PIL import Image  # type: ignore

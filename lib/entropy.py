@@ -1,7 +1,9 @@
+import math
+from typing import Iterable, Sequence
+
 import numpy as np
 import pandas as pd
-from typing import Sequence, Iterable
-import math
+
 
 def shannon_H_from_probs(p: np.ndarray) -> float:
     p = p.astype(float)
@@ -41,10 +43,6 @@ def money_entropy(
         # fallback to intersection that exists
         q_cols = [c for c in q_cols if c in df_q.columns]
     df = df_money.merge(df_q, on="date", how="inner").copy()
-    if not q_cols:
-        df["Hq"] = np.nan
-    else:
-        df["Hq"] = df.apply(lambda r: shannon_H(r, q_cols), axis=1)
     if not q_cols:
         df["Hq"] = np.nan
     else:

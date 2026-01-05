@@ -12,13 +12,13 @@ The script normalizes both yields to their first valid observation for visual
 shape comparison (index=100). It also computes a simple rolling differential
 and correlation diagnostics.
 """
-import os
 import argparse
+import os
+import sys
+
 import pandas as pd
 import plotly.express as px
-import plotly.io as pio
 
-import sys
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)

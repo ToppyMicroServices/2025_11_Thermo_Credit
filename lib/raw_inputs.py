@@ -5,9 +5,12 @@ Expected CSV schema: columns 'date' and 'value' (case-insensitive). If a differe
 filename is needed, provide "path" in sources.json entry.
 """
 from __future__ import annotations
-import os, json
+
+import json
+import os
+from typing import Dict, List, Optional, Tuple
+
 import pandas as pd
-from typing import List, Dict, Optional, Tuple
 
 
 def load_sources(path: str = "data/sources.json") -> List[Dict]:

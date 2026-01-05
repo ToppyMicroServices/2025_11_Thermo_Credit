@@ -15,8 +15,11 @@ Baseline parameters (p0, V0, U0, S0, T0) can therefore differ by region and allo
 distinct exergy (X_C) computations.
 """
 from __future__ import annotations
-import os, yaml
-from typing import Dict, Any
+
+import os
+from typing import Any, Dict
+
+import yaml
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
@@ -27,7 +30,13 @@ def _read_yaml(path: str) -> Dict[str, Any]:
         with open(path, 'r', encoding='utf-8') as fp:
             data = yaml.safe_load(fp)
         return data if isinstance(data, dict) else {}
-    except Exception:
+    except yaml.YAMLError as exc:
+        import logging
+        logging.getLogger(__name__).warning("Failed to parse YAML in %s: %s, using empty config", path, exc)
+        return {}
+    except OSError as exc:
+        import logging
+        logging.getLogger(__name__).warning("Failed to read %s: %s, using empty config", path, exc)
         return {}
 
 def _merge_series(base_series: Dict[str, Any], override_series: Dict[str, Any]) -> Dict[str, Any]:

@@ -4,9 +4,11 @@ Centralizes computation of depth and turnover enrichment metrics so region scrip
 and warning diagnostics.
 """
 from __future__ import annotations
-import pandas as pd
+
+from typing import Optional
+
 import numpy as np
-from typing import Optional, Dict
+import pandas as pd
 
 DEFAULT_DEPTH_FALLBACK = 1000.0
 DEFAULT_TURNOVER_FALLBACK = 1.0

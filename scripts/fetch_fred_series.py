@@ -9,12 +9,16 @@ Usage (optional):
 Writes files: data/<SERIES_ID>.csv with columns: date,value
 """
 from __future__ import annotations
-import os, sys, json, time
+
 import argparse
+import json
+import os
+import sys
+import time
 from typing import List, Set
 
-import requests
 import pandas as pd
+import requests
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DATA_DIR = os.path.join(ROOT, "data")

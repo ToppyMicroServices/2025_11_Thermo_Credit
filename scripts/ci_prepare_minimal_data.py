@@ -22,8 +22,6 @@ rely on them without network access.
 from __future__ import annotations
 
 import os
-import pandas as pd
-from datetime import datetime
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DATA = os.path.join(ROOT, "data")

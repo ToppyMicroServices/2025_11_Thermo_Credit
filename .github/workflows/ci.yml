@@ -28,7 +28,10 @@ jobs:
         run: |
           python -m pip install -U pip
           pip install -r requirements.txt -c constraints.txt
-          pip install pytest
+          pip install pytest ruff
+      - name: Lint
+        run: |
+          ruff check lib/ scripts/ tests/
       - name: Prepare minimal data (no network)
         run: |
           python scripts/ci_prepare_minimal_data.py

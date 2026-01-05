@@ -1,32 +1,13 @@
+import logging
 import os
-import pandas as pd
-from typing import Dict, Any, Sequence, Optional
+from typing import Any, Dict, Optional, Sequence
 
+import pandas as pd
+
+from lib.config_loader import load_config
 from lib.indicators import build_indicators_core, compute_diagnostics
 
-
-def _load_cfg(region: str) -> Dict[str, Any]:
-    import yaml
-    base: Dict[str, Any] = {}
-    reg: Dict[str, Any] = {}
-    try:
-        with open("config.yml", "r") as f:
-            base = yaml.safe_load(f) or {}
-            if not isinstance(base, dict):
-                base = {}
-    except Exception:
-        base = {}
-    if region in ("jp", "eu", "us"):
-        p = f"config_{region}.yml"
-        if os.path.exists(p):
-            try:
-                with open(p, "r") as f:
-                    reg = yaml.safe_load(f) or {}
-                    if not isinstance(reg, dict):
-                        reg = {}
-            except Exception:
-                reg = {}
-    return {**base, **reg}
+logger = logging.getLogger(__name__)
 
 
 def _read_raw(sid: str) -> pd.DataFrame:
@@ -65,7 +46,7 @@ def _qe_dec(dfm: pd.DataFrame) -> pd.DataFrame:
 
 def compute_region(region: str) -> str:
     region = (region or "jp").strip().lower()
-    cfg = _load_cfg(region)
+    cfg = load_config(region)
 
     series_cfg = cfg.get("series", {}) if isinstance(cfg, dict) else {}
     if region == "eu":
@@ -92,9 +73,9 @@ def compute_region(region: str) -> str:
             boj = _apply_start(boj, ts)
             m2 = _apply_start(m2, ts)
             yld = _apply_start(yld, ts)
-            print(f"[info] Applied JP_START={ts.date()} to raw JP series")
+            logger.info("Applied JP_START=%s to raw JP series", ts.date())
         except Exception as e:
-            print(f"[warn] Could not apply JP_START ({jp_env}): {e}")
+            logger.warning("Could not apply JP_START (%s): %s", jp_env, e)
 
     money_scale = m2 if not m2.empty else boj
     base = boj
@@ -132,12 +113,12 @@ def compute_region(region: str) -> str:
     # Deterministic per-region output path. Also keep JP legacy alias.
     out_path_region = f"site/indicators_{region}.csv"
     df.to_csv(out_path_region, index=False)
-    print(f"Wrote {out_path_region}")
+    logger.info("Wrote %s", out_path_region)
     if region == "jp":
         legacy = "site/indicators.csv"
         try:
             df.to_csv(legacy, index=False)
-            print(f"Wrote {legacy}")
+            logger.info("Wrote %s", legacy)
         except Exception:
             pass
     return out_path_region

@@ -1,13 +1,13 @@
-import os
-import sys
-import json
-import shutil
-import html as html_lib
-from datetime import datetime
 import base64
+import html as html_lib
+import json
+import os
+import shutil
+import sys
+from datetime import datetime
 from io import BytesIO
+from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
-from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -22,21 +22,19 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
-from lib.raw_inputs import load_sources, enabled_sources, load_and_normalize
+from lib.raw_inputs import enabled_sources, load_and_normalize, load_sources
 from lib.report_helpers import (
     CATEGORY_LABELS,
+    DERIVATIVE_COLS,
+    REQUIRED_THERMO_COLS,
     ChartSpec,
     CompareBuilder,
-    DERIVATIVE_COLS,
-    FIRSTLAW_COLS,
-    REQUIRED_THERMO_COLS,
     _apply_hover,
     _augment_region_frame,
     _calc_effective_window,
     _chart_interpretation,
     _figs_html,
     _filter_placeholders,
-    _latest_numeric,
     _load_csv,
     _load_json,
     _mask_to_ranges,

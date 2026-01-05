@@ -1,6 +1,6 @@
-import os
-import json
 import html as html_lib
+import json
+import os
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 import numpy as np

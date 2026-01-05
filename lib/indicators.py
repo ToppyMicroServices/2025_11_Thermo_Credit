@@ -13,14 +13,15 @@ All inputs must have a 'date' column (datetime) and expected numeric columns.
 Missing optional pieces (e.g., U or S_M for F_C) will result in NaNs instead of raising.
 """
 from __future__ import annotations
-import pandas as pd
+
+from typing import Any, Dict, Optional, Tuple
+
 import numpy as np
-from typing import Dict, Any, Optional, Tuple
+import pandas as pd
 
-from lib.loop_area import LoopArea
 from lib.entropy import money_entropy
+from lib.loop_area import LoopArea
 from lib.temperature import liquidity_temperature
-
 
 DEFAULT_HEADROOM_COLS = ("capital_headroom", "lcr_headroom", "nsfr_headroom")
 

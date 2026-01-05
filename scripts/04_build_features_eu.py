@@ -1,15 +1,22 @@
-import os, json, time
 import argparse
-from typing import Optional
 import glob
+import json
+import os
+import sys
+import time
+from typing import Optional
+
 import pandas as pd
 import requests
-import sys
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
+from lib.config_loader import load_config
+from lib.config_params import allocation_weights, leverage_share
+from lib.credit_enrichment import compute_enrichment
+from lib.external_coupling import build_external_coupling_indices
 from lib.series_selector import (
     DEFAULT_SERIES,
     DEFAULT_START,
@@ -17,11 +24,7 @@ from lib.series_selector import (
     load_series_preferences,
     select_series,
 )
-from lib.credit_enrichment import compute_enrichment
 from lib.worldbank import fetch_worldbank_series
-from lib.config_params import allocation_weights, leverage_share
-from lib.config_loader import load_config
-from lib.external_coupling import build_external_coupling_indices
 
 FRED_KEY = os.getenv("FRED_API_KEY", "")
 CONFIG_PATH = os.path.join(ROOT, "config.yml")
