@@ -454,9 +454,6 @@ def compute_diagnostics(df: pd.DataFrame, window: int = 24) -> pd.DataFrame:
     if len(core_subset) < window:
         # not enough data; skip diagnostics
         return df
-    core_subset.iloc[0]["S_M"], core_subset.index[0]
-    # where all required present
-    df[required].notna().all(axis=1)
     # keep all rows but we only compute for rolling windows; early rows remain NaN
     n = len(df)
     def _rolling_partial_beta(y, x_main, x_cond):

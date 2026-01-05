@@ -30,7 +30,7 @@ def _bootstrap_region_env() -> str:
 
 REGION = _bootstrap_region_env()
 
-HEADROOM_DECAY = dict(zip(DEFAULT_HEADROOM_COLS, (0.04, 0.05, 0.06), strict=False))
+HEADROOM_DECAY = dict(zip(DEFAULT_HEADROOM_COLS, (0.04, 0.05, 0.06)))
 
 
 def _ensure_headrooms(reg: pd.DataFrame) -> pd.DataFrame:

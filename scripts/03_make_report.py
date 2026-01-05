@@ -320,7 +320,7 @@ def _build_region_context(
     local = frame.copy()
     def _empty_context() -> dict[str, Any]:
         summary_items = ["No indicator data available yet."]
-        _plot_start_date()
+        # Note: plot start date not used when no data available
         summary_html = "<p class=\"note\">No indicator data available yet.</p>"
         selected_table_html = _selected_table(selected_meta, label)
         region_html = (
