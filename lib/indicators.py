@@ -237,9 +237,9 @@ def _apply_chemical_potentials(df: pd.DataFrame,
     if k_val == 0:
         return df
     try:
-        T0 = float(cfg.get("T0", 1.0))
+        t0 = float(cfg.get("T0", 1.0))
     except Exception:
-        T0 = 1.0
+        t0 = 1.0
     eps = cfg.get("mu_share_floor", 1e-6)
     try:
         eps = float(eps)
@@ -247,7 +247,7 @@ def _apply_chemical_potentials(df: pd.DataFrame,
         eps = 1e-6
     shares = df[q_cols_present].astype(float).clip(lower=eps)
     M_in = pd.to_numeric(df["M_in"], errors="coerce")
-    factor = T0 * k_val * M_in
+    factor = t0 * k_val * M_in
     log_term = np.log(shares)
     for col in q_cols_present:
         df[f"mu_{col}"] = factor * (log_term[col] + 1.0)
@@ -273,7 +273,7 @@ def build_indicators_core(money: pd.DataFrame,
     """Merge sources and compute loop area, F_C, X_C.
     Expects money columns (M_in, M_out), q shares, cred columns (U, S_M inputs after entropy merge), reg (p_R,V_R).
     """
-    T0 = float(cfg.get("T0", 1.0))
+    t0 = float(cfg.get("T0", 1.0))
     lam = float(cfg.get("loop_forgetting", 0.98))
     k_val = float(cfg.get("k", 1.0))
     q_cols_cfg = cfg.get("q_cols")  # optional MECE categories override
@@ -344,7 +344,7 @@ def build_indicators_core(money: pd.DataFrame,
     if all(c in df.columns for c in [u_eff_col, "S_M"]):
         u_series = pd.to_numeric(df[u_eff_col], errors="coerce")
         s_series = pd.to_numeric(df["S_M"], errors="coerce")
-        df["F_C"] = u_series - T0 * s_series
+        df["F_C"] = u_series - t0 * s_series
     else:
         df["F_C"] = np.nan
 
@@ -355,7 +355,7 @@ def build_indicators_core(money: pd.DataFrame,
             u_series = pd.to_numeric(df[u_eff_col], errors="coerce")
             v_series = pd.to_numeric(df["V_C"], errors="coerce")
             s_series = pd.to_numeric(df["S_M"], errors="coerce")
-            df["X_C"] = (u_series - U0f) + p0f * (v_series - V0f) - T0 * (s_series - S0f)
+            df["X_C"] = (u_series - U0f) + p0f * (v_series - V0f) - t0 * (s_series - S0f)
         except Exception:
             df["X_C"] = df["F_C"]
     else:
@@ -387,28 +387,28 @@ def build_indicators_core(money: pd.DataFrame,
     # ΔF_C(t) = F_C(t) - F_C_ref; X_C_plus = max(0, ΔF_C); X_C_minus = max(0, -ΔF_C)
     try:
         fc = pd.to_numeric(df.get("F_C", pd.Series([], dtype=float)), errors="coerce")
-        F_ref = None
+        f_ref = None
         # Preference order for reference: explicit cfg value -> cfg date pick -> first valid
         if "F_C_ref" in cfg:
             try:
-                F_ref = float(cfg.get("F_C_ref"))
+                f_ref = float(cfg.get("F_C_ref"))
             except Exception:
-                F_ref = None
-        if F_ref is None and "F_C_ref_date" in cfg:
+                f_ref = None
+        if f_ref is None and "F_C_ref_date" in cfg:
             try:
                 ref_dt = pd.to_datetime(cfg.get("F_C_ref_date"))
                 # exact match only; if multiple, take first
                 match = df.loc[df["date"] == ref_dt, "F_C"]
                 if not match.empty:
-                    F_ref = float(pd.to_numeric(match, errors="coerce").dropna().iloc[0])
+                    f_ref = float(pd.to_numeric(match, errors="coerce").dropna().iloc[0])
             except Exception:
-                F_ref = None
-        if F_ref is None:
+                f_ref = None
+        if f_ref is None:
             idx0 = fc.first_valid_index()
             if idx0 is not None:
-                F_ref = float(fc.loc[idx0])
-        if F_ref is not None and np.isfinite(F_ref):
-            dF = fc.astype(float) - F_ref
+                f_ref = float(fc.loc[idx0])
+        if f_ref is not None and np.isfinite(f_ref):
+            dF = fc.astype(float) - f_ref
             df["Delta_F_C"] = dF
             df["X_C_plus"] = dF.clip(lower=0)
             df["X_C_minus"] = (-dF).clip(lower=0)
