@@ -1,13 +1,12 @@
 import argparse
 import glob
 import json
+import logging
 import os
 import sys
-import time
 from typing import Optional
 
 import pandas as pd
-import requests
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT not in sys.path:
@@ -17,6 +16,7 @@ from lib.config_loader import load_config
 from lib.config_params import allocation_weights, leverage_share
 from lib.credit_enrichment import compute_enrichment
 from lib.external_coupling import build_external_coupling_indices
+from lib.fred import fetch_fred_series
 from lib.series_selector import (
     DEFAULT_SERIES,
     DEFAULT_START,
@@ -36,29 +36,27 @@ ROLE_ENV_US = {
 }
 
 
-def fred_series(series_id: str, start: str = DEFAULT_START, retries: int = 3, backoff: float = 1.5) -> pd.DataFrame:
+def fred_series(series_id: str, start: str = DEFAULT_START) -> pd.DataFrame:
+    """Fetch a FRED series using shared helper with cache fallback."""
+    cache_path = os.path.join("data", f"{series_id}.csv")
+
     if not FRED_KEY:
-        raise RuntimeError("FRED_API_KEY not set; cannot fetch online.")
-    url = (
-        "https://api.stlouisfed.org/fred/series/observations"
-        f"?series_id={series_id}&api_key={FRED_KEY}&file_type=json&observation_start={start}"
-    )
-    last = None
-    for i in range(retries):
-        try:
-            r = requests.get(url, timeout=30)
-            r.raise_for_status()
-            obs = r.json()["observations"]
-            df = pd.DataFrame(obs)[["date", "value"]]
-            df["value"] = pd.to_numeric(df["value"], errors="coerce")
-            df = df.dropna()
-            return df
-        except Exception as e:
-            last = e
-            if i < retries - 1:
-                time.sleep(backoff ** i)
-            else:
-                raise
+        if os.path.exists(cache_path):
+            return pd.read_csv(cache_path)
+        raise RuntimeError("FRED_API_KEY not set; cannot fetch online and no cached CSV found.")
+
+    try:
+        df = fetch_fred_series(series_id, api_key=FRED_KEY, start=start, retries=3, backoff=1.5)
+        os.makedirs("data", exist_ok=True)
+        df.to_csv(cache_path, index=False)
+        return df
+    except Exception as e:
+        if os.path.exists(cache_path):
+            logging.getLogger(__name__).warning(
+                "FRED fetch failed for %s: %s. Using cached CSV.", series_id, e
+            )
+            return pd.read_csv(cache_path)
+        raise
 
 
 def worldbank_series(country: str = "USA", indicator: str = "NY.GDP.MKTP.CN") -> pd.DataFrame:

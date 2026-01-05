@@ -2,14 +2,13 @@
 import argparse
 import glob
 import json
+import logging
 import os
 import sys
-import time
 from typing import Optional
 
 import numpy as np
 import pandas as pd
-import requests
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT not in sys.path:
@@ -18,6 +17,7 @@ from lib.config_loader import load_config
 from lib.config_params import allocation_weights, leverage_share
 from lib.credit_enrichment import compute_enrichment
 from lib.external_coupling import build_external_coupling_indices
+from lib.fred import fetch_fred_series
 from lib.series_selector import (
     DEFAULT_SERIES,
     DEFAULT_START,
@@ -29,7 +29,7 @@ from lib.worldbank import fetch_worldbank_series
 
 # -----------------------------------
 FRED_KEY = os.getenv("FRED_API_KEY", "")
-WB_BASE  = "https://api.worldbank.org/v2"
+WB_BASE = "https://api.worldbank.org/v2"
 CONFIG_PATH = os.path.join(ROOT, "config.yml")
 ROLE_ENV = {
     "money_scale": "MONEY_SERIES",
@@ -79,6 +79,37 @@ def _persist_series(series_id: str, df: pd.DataFrame) -> None:
         return
     os.makedirs(os.path.join(ROOT, "data"), exist_ok=True)
     df.to_csv(os.path.join("data", f"{series_id}.csv"), index=False)
+
+
+def fred_series(series_id: str, start: str = DEFAULT_START) -> pd.DataFrame:
+    """Fetch a FRED series with fallback to local cache.
+
+    Wrapper around lib.fred.fetch_fred_series with fallback to cached CSV
+    for resilience when FRED API is unavailable or no API key is set.
+    """
+    cache_path = os.path.join("data", f"{series_id}.csv")
+
+    if not FRED_KEY:
+        if os.path.exists(cache_path):
+            df = pd.read_csv(cache_path)
+            return df
+        raise RuntimeError("FRED_API_KEY not set; cannot fetch online and no cached CSV found.")
+
+    try:
+        df = fetch_fred_series(series_id, api_key=FRED_KEY, start=start, retries=3, backoff=1.5)
+        # Keep cache up to date
+        os.makedirs("data", exist_ok=True)
+        df.to_csv(cache_path, index=False)
+        return df
+    except Exception as e:
+        # Final fallback to cache if present
+        if os.path.exists(cache_path):
+            logging.getLogger(__name__).warning(
+                "FRED fetch failed for %s: %s. Using cached CSV.", series_id, e
+            )
+            df = pd.read_csv(cache_path)
+            return df
+        raise
 
 
 def _external_series_fetcher(series_id: str, start: Optional[str] = None) -> pd.DataFrame:
@@ -273,93 +304,10 @@ def build_features(series_prefs: dict, project_config: dict) -> None:
     ordered_cols = ["date", "q_pay", "q_firm", "q_asset", "q_reserve", *mece_cols]
     q[ordered_cols].to_csv("data/allocation_q.csv", index=False)
 
-    print("API fetch -> CSV write complete")
+    logging.getLogger(__name__).info("API fetch -> CSV write complete")
+
 
 # --- helpers (JP) ---
-def fred_series(series_id: str, start: str = DEFAULT_START, retries: int = 3, backoff: float = 1.5) -> pd.DataFrame:
-    """Fetch a FRED series as a DataFrame with ``date``/``value``.
-
-    Notes
-    -----
-    - Some series (notably MOVE) can intermittently return HTTP 400 even with
-      a valid API key. To keep the pipeline and CI resilient, we fall back to a
-      local cached CSV if the HTTP request ultimately fails.
-    """
-    # First, try to use an on-disk cache if it exists. This allows CI runs and
-    # offline work to proceed even if FRED is temporarily unhappy.
-    cache_path = os.path.join("data", f"{series_id}.csv")
-
-    if not FRED_KEY:
-        if os.path.exists(cache_path):
-            df = pd.read_csv(cache_path)
-            return df
-        raise RuntimeError("FRED_API_KEY not set; cannot fetch online and no cached CSV found.")
-
-    url = (
-        "https://api.stlouisfed.org/fred/series/observations"
-        f"?series_id={series_id}&api_key={FRED_KEY}&file_type=json&observation_start={start}"
-    )
-    last = None
-    for i in range(retries):
-        try:
-            r = requests.get(url, timeout=30)
-            r.raise_for_status()
-            obs = r.json()["observations"]
-            df = pd.DataFrame(obs)[["date", "value"]]
-            df["value"] = pd.to_numeric(df["value"], errors="coerce")
-            df = df.dropna()
-            # keep cache up to date
-            os.makedirs("data", exist_ok=True)
-            df.to_csv(cache_path, index=False)
-            return df
-        except Exception as e:
-            last = e
-            if i < retries - 1:
-                time.sleep(backoff ** i)
-            else:
-                # Final failure: fall back to cache if present instead of
-                # blowing up the whole build (e.g., MOVE occasionally 400s).
-                if os.path.exists(cache_path):
-                    print(f"[fred_series] HTTP error for {series_id}, using cached CSV: {last}")
-                    try:
-                        df = pd.read_csv(cache_path)
-                        return df
-                    except Exception as cache_exc:
-                        print(f"[fred_series] failed to read cached CSV for {series_id}: {cache_exc}")
-                raise
-
-def worldbank_series(country: str = "JPN", indicator: str = "NY.GDP.MKTP.CN") -> pd.DataFrame:
-    cache_dir = os.path.join(ROOT, "data")
-    # Prefer explicit indicator files, but fall back to any "indicator@start" CSV the repo already ships.
-    fallback_patterns = [
-        os.path.join("data", f"{indicator}.csv"),
-        os.path.join("data", f"{indicator}@2000-01-01.csv"),
-        os.path.join(cache_dir, f"{indicator}.csv"),
-        os.path.join(cache_dir, f"{indicator}@2000-01-01.csv"),
-        os.path.join("data", f"{indicator}@*.csv"),
-        os.path.join(cache_dir, f"{indicator}@*.csv"),
-    ]
-    fallback_csvs: list[str] = []
-    for pattern in fallback_patterns:
-        if "*" in pattern:
-            fallback_csvs.extend(glob.glob(pattern))
-        else:
-            fallback_csvs.append(pattern)
-    # Deduplicate while preserving order so we try deterministic sources first.
-    unique_fallbacks = []
-    seen: set[str] = set()
-    for path in fallback_csvs:
-        if path not in seen:
-            unique_fallbacks.append(path)
-            seen.add(path)
-
-    return fetch_worldbank_series(
-        country,
-        indicator,
-        cache_dir=cache_dir,
-        fallback_csvs=unique_fallbacks,
-    )
-
 def _log_selection(role: str, info: dict) -> None:
     title = info.get("title") or ""; start = info.get("start") or DEFAULT_START
     source = info.get("source") or "default"; suffix = f" - {title}" if title else ""
@@ -399,6 +347,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     args = parse_args()
     series_prefs = load_series_preferences(CONFIG_PATH)
     project_config = load_config("jp")
@@ -408,7 +357,7 @@ def main() -> None:
         return
 
     if not FRED_KEY:
-        print("No FRED_API_KEY; skip online fetch and keep local CSVs.")
+        logging.info("No FRED_API_KEY; skip online fetch and keep local CSVs.")
         return
 
     build_features(series_prefs, project_config)

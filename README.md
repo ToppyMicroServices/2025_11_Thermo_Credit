@@ -58,6 +58,32 @@ Detailed descriptions of external coupling (`E_p`, `E_T`) and chemical potential
 
 ---
 
+## Development
+
+### Linting and Formatting
+
+This project uses [Ruff](https://docs.astral.sh/ruff/) for linting and formatting. Configuration is in `pyproject.toml`.
+
+Run linting checks:
+```bash
+pip install ruff
+ruff check lib/ scripts/ tests/
+```
+
+Auto-fix issues:
+```bash
+ruff check lib/ scripts/ tests/ --fix
+```
+
+Format code:
+```bash
+ruff format lib/ scripts/ tests/
+```
+
+The CI pipeline automatically runs lint checks on all pull requests.
+
+---
+
 ## Data & sources
 ---
 
