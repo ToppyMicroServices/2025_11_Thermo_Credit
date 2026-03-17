@@ -1,6 +1,7 @@
 import os
 import json
 import html as html_lib
+import textwrap
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 import numpy as np
@@ -255,6 +256,392 @@ def _style_figure(fig) -> None:
 
 def _apply_hover(fig, fmt: str) -> None:
     fig.update_traces(hovertemplate="%{x|%Y-%m-%d}<br>%{y:" + fmt + "}<extra>%{fullData.name}</extra>")
+
+
+def build_report_style_block(brand_bg: str, brand_bg2: str, brand_text: str) -> str:
+    """Return readable inline CSS for the generated dashboard HTML."""
+    return textwrap.dedent(
+        f"""
+        :root {{
+          --page-bg: #f6f8fb;
+          --surface-bg: #ffffff;
+          --surface-muted: #fafafa;
+          --surface-emphasis: #eef2f7;
+          --border-soft: #e5e7eb;
+          --border-strong: #dce3f1;
+          --text-main: #18212b;
+          --text-muted: #4b5563;
+          --text-soft: #6b7280;
+          --tab-bg: #f8fafc;
+          --tab-border: #94a3b8;
+          --tab-active-bg: #1f2937;
+          --tab-active-text: #ffffff;
+          --shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.05);
+          --radius-lg: 14px;
+          --radius-md: 10px;
+          --radius-sm: 8px;
+          --brand-bg: {brand_bg};
+          --brand-bg2: {brand_bg2};
+          --brand-text: {brand_text};
+        }}
+
+        /* Base */
+        html {{
+          background: var(--page-bg);
+        }}
+
+        body {{
+          margin: 1.25rem;
+          background: var(--page-bg);
+          color: var(--text-main);
+          font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+          line-height: 1.55;
+        }}
+
+        h1 {{
+          margin: 0;
+          font-size: 1.9rem;
+          line-height: 1.15;
+        }}
+
+        h2 {{
+          margin: 0 0 0.75rem;
+          font-size: 1.08rem;
+          line-height: 1.25;
+        }}
+
+        p, ul {{
+          margin-top: 0;
+        }}
+
+        figure {{
+          margin: 1rem 0;
+        }}
+
+        figcaption {{
+          color: var(--text-muted);
+          font-size: 0.8rem;
+        }}
+
+        /* Layout */
+        .wrap {{
+          max-width: 1120px;
+          margin: 0 auto;
+        }}
+
+        .page-header {{
+          display: grid;
+          gap: 0.85rem;
+          margin-bottom: 1rem;
+        }}
+
+        .page-hero {{
+          display: grid;
+          gap: 0.35rem;
+        }}
+
+        .page-subtitle {{
+          margin: 0;
+          color: var(--text-muted);
+        }}
+
+        .page-content {{
+          display: grid;
+          gap: 1rem;
+        }}
+
+        /* Shared panel styling */
+        .region-summary,
+        .intro,
+        .inputs-summary {{
+          background: var(--surface-bg);
+          border: 1px solid var(--border-soft);
+          border-radius: var(--radius-lg);
+          box-shadow: var(--shadow-soft);
+          padding: 0.95rem 1rem;
+        }}
+
+        .intro {{
+          background: var(--surface-emphasis);
+          border-color: #dde4ee;
+        }}
+
+        .note {{
+          margin: 0.5rem 0 1rem;
+          color: var(--text-muted);
+        }}
+
+        .note.small {{
+          color: var(--text-soft);
+          font-size: 0.85rem;
+        }}
+
+        /* Data tables */
+        table.mini {{
+          width: 100%;
+          border-collapse: collapse;
+          margin: 0.5rem 0;
+          background: transparent;
+        }}
+
+        table.mini th,
+        table.mini td {{
+          padding: 0.42rem 0.58rem;
+          border-bottom: 1px solid var(--border-soft);
+          text-align: right;
+          vertical-align: top;
+        }}
+
+        table.mini th:first-child,
+        table.mini td:first-child {{
+          text-align: left;
+        }}
+
+        /* Navigation controls */
+        .tabs,
+        .subtabs {{
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.5rem;
+        }}
+
+        .tabs {{
+          margin: 0.25rem 0 0.75rem;
+        }}
+
+        .subtabs {{
+          margin: 0.35rem 0 0.8rem;
+        }}
+
+        .tabs button,
+        .subtabs button {{
+          border: 1px solid var(--tab-border);
+          background: var(--tab-bg);
+          color: var(--text-main);
+          border-radius: 999px;
+          cursor: pointer;
+          transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+        }}
+
+        .tabs button {{
+          padding: 0.48rem 0.9rem;
+          font-size: 0.82rem;
+        }}
+
+        .subtabs button {{
+          padding: 0.34rem 0.72rem;
+          font-size: 0.78rem;
+        }}
+
+        .tabs button.active,
+        .subtabs button.active {{
+          border-color: var(--tab-active-bg);
+          background: var(--tab-active-bg);
+          color: var(--tab-active-text);
+        }}
+
+        .compare-block .pane,
+        .region {{
+          display: none;
+        }}
+
+        .compare-block .pane.active,
+        .region.active {{
+          display: block;
+        }}
+
+        /* Narrative helpers */
+        .chart-notes {{
+          margin: 0.8rem 0;
+          padding: 0.5rem 0.72rem;
+          background: #f1f4fb;
+          border: 1px solid var(--border-strong);
+          border-radius: var(--radius-sm);
+        }}
+
+        .chart-note {{
+          display: flex;
+          flex-direction: column;
+          gap: 0.12rem;
+          margin: 0.28rem 0;
+          font-size: 0.82rem;
+        }}
+
+        .chart-note strong {{
+          color: #1b2a43;
+          font-weight: 600;
+        }}
+
+        .chart-note span,
+        .chart-note-inline {{
+          color: var(--text-muted);
+          font-size: 0.78rem;
+        }}
+
+        details {{
+          margin: 0.6rem 0;
+        }}
+
+        details > summary {{
+          cursor: pointer;
+          font-weight: 600;
+          list-style: none;
+        }}
+
+        details > summary::-webkit-details-marker {{
+          display: none;
+        }}
+
+        /* Input pills */
+        .inputs-row {{
+          margin: 0.4rem 0;
+        }}
+
+        .inputs-summary .region-tag {{
+          display: inline-block;
+          margin-right: 0.45rem;
+          padding: 0.18rem 0.45rem;
+          border-radius: 999px;
+          background: #1f2937;
+          color: #ffffff;
+          font-size: 0.74rem;
+          font-weight: 600;
+        }}
+
+        .inputs-summary .pill-list {{
+          display: inline;
+        }}
+
+        .inputs-summary .pill {{
+          display: inline-block;
+          margin: 0.15rem 0.25rem;
+          padding: 0.18rem 0.56rem;
+          border: 1px solid var(--border-soft);
+          border-radius: 999px;
+          background: var(--surface-bg);
+          font-size: 0.75rem;
+        }}
+
+        /* Branding */
+        .brandbar,
+        .footer-brand {{
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          color: var(--brand-text);
+          background: linear-gradient(90deg, var(--brand-bg), var(--brand-bg2));
+        }}
+
+        .brandbar {{
+          padding: 0.6rem 0.85rem;
+          border-radius: var(--radius-lg);
+        }}
+
+        .brandbar img,
+        .footer-brand img {{
+          width: auto;
+          border-radius: 6px;
+          box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2);
+        }}
+
+        .brandbar img {{
+          height: 40px;
+        }}
+
+        .brandbar .brand-name {{
+          font-size: 1rem;
+          font-weight: 600;
+          color: var(--brand-text);
+        }}
+
+        .footer-brand {{
+          margin-top: 1.5rem;
+          padding: 0.75rem 0.85rem;
+          border-radius: var(--radius-lg);
+          font-size: 0.75rem;
+        }}
+
+        .footer-brand img {{
+          height: 32px;
+        }}
+
+        /* Responsive */
+        @media (max-width: 720px) {{
+          body {{
+            margin: 0.7rem;
+          }}
+
+          h1 {{
+            font-size: 1.55rem;
+          }}
+
+          .region-summary,
+          .intro,
+          .inputs-summary,
+          .brandbar,
+          .footer-brand {{
+            padding-left: 0.8rem;
+            padding-right: 0.8rem;
+          }}
+
+          table.mini {{
+            display: block;
+            overflow-x: auto;
+          }}
+        }}
+        """
+    ).strip()
+
+
+def build_report_script_block() -> str:
+    """Return readable inline JS for dashboard tab toggles."""
+    return textwrap.dedent(
+        """
+        <script>
+        (function () {
+          const tabs = Array.from(document.querySelectorAll(".tabs button"));
+          if (tabs.length) {
+            tabs.forEach((button) => {
+              button.addEventListener("click", () => {
+                tabs.forEach((item) => item.classList.remove("active"));
+                button.classList.add("active");
+                const targetId = button.getAttribute("data-target");
+                document.querySelectorAll(".region").forEach((region) => {
+                  region.classList.remove("active");
+                });
+                const target = document.getElementById("region-" + targetId);
+                if (target) {
+                  target.classList.add("active");
+                }
+              });
+            });
+          }
+
+          document.querySelectorAll(".compare-toggle").forEach((toggle) => {
+            const buttons = Array.from(toggle.querySelectorAll("button"));
+            const block = toggle.parentElement ? toggle.parentElement.nextElementSibling : null;
+            buttons.forEach((button) => {
+              button.addEventListener("click", () => {
+                buttons.forEach((item) => item.classList.remove("active"));
+                button.classList.add("active");
+                const mode = button.getAttribute("data-mode") === "std" ? "std" : "raw";
+                if (!block) {
+                  return;
+                }
+                block.querySelectorAll(".pane").forEach((pane) => {
+                  pane.classList.remove("active");
+                });
+                const target = block.querySelector(".pane." + mode);
+                if (target) {
+                  target.classList.add("active");
+                }
+              });
+            });
+          });
+        })();
+        </script>
+        """
+    ).strip()
 
 
 def _latest_numeric(frame: Optional[pd.DataFrame], column: str) -> Optional[float]:
@@ -685,5 +1072,4 @@ def _selected_table(meta: Optional[Dict[str, Any]], header: str) -> str:
         return ""
     table = pd.DataFrame(rows).to_html(index=False, border=0, classes="mini", escape=True)
     return f"<h2>{html_lib.escape(header)} Selected Input Series</h2>{table}"
-
 

@@ -35,24 +35,29 @@
 
 \title{Thermo-Credit Theory: A Credit-First Thermodynamic Mapping}
 \author{ToppyMicroServices O\"U}
-\date{Version 3.0 -- December 2025 (theory \& implementation update)}
+\date{Version 3.1 -- March 2026 (measurement-first and MCP distribution update)}
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-Within this framework we define (i) an SFC-style conservation backbone based
-on balance-sheet identities, and (ii) a non-equilibrium ``credit thermodynamics''
-layer in which irreversibility and hysteresis are first-class objects.
-We introduce an internal bookkeeping potential $U(S_{\mathrm{M}},V_{\mathrm{C}},\xi,\ldots)$
-with an explicit memory variable $\xi$ to accommodate path dependence, define a
-Helmholtz-style free energy $F_{\mathrm{C}}$ and an exergy-like measure $X_{\mathrm{C}}$ as
-operational gauges, and treat Maxwell-like integrability not as a law but as a
-limit case: persistent violations are interpreted as measurable non-equilibrium
-``vorticity'' in the $(S_{\mathrm{M}},V_{\mathrm{C}})$ state plane.
-The construction is deliberately practice-first: all quantities are intended to be
-computable from public data and to support decision-useful early-warning
-monitoring for investors, risk managers, and policymakers.
+This note develops Thermo Credit as a measurement-first macro-credit model of
+how the destination of new credit alters the transformation of credit expansion
+into output, inflation, asset-price acceleration, and fragility. The framework
+combines (i) an SFC-style conservation backbone based on balance-sheet
+identities with (ii) a non-equilibrium ``credit thermodynamics'' layer in which
+irreversibility and hysteresis are first-class objects. We introduce a minimal
+state description built around credit partition, capacity, and stress,
+including an internal bookkeeping potential $U(S_{\mathrm{M}},V_{\mathrm{C}},\xi,\ldots)$
+with memory variable $\xi$, and we define operational gauges such as
+Helmholtz-style free energy $F_{\mathrm{C}}$ and exergy-like availability
+$X_{\mathrm{C}}$. Maxwell-like integrability is treated as a local-equilibrium
+limit rather than a law; persistent violations are interpreted as measurable
+non-equilibrium ``vorticity'' in the $(S_{\mathrm{M}},V_{\mathrm{C}})$ state
+plane. The construction is deliberately practice-first: quantities are intended
+to be computable from public data, judged by forecast usefulness and
+falsifiability, and distributed in recalculable form through specification,
+code, and AI-facing interfaces rather than through narrative alone.
 \end{abstract}
 
 \section{Problem Statement and Scope}
@@ -75,6 +80,22 @@ balance sheets, and (iii) yields testable constraints and early-warning
 gauges. The aim is not to claim that macro data obey physical laws, but to
 provide a disciplined bookkeeping analogy useful for supervision, stress
 testing\K{18}, and systematic monitoring.
+
+\subsection*{Research target and use cases}
+
+The measurement-first revision narrows the framework to one research question:
+how does the destination of new credit alter the transformation of credit
+expansion into growth, inflation, asset-price acceleration, and fragility?
+Operationally, the current version is designed for three immediate use cases:
+\begin{enumerate}
+  \item early-warning signals for asset inflation and systemic fragility;
+  \item description of the real-versus-asset credit mix rather than credit
+        volume alone;
+  \item forecast improvement relative to total-credit-only baselines.
+\end{enumerate}
+This keeps the theory tied to a concrete mapping from inputs to outputs and
+prevents the thermodynamic analogy from drifting into a purely descriptive
+vocabulary.
 
 \subsection*{Related Work}
 
@@ -999,7 +1020,11 @@ This construction is intentionally modest. Key limitations include:
         conventional. Report normalized metrics and sensitivity checks.
 \end{itemize}
 
-This version is primarily a theory-and-implementation note; a more systematic
+This version should therefore be read as a theory-and-implementation note with
+explicit rejection conditions. If the partition variables $(C_t^R,C_t^A,q_t)$
+and the stress state $S_t$ fail to improve empirical discrimination relative to
+simpler credit-volume baselines, the measurement-first version of Thermo Credit
+should be simplified or rejected in that application. A more systematic
 empirical evaluation for the JP configuration will follow in a later revision.
 
 \section{Data Mapping, Reproducibility, and AI Assistance}
@@ -1010,10 +1035,32 @@ The measurement-first implementation layer is intentionally separated from the
 broader theory note. In the repository, variable meanings are fixed in
 \texttt{docs/definitions.md}, source and status mappings are recorded in
 \texttt{data/data\_dictionary.csv}, and the AI-facing interface layer is
-outlined in \texttt{docs/thermo\_credit\_mcp\_spec.md}. Together these files
-distinguish directly observed quantities, proxy-estimated quantities, and
-future latent-state estimates, and they provide the shortest path from theory
-to recalculable outputs.
+outlined in \texttt{docs/thermo\_credit\_mcp\_spec.md}. Connection patterns for
+local and remote AI clients are documented in
+\texttt{docs/mcp\_connection\_guide.md}, while \texttt{llms.txt} provides a
+short machine-facing reading order. Together these files distinguish directly
+observed quantities, proxy-estimated quantities, and future latent-state
+estimates, and they provide the shortest path from theory to recalculable
+outputs.
+
+\subsection{Publication stack and interface layers}
+
+The repository now separates four publication layers:
+\begin{enumerate}
+  \item \texttt{report.html} for narrative interpretation and plots;
+  \item \texttt{docs/definitions.md} and
+        \texttt{data/data\_dictionary.csv} for fixed variable meanings and
+        identification rules;
+  \item \texttt{scripts/} and \texttt{tests/} for recalculation and empirical
+        validation;
+  \item an AI-facing resource/tool layer built from schemas, structured
+        examples, and an MCP wrapper.
+\end{enumerate}
+This fourth layer should be understood as a \emph{distribution} mechanism
+rather than a validation mechanism. It makes Thermo Credit easier for AI
+systems to query and reuse, but it does not by itself establish the theory's
+empirical correctness. Validation still depends on the forecasting tests,
+identification strategy, and falsifiability criteria stated above.
 
 \subsection{Reproducibility and AI assistance}
 
@@ -1028,6 +1075,9 @@ At a high level:
   \item a Python pipeline computes $\SM$, $\TL$, $\VC$, $\FC$, $\XC$, and
         the diagnostics from public time series using shared configuration
         files and scripts;
+  \item a measurement-first tool layer now exposes the compact model spec,
+        variable definitions, core metric calculations, scenario evaluation,
+        and regime comparisons through structured JSON interfaces;
   \item minimal synthetic CSVs are provided so that tests and examples can
         run without external API keys, while real data are fetched from
         standard sources (e.g.\ FRED, World Bank) when credentials are
@@ -1112,6 +1162,20 @@ It is not required for understanding the theoretical sections.
         helper \texttt{lib/credit\_enrichment.py} constructs depth and
         turnover heuristically from real credit stocks $L_{\mathrm{real}}$
         and capacity proxy $U$ as described in the main text.
+  \item \textbf{Measurement-first tool layer.}
+        The module \texttt{lib/thermo\_credit\_tools.py} provides the compact
+        v2 interface used by the current repository-side AI layer:
+        theory overview, variable definitions, metric computation,
+        scenario evaluation, and regime comparison. The script
+        \texttt{scripts/thermo\_credit\_cli.py} exposes the same layer as a
+        JSON CLI for local reproducibility checks.
+  \item \textbf{MCP distribution wrapper.}
+        The module \texttt{lib/thermo\_credit\_mcp.py} wraps the same core
+        calculations as MCP resources, tools, and prompt templates, and
+        \texttt{scripts/thermo\_credit\_mcp\_server.py} provides a runnable
+        server entrypoint. This layer is designed for AI accessibility and
+        structured reuse; it is not a substitute for the empirical validation
+        logic discussed in the main text.
   \item \textbf{Capacity, headroom, and coupling.} The core constructor
         \texttt{lib/indicators.py} merges money, allocation, credit, and
         regulatory tables, renames regulatory quantities into

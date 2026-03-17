@@ -47,6 +47,8 @@ from lib.report_helpers import (
     _series_bucket,
     _series_trend,
     _style_figure,
+    build_report_script_block,
+    build_report_style_block,
     make_dual_axis_sm_tl,
 )
 
@@ -941,42 +943,27 @@ def main() -> None:
     BRAND_BG2 = os.getenv("BRAND_BG2", "#1b263b")
     BRAND_TEXT = os.getenv("BRAND_TEXT", "#ffffff")
 
-    style_block = (
-        "body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;line-height:1.5;margin:1.25rem;background:#f6f8fb}"
-        "h1{font-size:1.6rem;margin:0 0 .5rem}h2{font-size:1.1rem;margin:1.25rem 0 .5rem}.wrap{max-width:1100px;margin:0 auto}"
-        ".note{color:#333;margin:.5rem 0 1rem}.note.small{font-size:.85rem;color:#666}figure{margin:1rem 0}figcaption{font-size:.8rem;color:#555}"
-        ".region-summary{background:#fff;border:1px solid #eee;border-radius:8px;padding:.85rem 1rem}"
-        "table.mini{border-collapse:collapse;margin:.5rem 0}table.mini td,table.mini th{padding:.25rem .5rem;border-bottom:1px solid:#ddd;text-align:right}table.mini th:first-child,table.mini td:first-child{text-align:left}"
-        ".tabs{display:flex;gap:.5rem;margin:.75rem 0 1rem}.tabs button{border:1px solid #888;background:#f8f8f8;padding:.4rem .75rem;cursor:pointer;font-size:.8rem;border-radius:4px}.tabs button.active{background:#333;color:#fff}"
-        ".subtabs{display:flex;gap:.4rem;margin:.5rem 0 .75rem}.subtabs button{border:1px solid #aaa;background:#f6f7f9;padding:.3rem .6rem;font-size:.78rem;border-radius:999px;cursor:pointer}.subtabs button.active{background:#333;color:#fff;border-color:#333}"
-        ".compare-block .pane{display:none}.compare-block .pane.active{display:block}"
-        ".region{display:none}.region.active{display:block}"
-    ".chart-notes{background:#f1f4fb;border:1px solid #dce3f1;border-radius:6px;padding:.4rem .7rem;margin:.8rem 0}"
-    ".chart-note{display:flex;flex-direction:column;margin:.2rem 0;font-size:.82rem}"
-    ".chart-note strong{font-weight:600;color:#1b2a43}"
-    ".chart-note span{color:#333;font-size:.78rem}"
-    ".chart-note-inline{display:block;font-size:.78rem;color:#444;margin-top:.2rem}"
-        ".intro{background:#eef2f7;border:1px solid #dde4ee;padding:.85rem 1rem;border-radius:8px;margin:1rem 0}"
-        ".intro ul{margin:.5rem 0 .75rem;padding-left:1.1rem}"
-        ".intro li{margin:.3rem 0}"
-        "details{margin:.5rem 0}details>summary{cursor:pointer;list-style:none;font-weight:600}details>summary::-webkit-details-marker{display:none}"
-        ".inputs-summary{background:#fafafa;border:1px solid #eee;padding:.75rem;border-radius:6px;margin:.75rem 0 1rem}"
-        ".inputs-summary .inputs-row{margin:.35rem 0}.inputs-summary .region-tag{display:inline-block;background:#333;color:#fff;border-radius:3px;padding:.15rem .4rem;font-size:.75rem;margin-right:.4rem}"
-        ".inputs-summary .pill-list{display:inline}.inputs-summary .pill{display:inline-block;border:1px solid #ddd;background:#fff;border-radius:999px;padding:.15rem .5rem;margin:.15rem .25rem;font-size:.75rem}"
-        + f":root{{--brand-bg:{BRAND_BG};--brand-bg2:{BRAND_BG2};--brand-text:{BRAND_TEXT};}}"
-        ".brandbar{display:flex;align-items:center;gap:10px;margin-bottom:1rem;padding:.5rem .75rem;border-radius:8px;background:linear-gradient(90deg,var(--brand-bg),var(--brand-bg2));color:var(--brand-text)}"
-        ".brandbar img{height:40px;width:auto;border-radius:6px;box-shadow:0 0 0 1px rgba(255,255,255,.2)}"
-        ".brandbar .brand-name{font-weight:600;font-size:1rem;color:var(--brand-text)}"
-        ".footer-brand{margin-top:2rem;padding:.75rem;border-top:none;border-radius:8px;background:linear-gradient(90deg,var(--brand-bg),var(--brand-bg2));font-size:.75rem;color:var(--brand-text);display:flex;align-items:center;gap:10px}"
-        ".footer-brand img{height:32px;width:auto;border-radius:6px;box-shadow:0 0 0 1px rgba(255,255,255,.2)}"
+    style_block = build_report_style_block(BRAND_BG, BRAND_BG2, BRAND_TEXT)
+    header_html = (
+        '<header class="page-header"><div class="brandbar">'
+        + (f'<img src="{logo_uri}" alt="Company Logo"/>' if logo_uri else "")
+        + '<span class="brand-name">ToppyMicroServices</span></div>'
+        + '<div class="page-hero"><h1 class="page-title">Thermo-Credit Monitor</h1>'
+        + '<p class="page-subtitle">Interactive charts with summary, interpretations, and fallbacks.</p>'
+        + "</div></header>"
+    )
+    footer_html = (
+        '<div class="footer-brand">'
+        + (f'<img src="{logo_uri}" alt="Company Logo"/>' if logo_uri else "")
+        + "<span>© "
+        + datetime.utcnow().strftime('%Y')
+        + " ToppyMicroServices</span></div>"
     )
 
     head = ("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" "
             "content=\"width=device-width,initial-scale=1\"><title>Thermo-Credit Monitor</title><meta name=\"description\" "
             "content=\"Monthly thermo-credit indicators.\"><style>" + style_block + "</style>"
-            + "</head><body><div class=\"wrap\"><div class=\"brandbar\">"
-            + (f'<img src="{logo_uri}" alt="Company Logo"/>' if logo_uri else "")
-            + '<span class="brand-name">ToppyMicroServices</span></div><h1>Thermo-Credit Monitor</h1><p class="note">Interactive charts with summary & fallbacks.</p>')
+            + "</head><body><div class=\"wrap\">" + header_html + '<main class="page-content">')
 
     intro_html = (
         '<section class="intro">'
@@ -1001,16 +988,9 @@ def main() -> None:
     )
 
     page_body = intro_html + selected_summary_html + inputs_summary_html + tabs_html + regions_html + noscript + sources_html + defs_html + formulas_html
-    script_block = ("\n<script>(function(){const tabs=[...document.querySelectorAll('.tabs button')];if(tabs.length){"
-                    "tabs.forEach(btn=>btn.addEventListener('click',()=>{tabs.forEach(x=>x.classList.remove('active'));btn.classList.add('active');"
-                    "const tgt=btn.getAttribute('data-target');document.querySelectorAll('.region').forEach(r=>r.classList.remove('active'));"
-                    "const el=document.getElementById('region-'+tgt);if(el)el.classList.add('active');}));}"
-                    "document.querySelectorAll('.compare-toggle').forEach(ct=>{const btns=[...ct.querySelectorAll('button')];const block=ct.parentElement.nextElementSibling;"
-                    "btns.forEach(btn=>btn.addEventListener('click',()=>{btns.forEach(x=>x.classList.remove('active'));btn.classList.add('active');const mode=btn.getAttribute('data-mode');"
-                    "if(block){block.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));const target=block.querySelector('.pane.'+(mode==='std'?'std':'raw'));if(target)target.classList.add('active');}"
-                    "}));});})();</script></body></html>")
+    script_block = build_report_script_block() + "</body></html>"
 
-    final_html = head + page_body + '<div class="footer-brand">' + (f'<img src="{logo_uri}" alt="Company Logo"/>' if logo_uri else "") + '<span>© ' + datetime.utcnow().strftime('%Y') + ' ToppyMicroServices</span></div></div>' + script_block
+    final_html = head + page_body + "</main>" + footer_html + "</div>" + script_block
     with open(os.path.join(SITE_DIR, "report.html"), "w", encoding="utf-8") as fp:
         fp.write(final_html)
     print("Wrote site/report.html")
@@ -1032,10 +1012,8 @@ def main() -> None:
     month_head = ("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" "
                   f"content=\"width=device-width,initial-scale=1\"><title>Thermo-Credit Monitor – {month_key}</title><meta name=\"description\" "
                   "content=\"Monthly thermo-credit indicators.\"><style>" + style_block + "</style>"
-                  + "</head><body><div class=\"wrap\"><div class=\"brandbar\">"
-                  + (f'<img src="{logo_uri}" alt="Company Logo"/>' if logo_uri else "")
-                  + '<span class="brand-name">ToppyMicroServices</span></div><h1>Thermo-Credit Monitor</h1><p class="note">Interactive charts with summary & fallbacks.</p>')
-    month_html = month_head + page_body + '<div class="footer-brand">' + (f'<img src="{logo_uri}" alt="Company Logo"/>' if logo_uri else "") + '<span>© ' + datetime.utcnow().strftime('%Y') + ' ToppyMicroServices</span></div></div>' + script_block
+                  + "</head><body><div class=\"wrap\">" + header_html + '<main class="page-content">')
+    month_html = month_head + page_body + "</main>" + footer_html + "</div>" + script_block
     with open(os.path.join(month_dir, "index.html"), "w", encoding="utf-8") as fp:
         fp.write(month_html)
 
