@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://toppymicros.com/schemas/thermo_credit/get_variable_definitions.response.schema.json",
+  "title": "get_variable_definitions response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "model_version",
+    "definitions_version",
+    "interpretation_status",
+    "variables",
+    "limitations",
+    "source_ids"
+  ],
+  "properties": {
+    "model_version": { "type": "string" },
+    "definitions_version": { "type": "string" },
+    "interpretation_status": {
+      "type": "string",
+      "enum": ["research", "experimental", "production_candidate"]
+    },
+    "variables": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "symbol",
+          "name",
+          "category",
+          "type",
+          "units",
+          "definition",
+          "status"
+        ],
+        "properties": {
+          "symbol": { "type": "string" },
+          "name": { "type": "string" },
+          "category": { "type": "string" },
+          "type": { "type": "string" },
+          "units": { "type": "string" },
+          "definition": { "type": "string" },
+          "status": { "type": "string" },
+          "empirical_role": { "type": "string" },
+          "current_repo_artifacts": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "source_ids": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

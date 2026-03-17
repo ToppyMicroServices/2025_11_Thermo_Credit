@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://toppymicros.com/schemas/thermo_credit/evaluate_scenario.response.schema.json",
+  "title": "evaluate_scenario response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "model_version",
+    "definitions_version",
+    "interpretation_status",
+    "baseline",
+    "scenario",
+    "delta",
+    "summary",
+    "limitations",
+    "source_ids"
+  ],
+  "properties": {
+    "model_version": { "type": "string" },
+    "definitions_version": { "type": "string" },
+    "interpretation_status": {
+      "type": "string",
+      "enum": ["research", "experimental", "production_candidate"]
+    },
+    "baseline": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "scenario": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "delta": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "number"
+      }
+    },
+    "summary": { "type": "string" },
+    "limitations": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "source_ids": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

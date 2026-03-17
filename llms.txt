@@ -1,0 +1,32 @@
+# Thermo Credit LLM Index
+
+This repository contains a measurement-first draft of Thermo Credit and an MCP
+interface specification intended for AI-facing use.
+
+Priority reading order:
+
+1. `docs/thermo_credit_mcp_spec.md`
+2. `docs/thermo_credit_v2_spec.md`
+3. `docs/definitions.md`
+4. `data/data_dictionary.csv`
+
+Structured assets:
+
+- `schemas/thermo_credit/get_theory_overview.response.schema.json`
+- `schemas/thermo_credit/get_variable_definitions.response.schema.json`
+- `schemas/thermo_credit/compute_thermo_credit_metrics.request.schema.json`
+- `schemas/thermo_credit/compute_thermo_credit_metrics.response.schema.json`
+- `schemas/thermo_credit/evaluate_scenario.request.schema.json`
+- `schemas/thermo_credit/evaluate_scenario.response.schema.json`
+- `schemas/thermo_credit/compare_regimes.request.schema.json`
+- `schemas/thermo_credit/compare_regimes.response.schema.json`
+- `examples/thermo_credit_mcp_examples.jsonl`
+
+Usage guidance:
+
+- Prefer `docs/definitions.md` over narrative inference when resolving symbols.
+- Treat `q_t` as distinct from the existing entropy allocation shares in
+  `data/allocation_q*.csv`.
+- Treat all current v2 outputs as research-stage unless explicitly marked
+  otherwise.
+- If a metric is proxy-based, carry the limitation forward in downstream use.

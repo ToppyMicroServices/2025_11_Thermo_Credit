@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://toppymicros.com/schemas/thermo_credit/compute_thermo_credit_metrics.response.schema.json",
+  "title": "compute_thermo_credit_metrics response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "model_version",
+    "definitions_version",
+    "interpretation_status",
+    "region",
+    "frequency",
+    "metrics",
+    "limitations",
+    "source_ids"
+  ],
+  "properties": {
+    "model_version": { "type": "string" },
+    "definitions_version": { "type": "string" },
+    "interpretation_status": {
+      "type": "string",
+      "enum": ["research", "experimental", "production_candidate"]
+    },
+    "region": {
+      "type": "string",
+      "enum": ["jp", "eu", "us", "custom"]
+    },
+    "frequency": {
+      "type": "string",
+      "enum": ["monthly", "quarterly"]
+    },
+    "metrics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "date",
+          "credit_total",
+          "credit_real_share",
+          "credit_asset_share",
+          "credit_real_flow",
+          "credit_asset_flow",
+          "credit_efficiency",
+          "asset_bias",
+          "dissipation_proxy",
+          "stress_proxy"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "credit_total": { "type": "number" },
+          "credit_real_share": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "credit_asset_share": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "credit_real_flow": { "type": "number" },
+          "credit_asset_flow": { "type": "number" },
+          "credit_efficiency": { "type": "number" },
+          "asset_bias": { "type": "number" },
+          "dissipation_proxy": { "type": "number" },
+          "stress_proxy": { "type": "number" }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "latest_date": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "latest_credit_real_share": { "type": "number" },
+        "latest_stress_proxy": { "type": "number" }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "source_ids": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

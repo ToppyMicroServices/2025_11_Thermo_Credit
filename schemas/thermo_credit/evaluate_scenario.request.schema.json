@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://toppymicros.com/schemas/thermo_credit/evaluate_scenario.request.schema.json",
+  "title": "evaluate_scenario request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["region", "frequency", "baseline_state", "scenario_shocks", "horizon_periods"],
+  "properties": {
+    "region": {
+      "type": "string",
+      "enum": ["jp", "eu", "us", "custom"]
+    },
+    "frequency": {
+      "type": "string",
+      "enum": ["monthly", "quarterly"]
+    },
+    "baseline_state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["credit_total", "credit_real_share"],
+      "properties": {
+        "credit_total": { "type": "number" },
+        "credit_real_share": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "nominal_output": { "type": "number" },
+        "asset_price_index": { "type": "number" },
+        "stress_proxy": { "type": "number" }
+      }
+    },
+    "scenario_shocks": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "delta_credit_total": { "type": "number" },
+        "delta_credit_real_share": { "type": "number" },
+        "delta_stress_proxy": { "type": "number" }
+      }
+    },
+    "horizon_periods": {
+      "type": "integer",
+      "minimum": 1
+    }
+  }
+}

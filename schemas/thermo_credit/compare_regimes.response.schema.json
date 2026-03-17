@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://toppymicros.com/schemas/thermo_credit/compare_regimes.response.schema.json",
+  "title": "compare_regimes response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "model_version",
+    "definitions_version",
+    "interpretation_status",
+    "period_a_label",
+    "period_b_label",
+    "comparison",
+    "summary",
+    "limitations",
+    "source_ids"
+  ],
+  "properties": {
+    "model_version": { "type": "string" },
+    "definitions_version": { "type": "string" },
+    "interpretation_status": {
+      "type": "string",
+      "enum": ["research", "experimental", "production_candidate"]
+    },
+    "period_a_label": { "type": "string" },
+    "period_b_label": { "type": "string" },
+    "comparison": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "number"
+      }
+    },
+    "summary": { "type": "string" },
+    "limitations": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "source_ids": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

@@ -8,6 +8,38 @@
 
 - 英語版 README（詳細説明）: `README.md`
 - 主な出力: `site/report.html`（ダッシュボード）、`site/indicators*.csv`（指標時系列）
+
+## Thermo Credit v2 の設計メモ
+
+- `docs/thermo_credit_v2_spec.md`: 測定可能な v2 モデルの目的、状態変数、仮説、反証可能性
+- `docs/definitions.md`: `C_t`, `q_t`, `C_t^R`, `C_t^A`, `S_t` などの変数定義
+- `data/data_dictionary.csv`: 現在の系列と今後追加する系列の対応表
+- `docs/thermo_credit_mcp_spec.md`: MCP で公開する resources / tools / schema の最小仕様
+- `docs/mcp_connection_guide.md`: Claude Desktop / Claude Code / ChatGPT への接続ガイド
+- `llms.txt`: AI 向けの短い入口と参照順
+
+当面の主眼は、理論の言い換えではなく、変数定義・識別戦略・再計算可能性の固定です。
+
+## AI 向けの呼び出し入口
+
+- `lib/thermo_credit_tools.py`: 理論概要、変数定義、metric 計算、scenario 評価、regime 比較のコア実装
+- `lib/thermo_credit_mcp.py`: FastMCP で resources / tools / prompts を公開する薄いラッパー
+- `scripts/thermo_credit_cli.py`: 上記を JSON で呼ぶための CLI
+- `scripts/thermo_credit_mcp_server.py`: 実行用の MCP server
+
+MCP 依存は Python `3.10` から `3.13` を前提に有効化しています。既存のローカル `.venv` がそれより古い場合は、まず CLI を使うのが安全です。
+
+例:
+
+```bash
+./.venv/bin/python scripts/thermo_credit_cli.py get_variable_definitions <<'EOF'
+{"symbols":["C_t","q_t","S_t"],"include_existing_repo_metrics":false}
+EOF
+
+./.venv/bin/python scripts/thermo_credit_cli.py compute_thermo_credit_metrics --repo-region jp --limit 3
+
+./.venv/bin/python scripts/thermo_credit_mcp_server.py --transport stdio
+```
 ---
 ## インストール
 

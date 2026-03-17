@@ -7,3 +7,4 @@ kaleido>=0.2.1
 Pillow>=10.0
 pytest>=8.4
 pluggy>=1.5
+mcp[cli]>=1.26; python_version >= "3.10" and python_version < "3.14"

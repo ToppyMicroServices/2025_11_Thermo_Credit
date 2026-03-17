@@ -1,5 +1,16 @@
 name: "Build & Publish"
 on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/build-and-publish.yml'
+      - 'config*.yml'
+      - 'constraints.txt'
+      - 'requirements.txt'
+      - 'lib/**'
+      - 'scripts/**'
+      - 'data/**'
+      - 'site/**'
   schedule:
     - cron: '0 19 1 * *'   # Monthly on day 1 at 04:00 JST (UTC 19:00)
   workflow_dispatch: {}

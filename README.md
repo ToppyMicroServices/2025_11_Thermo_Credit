@@ -14,6 +14,38 @@ Key outputs (per region):
 - `site/report.html` — interactive dashboard (Plotly)
 - `site/indicators*.csv` — indicator time series
 - `data/*.csv` — intermediate feature tables
+
+## Measurement-first v2 Draft
+
+- `docs/thermo_credit_v2_spec.md` — measurement-first model scope, state vector, hypotheses, and falsifiability.
+- `docs/definitions.md` — fixed variable meanings for `C_t`, `q_t`, `C_t^R`, `C_t^A`, `S_t`, and companion thermo gauges.
+- `data/data_dictionary.csv` — source, layer, status, and construction notes for current and planned variables.
+- `docs/thermo_credit_mcp_spec.md` — minimum MCP surface for AI-facing resources, tools, and structured outputs.
+- `docs/mcp_connection_guide.md` — client connection guide for Claude Desktop / Claude Code / ChatGPT.
+- `llms.txt` — short AI-facing index for the most important docs and schemas.
+
+These files separate the "recalculable model" layer from the broader theory note in `tex/theory.tex`. The near-term priority is to fix variable definitions, identification rules, and testable hypotheses before expanding the narrative layer.
+
+## AI-facing tool entrypoint
+
+- `lib/thermo_credit_tools.py` — transport-agnostic core for theory overview, variable definitions, metric computation, scenario evaluation, and regime comparison.
+- `lib/thermo_credit_mcp.py` — minimal FastMCP wrapper that exposes resources, tools, and prompt templates.
+- `scripts/thermo_credit_cli.py` — JSON CLI wrapper for the same tool surface.
+- `scripts/thermo_credit_mcp_server.py` — runnable MCP server entrypoint.
+
+The MCP dependency is enabled for Python `3.10` to `3.13`. The existing local `.venv` in this repo may still be older, so the core CLI remains the safe fallback.
+
+Example:
+
+```bash
+./.venv/bin/python scripts/thermo_credit_cli.py get_variable_definitions <<'EOF'
+{"symbols":["C_t","q_t","S_t"],"include_existing_repo_metrics":false}
+EOF
+
+./.venv/bin/python scripts/thermo_credit_cli.py compute_thermo_credit_metrics --repo-region jp --limit 3
+
+./.venv/bin/python scripts/thermo_credit_mcp_server.py --transport stdio
+```
 ---
 
 ## Citation

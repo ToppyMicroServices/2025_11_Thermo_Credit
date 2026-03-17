@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://toppymicros.com/schemas/thermo_credit/get_theory_overview.response.schema.json",
+  "title": "get_theory_overview response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "model_version",
+    "definitions_version",
+    "interpretation_status",
+    "purpose",
+    "state_vector",
+    "hypotheses",
+    "falsifiability",
+    "limitations",
+    "source_ids"
+  ],
+  "properties": {
+    "model_version": { "type": "string" },
+    "definitions_version": { "type": "string" },
+    "interpretation_status": {
+      "type": "string",
+      "enum": ["research", "experimental", "production_candidate"]
+    },
+    "purpose": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "state_vector": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "hypotheses": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "falsifiability": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "limitations": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "source_ids": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

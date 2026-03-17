@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "thermo-credit": {
+      "type": "stdio",
+      "command": "/ABSOLUTE/PATH/TO/2025_11_Thermo_Credit/.venv-mcp/bin/python",
+      "args": [
+        "/ABSOLUTE/PATH/TO/2025_11_Thermo_Credit/scripts/thermo_credit_mcp_server.py",
+        "--transport",
+        "stdio"
+      ],
+      "env": {}
+    }
+  }
+}

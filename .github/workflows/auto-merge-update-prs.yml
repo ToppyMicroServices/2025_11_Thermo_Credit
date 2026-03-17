@@ -1,0 +1,33 @@
+name: Auto-merge Update PRs
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  actions: write
+  contents: write
+  pull-requests: write
+
+jobs:
+  merge-bot-update-pr:
+    if: >-
+      github.event.pull_request.base.ref == 'main' &&
+      github.event.pull_request.user.login == 'app/github-actions' &&
+      startsWith(github.event.pull_request.head.ref, 'ci/update-') &&
+      startsWith(github.event.pull_request.title, 'chore(ci): update')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge trusted update PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh pr merge "$PR_NUMBER" --repo "$REPO" --squash --delete-branch
+      - name: Trigger publish for merged update
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh workflow run build-and-publish.yml --repo "$REPO" --ref main
