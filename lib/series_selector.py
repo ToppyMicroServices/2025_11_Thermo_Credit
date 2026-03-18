@@ -1,6 +1,7 @@
 """Helpers for selecting economic series with preferences and fallbacks."""
 import os
 from typing import Any, Callable, Dict, Iterable, List, Optional
+import pandas as pd
 import yaml
 
 DEFAULT_START = "1990-01-01"
@@ -199,6 +200,21 @@ def select_series(
         raise RuntimeError(f"No candidate series configured for role '{role}'.")
 
     errors: List[str] = []
+    successes: List[Dict[str, Any]] = []
+
+    def _latest_date(data: Any) -> Optional[pd.Timestamp]:
+        if not hasattr(data, "__getitem__"):
+            return None
+        try:
+            if "date" not in data.columns:  # type: ignore[attr-defined]
+                return None
+            dates = pd.to_datetime(data["date"], errors="coerce").dropna()
+            if dates.empty:
+                return None
+            return pd.Timestamp(dates.max())
+        except Exception:
+            return None
+
     for candidate in queue:
         series_id = candidate["id"]
         start = candidate.get("start") or DEFAULT_START
@@ -218,9 +234,33 @@ def select_series(
             errors.append(f"{series_id} ({candidate['source']}): empty result")
             continue
 
-        candidate["data"] = data
-        candidate["start"] = start
-        return candidate
+        item = dict(candidate)
+        item["data"] = data
+        item["start"] = start
+        item["_latest_date"] = _latest_date(data)
+        successes.append(item)
+
+    if successes:
+        first = successes[0]
+        first_latest = first.get("_latest_date")
+        freshest = max(
+            successes,
+            key=lambda item: (
+                item.get("_latest_date") is not None,
+                item.get("_latest_date") or pd.Timestamp.min,
+            ),
+        )
+        freshest_latest = freshest.get("_latest_date")
+        if (
+            isinstance(first_latest, pd.Timestamp)
+            and isinstance(freshest_latest, pd.Timestamp)
+            and freshest_latest - first_latest > pd.Timedelta(days=365)
+        ):
+            freshest["selection_reason"] = "freshness_fallback"
+            freshest.pop("_latest_date", None)
+            return freshest
+        first.pop("_latest_date", None)
+        return first
 
     details = ", ".join(errors) if errors else "no candidates returned data"
     raise RuntimeError(f"No usable series for role '{role}'. Tried: {details}")

@@ -256,17 +256,76 @@ def _read_raw(sid: str) -> pd.DataFrame:
     return df.sort_values("date")
 
 def _pick_first_available(series_list):
-    """Given a list of dicts with id fields, return first DataFrame found under data/<id>.csv."""
+    """Return the first available raw series, unless a much fresher fallback exists."""
     if not series_list:
         return pd.DataFrame()
+    candidates = []
     for s in series_list:
         sid = s.get("id") if isinstance(s, dict) else None
         if not sid:
             continue
         df = _read_raw(str(sid))
         if not df.empty:
-            return df
-    return pd.DataFrame()
+            candidates.append((str(sid), df))
+    if not candidates:
+        return pd.DataFrame()
+    first_sid, first_df = candidates[0]
+    try:
+        first_latest = pd.to_datetime(first_df["date"], errors="coerce").dropna().max()
+    except Exception:
+        first_latest = pd.NaT
+    best_sid, best_df = candidates[0]
+    best_latest = first_latest
+    for sid, df in candidates[1:]:
+        try:
+            latest = pd.to_datetime(df["date"], errors="coerce").dropna().max()
+        except Exception:
+            latest = pd.NaT
+        if pd.isna(best_latest) or (pd.notna(latest) and latest > best_latest):
+            best_sid, best_df, best_latest = sid, df, latest
+    if pd.notna(first_latest) and pd.notna(best_latest) and best_latest - first_latest > pd.Timedelta(days=365):
+        print(f"[info] Switching raw series from {first_sid} to fresher fallback {best_sid}")
+        return best_df
+    return first_df
+
+
+def _data_path(kind: str, region: str) -> str:
+    suffix = "" if region == "jp" else f"_{region}"
+    return os.path.join("data", f"{kind}{suffix}.csv")
+
+
+def _read_region_csv(kind: str, region: str) -> pd.DataFrame:
+    preferred = _data_path(kind, region)
+    fallback = os.path.join("data", f"{kind}.csv")
+    path = preferred if os.path.exists(preferred) else fallback
+    return pd.read_csv(path, parse_dates=["date"]).sort_values("date")
+
+
+def _ensure_allocation_view(q: pd.DataFrame, housing_share: float = 0.4) -> pd.DataFrame:
+    if q is None or q.empty:
+        return q
+    out = q.copy()
+    for col in ("q_pay", "q_firm", "q_asset", "q_reserve"):
+        if col not in out.columns:
+            out[col] = np.nan
+    if "q_productive" not in out.columns:
+        out["q_productive"] = pd.to_numeric(out["q_firm"], errors="coerce")
+    if "q_financial" not in out.columns:
+        out["q_financial"] = pd.to_numeric(out["q_asset"], errors="coerce")
+    if "q_government" not in out.columns:
+        out["q_government"] = pd.to_numeric(out["q_reserve"], errors="coerce")
+    if "q_housing" not in out.columns:
+        out["q_housing"] = pd.to_numeric(out["q_pay"], errors="coerce") * housing_share
+    if "q_consumption" not in out.columns:
+        pay = pd.to_numeric(out["q_pay"], errors="coerce")
+        housing = pd.to_numeric(out["q_housing"], errors="coerce")
+        out["q_consumption"] = (pay - housing).clip(lower=0)
+    mece_cols = ["q_productive", "q_housing", "q_consumption", "q_financial", "q_government"]
+    total = out[mece_cols].apply(pd.to_numeric, errors="coerce").sum(axis=1).replace({0: np.nan})
+    valid = total.notna()
+    if valid.any():
+        out.loc[valid, mece_cols] = out.loc[valid, mece_cols].div(total[valid], axis=0)
+    return out
 
 # Resolve region-specific series preferences from config if available
 series_cfg = cfg.get("series", {}) if isinstance(cfg, dict) else {}
@@ -316,7 +375,7 @@ money_scale = m2 if not m2.empty else boj
 base = boj
 if money_scale.empty or base.empty:
     # fallback to existing files if raw not present
-    money = pd.read_csv("data/money.csv", parse_dates=["date"]).sort_values("date")
+    money = _read_region_csv("money", REGION)
 else:
     ms_q = _qe_dec(money_scale)
     bs_q = _qe_dec(base)
@@ -325,7 +384,7 @@ else:
     money = money.rename(columns={"value_ms":"M_in","value_bs":"M_out"})
 
 # Allocation: extend back to money start if needed by forward-filling earliest row
-q = pd.read_csv("data/allocation_q.csv", parse_dates=["date"]).sort_values("date")
+q = _ensure_allocation_view(_read_region_csv("allocation_q", REGION))
 if not money.empty and not q.empty and money["date"].min() < q["date"].min():
     first_row = q.iloc[0]
     ext_idx = pd.date_range(money["date"].min(), q["date"].min() - pd.offsets.QuarterEnd(0), freq="QE-DEC")
@@ -374,14 +433,14 @@ def compute_region(region: str) -> str:
     money_scale = m2 if not m2.empty else boj
     base = boj
     if money_scale.empty or base.empty:
-        money = pd.read_csv("data/money.csv", parse_dates=["date"]).sort_values("date")
+        money = _read_region_csv("money", region)
     else:
         ms_q = _qe_dec(money_scale)
         bs_q = _qe_dec(base)
         money = ms_q.merge(bs_q, on="date", how="outer", suffixes=("_ms","_bs")).sort_values("date")
         money = money.rename(columns={"value_ms":"M_in","value_bs":"M_out"})
 
-    q = pd.read_csv("data/allocation_q.csv", parse_dates=["date"]).sort_values("date")
+    q = _ensure_allocation_view(_read_region_csv("allocation_q", region))
     if not money.empty and not q.empty and money["date"].min() < q["date"].min():
         first_row = q.iloc[0]
         ext_idx = pd.date_range(money["date"].min(), q["date"].min() - pd.offsets.QuarterEnd(0), freq="QE-DEC")
@@ -395,9 +454,9 @@ def compute_region(region: str) -> str:
             })
             q = pd.concat([q_ext, q], ignore_index=True).sort_values("date").reset_index(drop=True)
 
-    cred  = pd.read_csv("data/credit.csv", parse_dates=["date"]).sort_values("date")
+    cred  = _read_region_csv("credit", region)
     cred  = _ensure_credit_inputs(cred, yld)
-    reg   = pd.read_csv("data/reg_pressure.csv", parse_dates=["date"]).sort_values("date")
+    reg   = _read_region_csv("reg_pressure", region)
     reg   = _ensure_headrooms(reg)
 
     # Normalize all inputs to quarter-end frequency to ensure inner-join alignment

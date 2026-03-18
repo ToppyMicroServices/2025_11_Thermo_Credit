@@ -251,22 +251,45 @@ def build_eu(series_prefs: dict, project_config: dict) -> None:
             reg = reg.merge(ext_df, on="date", how="left")
         reg.to_csv(os.path.join("data", "reg_pressure_eu.csv"), index=False)
 
-        # allocation_q_eu.csv (only create if absent): EU-specific buckets
+        # allocation_q_eu.csv: keep dates aligned to current credit history
         alloc_path = os.path.join("data", "allocation_q_eu.csv")
-        if not os.path.exists(alloc_path):
-            dates = cred["date"].drop_duplicates().sort_values()
-            qdf = pd.DataFrame({"date": dates})
-            default_weights = {
-                "q_households": 0.30,
-                "q_corporates": 0.35,
-                "q_government": 0.20,
-                "q_row": 0.15,
-            }
-            region_weights = allocation_weights(project_config, "eu", default_weights)
-            for col, value in region_weights.items():
-                qdf[col] = float(value)
-            qdf.to_csv(alloc_path, index=False)
-        print("EU feature CSVs built: money_eu.csv, credit_eu.csv, reg_pressure_eu.csv (+ allocation_q_eu.csv if missing)")
+        dates = cred["date"].drop_duplicates().sort_values()
+        qdf = pd.DataFrame({"date": dates})
+        default_weights = {
+            "q_pay": 0.30,
+            "q_firm": 0.30,
+            "q_asset": 0.25,
+            "q_reserve": 0.15,
+        }
+        region_weights = allocation_weights(project_config, "eu", default_weights)
+        if os.path.exists(alloc_path):
+            try:
+                existing = pd.read_csv(alloc_path, parse_dates=["date"]).sort_values("date")
+            except Exception:
+                existing = pd.DataFrame()
+            q_cols = [c for c in ("q_pay", "q_firm", "q_asset", "q_reserve") if c in existing.columns]
+            if q_cols:
+                qdf = qdf.merge(existing, on="date", how="left").sort_values("date")
+                qdf[q_cols] = qdf[q_cols].ffill().bfill()
+        base_cols = ["q_pay", "q_firm", "q_asset", "q_reserve"]
+        for col in base_cols:
+            if col not in qdf.columns:
+                qdf[col] = float(region_weights.get(col, default_weights[col]))
+        qdf[base_cols] = qdf[base_cols].fillna({col: float(region_weights.get(col, default_weights[col])) for col in base_cols})
+        base_sum = qdf[base_cols].sum(axis=1).replace(0, np.nan)
+        qdf[base_cols] = qdf[base_cols].div(base_sum, axis=0)
+        housing_share = 0.4
+        qdf["q_productive"] = qdf["q_firm"]
+        qdf["q_financial"] = qdf["q_asset"]
+        qdf["q_government"] = qdf["q_reserve"]
+        qdf["q_housing"] = qdf["q_pay"] * housing_share
+        qdf["q_consumption"] = (qdf["q_pay"] - qdf["q_housing"]).clip(lower=0)
+        mece_cols = ["q_productive", "q_housing", "q_consumption", "q_financial", "q_government"]
+        mece_sum = qdf[mece_cols].sum(axis=1).replace(0, np.nan)
+        qdf[mece_cols] = qdf[mece_cols].div(mece_sum, axis=0)
+        ordered_cols = ["date", *base_cols, *mece_cols]
+        qdf[ordered_cols].to_csv(alloc_path, index=False)
+        print("EU feature CSVs built: money_eu.csv, credit_eu.csv, reg_pressure_eu.csv, allocation_q_eu.csv")
     except Exception as e:
         print("[EU build] Skipped building EU feature CSVs:", e)
 

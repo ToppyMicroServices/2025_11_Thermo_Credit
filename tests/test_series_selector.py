@@ -66,6 +66,28 @@ class SeriesSelectorTests(unittest.TestCase):
         self.assertEqual(result["source"], "default")
         self.assertEqual(result["start"], "2000-01-01")
 
+    def test_select_series_prefers_fresher_fallback_when_primary_is_stale(self) -> None:
+        stale_df = pd.DataFrame({"date": ["2020-01-01"], "value": [1.0]})
+        fresh_df = pd.DataFrame({"date": ["2025-01-01"], "value": [2.0]})
+
+        def fake_fetch(series_id: str, start: str) -> pd.DataFrame:
+            if series_id == "STALE":
+                return stale_df
+            if series_id == "FRESH":
+                return fresh_df
+            raise RuntimeError("fail")
+
+        with patch.dict("os.environ", {}, clear=True):
+            result = selector.select_series(
+                "money_scale",
+                "MONEY_SERIES",
+                fake_fetch,
+                preferences={"money_scale": [{"id": "STALE"}, {"id": "FRESH"}]},
+                defaults={},
+            )
+        self.assertEqual(result["id"], "FRESH")
+        self.assertEqual(result.get("selection_reason"), "freshness_fallback")
+
     def test_select_series_no_candidate_raises(self) -> None:
         def fake_fetch(series_id: str, start: str) -> pd.DataFrame:
             raise RuntimeError("fail")
