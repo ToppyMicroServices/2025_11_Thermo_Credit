@@ -19,6 +19,7 @@ from lib.series_selector import (
     select_series,
 )
 from lib.credit_enrichment import compute_enrichment
+from lib.ecb_data import fetch_ecb_series
 from lib.worldbank import fetch_worldbank_series
 from lib.config_params import allocation_weights, leverage_share
 from lib.config_loader import load_config
@@ -33,6 +34,11 @@ ROLE_ENV_EU = {
     "base_proxy_eu": "BASE_SERIES_EU",
     "yield_proxy_eu": "YIELD_SERIES_EU",
 }
+
+ECB_M3_FLOW = "BSI"
+ECB_M3_KEY = "M.U2.Y.V.M30.X.I.U2.2300.Z01.E"
+ECB_GDP_FLOW = "MNA"
+ECB_GDP_KEY = "Q.N.U2.W2.S1.S1.B.B1GQ._Z._Z._Z.EUR.V.N"
 
 
 def fred_series(series_id: str, start: str = DEFAULT_START, retries: int = 3, backoff: float = 1.5) -> pd.DataFrame:
@@ -90,6 +96,29 @@ def worldbank_series(country: str = "EMU", indicator: str = "NY.GDP.MKTP.CN") ->
         cache_dir=cache_dir,
         fallback_csvs=unique_fallbacks,
     )
+
+
+def ecb_series(flow_id: str, series_key: str, start_period: str) -> pd.DataFrame:
+    return fetch_ecb_series(flow_id, series_key, start_period=start_period)
+
+
+def _latest_date(df: Optional[pd.DataFrame]) -> Optional[pd.Timestamp]:
+    if df is None or df.empty or "date" not in df.columns:
+        return None
+    dates = pd.to_datetime(df["date"], errors="coerce").dropna()
+    if dates.empty:
+        return None
+    return pd.Timestamp(dates.max())
+
+
+def _prefer_fresher(current: pd.DataFrame, candidate: pd.DataFrame, *, min_gain_days: int = 120) -> bool:
+    current_latest = _latest_date(current)
+    candidate_latest = _latest_date(candidate)
+    if candidate_latest is None:
+        return False
+    if current_latest is None:
+        return True
+    return candidate_latest - current_latest > pd.Timedelta(days=min_gain_days)
 
 
 def _log_selection(role: str, info: dict) -> None:
@@ -169,6 +198,23 @@ def build_eu(series_prefs: dict, project_config: dict) -> None:
     ):
         _log_selection(role, info)
 
+    try:
+        ecb_m3 = ecb_series(ECB_M3_FLOW, ECB_M3_KEY, "1999-01")
+    except Exception as exc:
+        print(f"[EU series] ECB M3 fetch unavailable: {exc}")
+        ecb_m3 = pd.DataFrame()
+
+    if money_choice.get("id") == "MABMM301EZM189S" and _prefer_fresher(money_choice.get("data"), ecb_m3):
+        money_choice["data"] = ecb_m3.copy()
+        money_choice["title"] = "Euro Area M3 (ECB Data Portal)"
+        money_choice["source"] = "ecb_api"
+        print("[EU series] money_scale_eu switched to fresher ECB Data Portal M3")
+    if base_choice.get("id") == "MABMM301EZM189S" and _prefer_fresher(base_choice.get("data"), ecb_m3):
+        base_choice["data"] = ecb_m3.copy()
+        base_choice["title"] = "Euro Area M3 (ECB Data Portal)"
+        base_choice["source"] = "ecb_api"
+        print("[EU series] base_proxy_eu switched to fresher ECB Data Portal M3")
+
     os.makedirs("data", exist_ok=True)
     selected_meta = {
         "money_scale_eu": {k: money_choice.get(k) for k in ("id", "source", "start", "title")},
@@ -208,7 +254,11 @@ def build_eu(series_prefs: dict, project_config: dict) -> None:
         bis["date"] = pd.to_datetime(bis["date"])  # quarterly or monthly depending on source
         bis["date"] = pd.to_datetime(bis["date"])  # quarterly
         bis = bis.rename(columns={"value": "L_real"})
-        gdp = worldbank_series("EMU", "NY.GDP.MKTP.CN").rename(columns={"value": "Y"})
+        try:
+            gdp = ecb_series(ECB_GDP_FLOW, ECB_GDP_KEY, "1999-Q1").rename(columns={"value": "Y"})
+        except Exception as exc:
+            print(f"[EU build] ECB GDP fetch unavailable, fallback to World Bank/cache: {exc}")
+            gdp = worldbank_series("EMU", "NY.GDP.MKTP.CN").rename(columns={"value": "Y"})
         yld = yield_choice.get("data").copy()
         yld["date"] = pd.to_datetime(yld["date"])  # monthly
         # Use explicit quarter ending alias (December) 'QE-DEC'
