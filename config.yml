@@ -61,15 +61,19 @@ series:
       start: 1990-01-01
   money_scale_eu:
     preferred:
+      - id: MABMM301EZM189S
+        title: Euro Area M3 (Broad Money)
+        note: Preferred broad money scale while ECB asset proxy remains stale
+        start: 1999-01-01
       - id: ECBASSETS
         title: ECB Total Assets (consolidated)
         note: Euro area balance sheet proxy
         start: 1999-01-01
-      - id: MABMM301EZM189S
-        title: Euro Area M3 (Broad Money)
-        note: Broad money scale alternative
-        start: 1999-01-01
   base_proxy_eu:
+    - id: MABMM301EZM189S
+      title: Euro Area M3 (Broad Money)
+      note: Preferred fallback until ECB balance-sheet proxy is refreshed
+      start: 1999-01-01
     - id: ECBASSETS
       title: ECB Total Assets
       start: 1999-01-01
