@@ -1,15 +1,15 @@
 {
   "money_scale_eu": {
-    "id": "ECBASSETS",
-    "source": "config",
+    "id": "MABMM301EZM189S",
+    "source": "ecb_api",
     "start": "1999-01-01",
-    "title": "ECB Total Assets (consolidated)"
+    "title": "Euro Area M3 (ECB Data Portal)"
   },
   "base_proxy_eu": {
-    "id": "ECBASSETS",
-    "source": "config",
+    "id": "MABMM301EZM189S",
+    "source": "ecb_api",
     "start": "1999-01-01",
-    "title": "ECB Total Assets"
+    "title": "Euro Area M3 (ECB Data Portal)"
   },
   "yield_proxy_eu": {
     "id": "IRLTLT01EZM156N",
