@@ -122,6 +122,29 @@ def _qe_dec(dfm: pd.DataFrame) -> pd.DataFrame:
     return dfm
 
 
+def _to_quarterly(df: pd.DataFrame) -> pd.DataFrame:
+    if df is None or df.empty or "date" not in df.columns:
+        return df
+    dd = df.copy()
+    try:
+        dd["date"] = pd.to_datetime(dd["date"])
+    except Exception:
+        return df
+    num_cols = [c for c in dd.columns if c != "date"]
+    if not num_cols:
+        return dd
+    try:
+        out = (
+            dd.set_index("date")[num_cols]
+            .resample("QE-DEC")
+            .mean()
+            .reset_index()
+        )
+        return out
+    except Exception:
+        return dd
+
+
 def compute_region(region: str) -> str:
     region = (region or "jp").strip().lower()
     cfg = _load_cfg(region)
@@ -183,6 +206,11 @@ def compute_region(region: str) -> str:
 
     cred = _read_region_csv("credit", region)
     reg = _read_region_csv("reg_pressure", region)
+
+    money = _to_quarterly(money)
+    q = _to_quarterly(q)
+    cred = _to_quarterly(cred)
+    reg = _to_quarterly(reg)
 
     df = build_indicators_core(money, q, cred, reg, cfg)
     df = compute_diagnostics(df)
