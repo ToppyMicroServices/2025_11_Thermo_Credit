@@ -168,6 +168,12 @@ def _attach_headrooms(reg: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def _to_quarter_end(df: pd.DataFrame) -> pd.DataFrame:
+    out = df.copy()
+    out["date"] = pd.to_datetime(out["date"]) + pd.offsets.QuarterEnd(0)
+    return out
+
+
 def build_eu(series_prefs: dict, project_config: dict) -> None:
     money_choice = select_series(
         "money_scale_eu",
@@ -251,14 +257,14 @@ def build_eu(series_prefs: dict, project_config: dict) -> None:
         except Exception:
             # Fallback candidate (long-term series) - adjust if not available
             bis = fred_series("QUSN628BIS")  # Placeholder: will likely differ; user should replace
-        bis["date"] = pd.to_datetime(bis["date"])  # quarterly or monthly depending on source
-        bis["date"] = pd.to_datetime(bis["date"])  # quarterly
+        bis = _to_quarter_end(bis)
         bis = bis.rename(columns={"value": "L_real"})
         try:
             gdp = ecb_series(ECB_GDP_FLOW, ECB_GDP_KEY, "1999-Q1").rename(columns={"value": "Y"})
         except Exception as exc:
             print(f"[EU build] ECB GDP fetch unavailable, fallback to World Bank/cache: {exc}")
             gdp = worldbank_series("EMU", "NY.GDP.MKTP.CN").rename(columns={"value": "Y"})
+        gdp = _to_quarter_end(gdp)
         yld = yield_choice.get("data").copy()
         yld["date"] = pd.to_datetime(yld["date"])  # monthly
         # Use explicit quarter ending alias (December) 'QE-DEC'
