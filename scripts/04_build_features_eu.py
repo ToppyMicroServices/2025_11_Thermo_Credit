@@ -62,6 +62,7 @@ def worldbank_series(country: str = "EMU", indicator: str = "NY.GDP.MKTP.CN") ->
     cache_dir = os.path.join(ROOT, "data")
     # Prefer explicit indicator files and cache JSONs, then any indicator@start CSVs.
     fallback_patterns = [
+        os.path.join("data", "gdp_eu.csv") if country == "EMU" and indicator == "NY.GDP.MKTP.CN" else "",
         os.path.join("data", f"{indicator}.csv"),
         os.path.join("data", f"{indicator}@2000-01-01.csv"),
         os.path.join(cache_dir, f"{indicator}.csv"),
