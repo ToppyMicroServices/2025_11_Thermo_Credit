@@ -2,6 +2,7 @@ import os, json, time
 import argparse
 from typing import Optional
 import glob
+import numpy as np
 import pandas as pd
 import requests
 import sys
