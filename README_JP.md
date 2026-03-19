@@ -29,6 +29,18 @@
 
 MCP 依存は Python `3.10` から `3.13` を前提に有効化しています。既存のローカル `.venv` がそれより古い場合は、まず CLI を使うのが安全です。
 
+## Release 自動化
+
+- GitHub release 用 workflow: `.github/workflows/release-theory.yml`
+- release 時に Zenodo へ `theory.pdf` を送るスクリプト: `scripts/release_to_zenodo.py`
+- 必須 secret: `ZENODO_ACCESS_TOKEN`
+- 必須 variable: `ZENODO_CONCEPT_RECORD_ID`
+- 任意 variable: `ZENODO_API_URL`
+  - 本番: `https://zenodo.org/api`
+  - sandbox: `https://sandbox.zenodo.org/api`
+
+GitHub Release を publish すると、workflow が `tex/theory.pdf` を release asset として `theory.pdf` 名で添付し、Zenodo 設定がある場合は同じ concept record に対して新しい version を作成して publish します。
+
 例:
 
 ```bash

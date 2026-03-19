@@ -2,7 +2,7 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17778342.svg)](https://doi.org/10.5281/zenodo.17778342)
 
-Current version: v2.0 (Dec 2025)
+Current version: v2.1 (Mar 2026)
 
 Compute thermo‑credit indicators from public statistics (local CSVs or FRED API) and render a monthly, multi‑region dashboard.
 
@@ -34,6 +34,16 @@ These files separate the "recalculable model" layer from the broader theory note
 - `scripts/thermo_credit_mcp_server.py` — runnable MCP server entrypoint.
 
 The MCP dependency is enabled for Python `3.10` to `3.13`. The existing local `.venv` in this repo may still be older, so the core CLI remains the safe fallback.
+
+## Release automation
+
+- GitHub release asset workflow: `.github/workflows/release-theory.yml`
+- Release-time Zenodo upload script: `scripts/release_to_zenodo.py`
+- Required GitHub secret: `ZENODO_ACCESS_TOKEN`
+- Required GitHub variable: `ZENODO_CONCEPT_RECORD_ID`
+- Optional GitHub variable: `ZENODO_API_URL` (`https://zenodo.org/api` for production, `https://sandbox.zenodo.org/api` for testing)
+
+When a GitHub release is published, the workflow uploads `tex/theory.pdf` to the release as `theory.pdf` and, if the Zenodo settings are present, creates/publishes a new Zenodo version for the same concept record.
 
 Example:
 

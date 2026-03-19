@@ -6,6 +6,7 @@ import html as html_lib
 from datetime import datetime
 import base64
 from io import BytesIO
+from pathlib import Path
 from urllib.parse import urlparse
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
@@ -47,10 +48,19 @@ from lib.report_helpers import (
     _series_bucket,
     _series_trend,
     _style_figure,
+    apply_event_overlays,
+    build_dashboard_takeaway_sections,
+    build_event_summary_html,
     build_report_script_block,
     build_report_style_block,
+    filter_dashboard_events,
+    load_dashboard_events,
+    render_dashboard_events_tex,
+    render_dashboard_takeaways_tex,
     make_dual_axis_sm_tl,
+    write_dashboard_takeaways_png,
 )
+from lib.theory_figures import build_theory_figures
 
 SITE_DIR = os.path.join(ROOT, "site")
 DATA_DIR = os.path.join(ROOT, "data")
@@ -73,13 +83,86 @@ except Exception as exc:
     print("[report] raw_inputs preload failed:", exc)
 
 
-def _build_compare_context(region_ctxs: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
-    builder = CompareBuilder(region_ctxs)
+def _metric_card_html(label: str, value: str, *, detail: str = "", tone: str = "neutral") -> str:
+    safe_tone = tone if tone in {"neutral", "current", "delayed", "stale"} else "neutral"
+    detail_html = f"<span class=\"summary-detail\">{html_lib.escape(detail)}</span>" if detail else ""
+    return (
+        f"<article class=\"summary-card tone-{safe_tone}\">"
+        f"<span class=\"summary-label\">{html_lib.escape(label)}</span>"
+        f"<strong class=\"summary-value\">{html_lib.escape(value)}</strong>"
+        f"{detail_html}</article>"
+    )
+
+
+def _summary_cards_html(cards: List[Dict[str, str]]) -> str:
+    if not cards:
+        return ""
+    inner = "".join(
+        _metric_card_html(
+            item.get("label", ""),
+            item.get("value", ""),
+            detail=item.get("detail", ""),
+            tone=item.get("tone", "neutral"),
+        )
+        for item in cards
+    )
+    return f"<div class=\"summary-grid\">{inner}</div>"
+
+
+def _coverage_status(last_date: datetime, reference_date: datetime) -> Tuple[str, str]:
+    lag_days = max((reference_date - last_date).days, 0)
+    if lag_days <= 120:
+        return "Current", "current"
+    if lag_days <= 365:
+        return "Lagging", "delayed"
+    return "Stale", "stale"
+
+
+def _build_coverage_summary(region_ctxs: List[Dict[str, Any]]) -> str:
+    dated_regions = [ctx for ctx in region_ctxs if ctx.get("last_date")]
+    if not dated_regions:
+        return ""
+    reference_date = max(pd.to_datetime(ctx["last_date"]).to_pydatetime() for ctx in dated_regions)
+    cards: List[str] = []
+    for ctx in dated_regions:
+        label = str(ctx.get("label", "Region"))
+        last_date = pd.to_datetime(ctx["last_date"]).to_pydatetime()
+        status_label, status_tone = _coverage_status(last_date, reference_date)
+        lag_days = max((reference_date - last_date).days, 0)
+        lag_note = "Aligned with the freshest regional data in this report." if lag_days == 0 else f"{lag_days} days behind the freshest region in this report."
+        cards.append(
+            (
+                f"<article class=\"coverage-card tone-{status_tone}\">"
+                "<div class=\"coverage-head\">"
+                f"<span class=\"coverage-region\">{html_lib.escape(label)}</span>"
+                f"<span class=\"status-badge tone-{status_tone}\">{status_label}</span>"
+                "</div>"
+                f"<strong class=\"coverage-date\">{last_date.strftime('%Y-%m-%d')}</strong>"
+                f"<p class=\"coverage-note\">{html_lib.escape(lag_note)}</p>"
+                "</article>"
+            )
+        )
+    note = (
+        "<p class=\"note small\">This block highlights whether each regional panel is aligned with the freshest data currently available in the report, so stale regions stand out before you read the charts.</p>"
+    )
+    return (
+        '<section class="coverage-summary">'
+        "<h2>Coverage Summary</h2>"
+        f"{note}<div class=\"coverage-grid\">{''.join(cards)}</div></section>"
+    )
+
+
+def _build_compare_context(
+    region_ctxs: List[Dict[str, Any]],
+    dashboard_events: Optional[List[Dict[str, Any]]] = None,
+) -> Optional[Dict[str, Any]]:
+    builder = CompareBuilder(region_ctxs, events=dashboard_events)
     compare_data = builder.build()
     if compare_data is None:
         return None
 
     summary_html = ""
+    takeaway_lines: List[str] = []
     if not compare_data.latest_rows.empty:
         latest_df = compare_data.latest_rows.copy()
         cols = [c for c in ["Region", "Latest date", "S_M", "T_L", "loop_area", "X_C"] if c in latest_df.columns]
@@ -94,6 +177,29 @@ def _build_compare_context(region_ctxs: List[Dict[str, Any]]) -> Optional[Dict[s
             f"<p><strong>At the latest date</strong>{' (' + latest_dt_str + ')' if latest_dt_str else ''}, this section compares dispersion (S<sub>M</sub>), liquidity temperature (T<sub>L</sub>), loop dissipation, and remaining credit exergy (X<sub>C</sub>) across regions. The table below gives exact values.</p>"
         )
         summary_html = headline + "<h2>Compare – Latest snapshot</h2>" + latest_df.to_html(index=False, border=0, classes="mini", float_format=lambda x: f"{x:.4g}")
+        if latest_dt_str:
+            takeaway_lines.append(f"Cross-region snapshot uses {latest_dt_str}.")
+        metric_specs = [
+            ("S_M", "S_M is highest in", "max"),
+            ("T_L", "T_L is highest in", "max"),
+            ("loop_area", "Loop dissipation is largest in", "absmax"),
+            ("X_C", "X_C is lowest in", "min"),
+        ]
+        for column, prefix, mode in metric_specs:
+            if column not in latest_df.columns:
+                continue
+            ranked = latest_df[["Region", column]].copy()
+            ranked[column] = pd.to_numeric(ranked[column], errors="coerce")
+            ranked = ranked.dropna(subset=[column])
+            if ranked.empty:
+                continue
+            if mode == "min":
+                row = ranked.loc[ranked[column].idxmin()]
+            elif mode == "absmax":
+                row = ranked.loc[ranked[column].abs().idxmax()]
+            else:
+                row = ranked.loc[ranked[column].idxmax()]
+            takeaway_lines.append(f"{prefix} {row['Region']} ({float(row[column]):.4g}).")
 
     raw_charts_html = _figs_html(compare_data.raw_figs)
     std_charts_html = _figs_html(compare_data.std_figs) if compare_data.std_figs else ""
@@ -123,6 +229,7 @@ def _build_compare_context(region_ctxs: List[Dict[str, Any]]) -> Optional[Dict[s
         "fig_specs": compare_data.raw_figs + compare_data.std_figs,
         "summary_line": None,
         "summary_items": [],
+        "takeaway_lines": takeaway_lines,
         "has_maxwell_fig": False,
         "has_firstlaw_fig": False,
         "has_raw_inputs_fig": False,
@@ -316,6 +423,7 @@ def _build_region_context(
     selected_meta: Optional[Dict[str, Any]] = None,
     include_raw_inputs: bool = False,
     raw_inputs_fig=None,
+    dashboard_events: Optional[List[Dict[str, Any]]] = None,
 ) -> Optional[Dict[str, Any]]:
     if frame is None:
         return None
@@ -357,6 +465,12 @@ def _build_region_context(
     # Plot subset filtered by start date
     plot_start = _plot_start_date()
     plot_df = local[local["date"] >= plot_start].copy() if "date" in local.columns else local.copy()
+    region_events = filter_dashboard_events(
+        dashboard_events or [],
+        region_key=key,
+        start_date=plot_df["date"].min() if not plot_df.empty and "date" in plot_df.columns else None,
+        end_date=plot_df["date"].max() if not plot_df.empty and "date" in plot_df.columns else None,
+    )
 
     fig_specs: List[ChartSpec] = []
     if {"S_M", "T_L"}.issubset(local.columns) and not plot_df.empty:
@@ -364,6 +478,7 @@ def _build_region_context(
         fig = make_dual_axis_sm_tl(plot_df, title=f"{label} – S_M & T_L")
         _style_figure(fig)
         _apply_hover(fig, ".3f")
+        apply_event_overlays(fig, region_events)
         interp = _chart_interpretation("S_M & T_L", plot_df)
         fig_specs.append((fig, "S_M & T_L", "Entropy & temperature", interp))
     # Stacked MECE entropy view when per-category columns exist
@@ -387,6 +502,7 @@ def _build_region_context(
             )
             _style_figure(fig_cat)
             _apply_hover(fig_cat, ".3f")
+            apply_event_overlays(fig_cat, region_events)
             interp = _chart_interpretation("S_M by category", plot_df)
             fig_specs.append((fig_cat, "S_M by category", "Entropy by MECE categories", interp))
     if "loop_area" in local.columns and not plot_df.empty:
@@ -399,6 +515,7 @@ def _build_region_context(
         )
         _style_figure(fig)
         _apply_hover(fig, ".3f")
+        apply_event_overlays(fig, region_events)
     interp = _chart_interpretation("Policy Loop Dissipation", plot_df)
     fig_specs.append((fig, "Policy Loop Dissipation", "Loop area", interp))
     # Exergy, free energy, internal energy, change in free energy, and surplus/shortage figures
@@ -414,6 +531,7 @@ def _build_region_context(
             )
             _style_figure(fig_xc)
             _apply_hover(fig_xc, ".3f")
+            apply_event_overlays(fig_xc, region_events)
             interp = _chart_interpretation("Credit Exergy Ceiling", plot_df)
             fig_specs.append((fig_xc, "Credit Exergy Ceiling", "X_C", interp))
         # Free energy F_C (always show if present)
@@ -427,6 +545,7 @@ def _build_region_context(
             )
             _style_figure(fig_fc)
             _apply_hover(fig_fc, ".3f")
+            apply_event_overlays(fig_fc, region_events)
             interp = _chart_interpretation("Free Energy (F_C)", plot_df)
             fig_specs.append((fig_fc, "Free Energy (F_C)", "F_C", interp))
         # Change in free energy dF_C
@@ -440,6 +559,7 @@ def _build_region_context(
             )
             _style_figure(fig_dfc)
             _apply_hover(fig_dfc, ".3f")
+            apply_event_overlays(fig_dfc, region_events)
             interp = _chart_interpretation("ΔF_C (change)", plot_df)
             fig_specs.append((fig_dfc, "ΔF_C (change)", "dF_C", interp))
         # Internal energy U
@@ -453,6 +573,7 @@ def _build_region_context(
             )
             _style_figure(fig_u)
             _apply_hover(fig_u, ".3f")
+            apply_event_overlays(fig_u, region_events)
             interp = _chart_interpretation("Internal Energy (U)", plot_df)
             fig_specs.append((fig_u, "Internal Energy (U)", "U", interp))
         # Surplus/Shortage split from ΔF_C
@@ -475,6 +596,7 @@ def _build_region_context(
                 )
                 _style_figure(fig_pm)
                 _apply_hover(fig_pm, ".3f")
+                apply_event_overlays(fig_pm, region_events)
                 interp = _chart_interpretation("Surplus/Shortage (ΔF_C)", df_pm)
                 fig_specs.append((fig_pm, "Surplus/Shortage (ΔF_C)", "X_C_plus / X_C_minus", interp))
 
@@ -495,6 +617,7 @@ def _build_region_context(
         )
         _style_figure(fig)
         _apply_hover(fig, ".3f")
+        apply_event_overlays(fig, region_events)
         # Shade out-of-spec zones across the full plot if diagnostics spike
         try:
             mask = _out_of_spec_mask(plot_df)
@@ -518,6 +641,7 @@ def _build_region_context(
         )
         _style_figure(fig)
         _apply_hover(fig, ".3f")
+        apply_event_overlays(fig, region_events)
         # Mirror shading on first-law plot for same out-of-spec windows
         try:
             if not out_of_spec_ranges:
@@ -562,7 +686,20 @@ def _build_region_context(
         summary_items.append(f"Maxwell gap: {fmt(last_row.get('maxwell_gap'))}")
     if has_thermo and "firstlaw_resid" in local.columns:
         summary_items.append(f"First-law resid: {fmt(last_row.get('firstlaw_resid'))}")
-    summary_html = "<ul>" + "".join(f"<li>{html_lib.escape(item)}</li>" for item in summary_items) + "</ul>"
+    summary_cards: List[Dict[str, str]] = [
+        {"label": "Latest", "value": last_date.strftime("%Y-%m-%d"), "detail": "Most recent observation in this panel."},
+    ]
+    if "S_M" in local.columns:
+        summary_cards.append({"label": "S_M", "value": fmt(last_row.get("S_M")), "detail": "Dispersion / allocation spread."})
+    if "T_L" in local.columns:
+        summary_cards.append({"label": "T_L", "value": fmt(last_row.get("T_L")), "detail": "Liquidity temperature."})
+    if "loop_area" in local.columns:
+        summary_cards.append({"label": "Loop Area", "value": fmt(last_row.get("loop_area")), "detail": "Dissipation along the policy loop."})
+    if "X_C" in local.columns and pd.to_numeric(local["X_C"], errors="coerce").dropna().size > 0:
+        summary_cards.append({"label": "X_C", "value": fmt(last_row.get("X_C")), "detail": "Remaining adjustment room."})
+    elif "F_C" in local.columns and pd.to_numeric(local["F_C"], errors="coerce").dropna().size > 0:
+        summary_cards.append({"label": "F_C", "value": fmt(last_row.get("F_C")), "detail": "Free-energy proxy when X_C is absent."})
+    summary_html = _summary_cards_html(summary_cards)
 
     try:
         last_sm = float(pd.to_numeric(local.get("S_M"), errors="coerce").dropna().iloc[-1]) if "S_M" in local.columns else None
@@ -594,17 +731,38 @@ def _build_region_context(
             xc_desc = "positive (some room remains)"
 
     parts: List[str] = []
+    takeaway_lines: List[str] = []
+    snapshot_fields: List[str] = []
+    if "S_M" in local.columns and last_sm is not None:
+        snapshot_fields.append(f"S_M={fmt(last_sm)}")
+    if "T_L" in local.columns and last_tl is not None:
+        snapshot_fields.append(f"T_L={fmt(last_tl)}")
+    if "loop_area" in local.columns and last_la is not None:
+        snapshot_fields.append(f"loop area={fmt(last_la)}")
+    if last_xc is not None:
+        snapshot_fields.append(f"X_C={fmt(last_xc)}")
+    elif "F_C" in local.columns and pd.to_numeric(local["F_C"], errors="coerce").dropna().size > 0:
+        snapshot_fields.append(f"F_C={fmt(last_row.get('F_C'))}")
+    if snapshot_fields:
+        takeaway_lines.append(f"Latest snapshot ({last_date.strftime('%Y-%m-%d')}): " + ", ".join(snapshot_fields) + ".")
     if sm_bucket and tl_bucket:
         parts.append(f"{label} sits in a <strong>{sm_bucket}-dispersion, {tl_bucket}-temperature</strong> regime.")
+        takeaway_lines.append(f"{label} sits in a {sm_bucket}-dispersion, {tl_bucket}-temperature regime.")
     elif sm_bucket or tl_bucket:
         if sm_bucket:
             parts.append(f"Dispersion is <strong>{sm_bucket}</strong>.")
+            takeaway_lines.append(f"Dispersion is {sm_bucket}.")
         if tl_bucket:
             parts.append(f"Liquidity temperature is <strong>{tl_bucket}</strong>.")
+            takeaway_lines.append(f"Liquidity temperature is {tl_bucket}.")
     if la_desc:
         parts.append(f"Loop area is <strong>{la_desc}</strong>, indicating {'ongoing dissipation' if la_desc=='non-zero' else 'a quiet loop'}.")
+        takeaway_lines.append(
+            f"Loop area is {la_desc}, indicating {'ongoing dissipation' if la_desc == 'non-zero' else 'a quiet loop'}."
+        )
     if xc_desc:
         parts.append(f"X<sub>C</sub> is <strong>{xc_desc}</strong>.")
+        takeaway_lines.append(f"X_C is {xc_desc}.")
     comment_html = ("<p>" + " ".join(parts) + "</p>") if parts else ""
 
     chart_lines: List[Tuple[str, str]] = []
@@ -642,6 +800,7 @@ def _build_region_context(
             for title, text in chart_lines
         )
         chart_notes_html = f"<div class=\"chart-notes\"><h3>Interpretation</h3>{items}</div>"
+        takeaway_lines.extend(f"{title}: {text}" for title, text in chart_lines)
 
     # Mini table columns with fallback: include F_C if X_C absent
     mini_cols_base = ["S_M", "T_L", "loop_area", "U", "dF_C"]
@@ -716,6 +875,7 @@ def _build_region_context(
         "fig_specs": fig_specs,
         "summary_line": _selected_summary_line(label, selected_meta),
         "summary_items": summary_items,
+        "takeaway_lines": takeaway_lines,
         "has_maxwell_fig": any(spec[1] == "Maxwell-like Test" for spec in fig_specs),
         "has_firstlaw_fig": any(spec[1] == "First-law Decomposition" for spec in fig_specs),
         "has_raw_inputs_fig": any(spec[1] == "Raw Inputs (first=100)" for spec in fig_specs),
@@ -804,6 +964,7 @@ def main() -> None:
     selected_meta = _load_json(os.path.join(DATA_DIR, "series_selected.json"))
     eu_selected_meta = _load_json(os.path.join(DATA_DIR, "series_selected_eu.json"))
     us_selected_meta = _load_json(os.path.join(DATA_DIR, "series_selected_us.json"))
+    dashboard_events = load_dashboard_events(os.path.join(DATA_DIR, "report_events.csv"))
 
     # Prefer module-level preloaded raw_inputs_df if available; otherwise attempt repo data path
     sources_meta = load_sources(os.path.join(DATA_DIR, "sources.json"))
@@ -827,6 +988,7 @@ def main() -> None:
         selected_meta=selected_meta,
         include_raw_inputs=raw_inputs_fig is not None,
         raw_inputs_fig=raw_inputs_fig,
+        dashboard_events=dashboard_events,
     )
     if jp_ctx:
         regions.append(jp_ctx)
@@ -839,6 +1001,7 @@ def main() -> None:
         selected_meta=eu_selected_meta,
         include_raw_inputs=raw_inputs_fig is not None,
         raw_inputs_fig=raw_inputs_fig,
+        dashboard_events=dashboard_events,
     )
     if eu_ctx:
         regions.append(eu_ctx)
@@ -851,6 +1014,7 @@ def main() -> None:
         selected_meta=us_selected_meta,
         include_raw_inputs=raw_inputs_fig is not None,
         raw_inputs_fig=raw_inputs_fig,
+        dashboard_events=dashboard_events,
     )
     if us_ctx:
         regions.append(us_ctx)
@@ -875,13 +1039,84 @@ def main() -> None:
 
     selected_summary_html = ""
     inputs_summary_html = _build_inputs_summary(regions)
+    coverage_html = _build_coverage_summary(regions)
+    event_summary_html = build_event_summary_html(dashboard_events, plot_start=_plot_start_date())
 
     # Optional: add a Compare tab if at least two regions have frames (even if one is placeholder, charts are gated by data presence)
-    compare_ctx = _build_compare_context([ctx for ctx in regions if isinstance(ctx.get("frame"), pd.DataFrame)])
+    compare_ctx = _build_compare_context(
+        [ctx for ctx in regions if isinstance(ctx.get("frame"), pd.DataFrame)],
+        dashboard_events=dashboard_events,
+    )
     if compare_ctx and compare_ctx.get("html"):
         regions_with_compare = [compare_ctx] + regions
     else:
         regions_with_compare = regions
+
+    month_key = primary_ctx["last_date"].strftime("%Y-%m")
+    takeaways = build_dashboard_takeaway_sections(regions_with_compare)
+    tex_generated_dir = os.path.join(ROOT, "tex", "generated")
+    os.makedirs(tex_generated_dir, exist_ok=True)
+    takeaways_json = {
+        "month": month_key,
+        "source": "site/report.html",
+        "sections": takeaways,
+    }
+    with open(os.path.join(SITE_DIR, "dashboard_takeaways.json"), "w", encoding="utf-8") as fp:
+        json.dump(takeaways_json, fp, ensure_ascii=False, indent=2)
+    with open(os.path.join(SITE_DIR, "dashboard_events.json"), "w", encoding="utf-8") as fp:
+        json.dump(
+            {
+                "source": "data/report_events.csv",
+                "plot_start": _plot_start_date().strftime("%Y-%m-%d"),
+                "events": [
+                    {
+                        "key": event.get("key", ""),
+                        "label": event.get("label", ""),
+                        "start_date": pd.to_datetime(event.get("start_date")).strftime("%Y-%m-%d"),
+                        "end_date": pd.to_datetime(event.get("end_date")).strftime("%Y-%m-%d"),
+                        "regions": event.get("regions") or [],
+                        "category": event.get("category", ""),
+                        "description": event.get("description", ""),
+                    }
+                    for event in dashboard_events
+                ],
+            },
+            fp,
+            ensure_ascii=False,
+            indent=2,
+        )
+    takeaways_tex = render_dashboard_takeaways_tex(
+        takeaways,
+        source_path="site/report.html",
+        report_month=month_key,
+    )
+    with open(os.path.join(tex_generated_dir, "dashboard_takeaways.tex"), "w", encoding="utf-8") as fp:
+        fp.write(takeaways_tex)
+    with open(os.path.join(tex_generated_dir, "dashboard_events.tex"), "w", encoding="utf-8") as fp:
+        fp.write(render_dashboard_events_tex(dashboard_events, source_path="data/report_events.csv"))
+    try:
+        build_theory_figures(
+            site_dir=Path(SITE_DIR),
+            output_dir=Path(tex_generated_dir),
+            events_path=Path(DATA_DIR) / "report_events.csv",
+            start_date=os.getenv("THEORY_PLOT_START") or os.getenv("REPORT_PLOT_START") or "1998-01-01",
+        )
+    except Exception as exc:
+        print("Theory figure export skipped:", exc)
+    takeaways_png_ok = write_dashboard_takeaways_png(
+        os.path.join(SITE_DIR, "dashboard_takeaways.png"),
+        takeaways,
+        title="Thermo-Credit Dashboard Takeaways",
+        subtitle=f"Auto-generated snapshot for {month_key}",
+    )
+    if takeaways_png_ok:
+        try:
+            shutil.copyfile(
+                os.path.join(SITE_DIR, "dashboard_takeaways.png"),
+                os.path.join(tex_generated_dir, "dashboard_takeaways.png"),
+            )
+        except Exception:
+            pass
 
     if len(regions_with_compare) > 1:
         buttons: List[str] = []
@@ -987,7 +1222,19 @@ def main() -> None:
         '</section>'
     )
 
-    page_body = intro_html + selected_summary_html + inputs_summary_html + tabs_html + regions_html + noscript + sources_html + defs_html + formulas_html
+    page_body = (
+        intro_html
+        + coverage_html
+        + event_summary_html
+        + selected_summary_html
+        + inputs_summary_html
+        + tabs_html
+        + regions_html
+        + noscript
+        + sources_html
+        + defs_html
+        + formulas_html
+    )
     script_block = build_report_script_block() + "</body></html>"
 
     final_html = head + page_body + "</main>" + footer_html + "</div>" + script_block
@@ -996,7 +1243,6 @@ def main() -> None:
     print("Wrote site/report.html")
 
     base_url = _validated_base_url(os.getenv("TMS_BASE_URL", DEFAULT_BASE_URL))
-    month_key = primary_ctx["last_date"].strftime("%Y-%m")
     month_dir = os.path.join(SITE_DIR, month_key)
     os.makedirs(month_dir, exist_ok=True)
 
@@ -1008,6 +1254,13 @@ def main() -> None:
                     shutil.copyfile(src, os.path.join(month_dir, filename))
                 except Exception:
                     pass
+    for filename in ("dashboard_takeaways.json", "dashboard_takeaways.png", "dashboard_events.json"):
+        src = os.path.join(SITE_DIR, filename)
+        if os.path.exists(src):
+            try:
+                shutil.copyfile(src, os.path.join(month_dir, filename))
+            except Exception:
+                pass
 
     month_head = ("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" "
                   f"content=\"width=device-width,initial-scale=1\"><title>Thermo-Credit Monitor – {month_key}</title><meta name=\"description\" "

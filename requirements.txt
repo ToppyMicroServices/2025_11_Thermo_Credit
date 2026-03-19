@@ -5,6 +5,8 @@ plotly>=5.24
 requests>=2.32
 kaleido>=0.2.1
 Pillow>=10.0
+matplotlib>=3.10
+seaborn>=0.13
 pytest>=8.4
 pluggy>=1.5
 mcp[cli]>=1.26; python_version >= "3.10" and python_version < "3.14"

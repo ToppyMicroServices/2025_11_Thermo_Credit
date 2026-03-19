@@ -7,6 +7,7 @@
 \geometry{margin=25mm}
 \usepackage{amsmath,amssymb}
 \usepackage{booktabs}
+\usepackage{graphicx}
 \usepackage{hyperref}
 \usepackage{microtype}
 
@@ -1061,6 +1062,93 @@ rather than a validation mechanism. It makes Thermo Credit easier for AI
 systems to query and reuse, but it does not by itself establish the theory's
 empirical correctness. Validation still depends on the forecasting tests,
 identification strategy, and falsifiability criteria stated above.
+
+\subsection{Canonical event windows}
+
+To make chart reading and case-study writing more stable across the HTML
+dashboard and this note, the repository now keeps a small shared event
+registry in \texttt{data/report\_events.csv}. The intent is not to impose a
+single historical taxonomy, but to keep major windows such as the IT bubble
+unwind, the Lehman / global financial crisis, the euro sovereign debt crisis,
+and the COVID-19 pandemic shock aligned across outputs. Dashboard charts shade
+these windows whenever they overlap the visible sample, while this note can
+quote the same registry directly.
+
+\IfFileExists{generated/dashboard_events.tex}{
+\paragraph{Canonical dashboard event registry.}
+\input{generated/dashboard_events.tex}
+}{%
+\paragraph{Canonical dashboard event registry.}
+Regenerate \texttt{site/report.html} to populate
+\texttt{tex/generated/dashboard\_events.tex}.
+}
+
+\subsection{Paper-ready figures from dashboard data}
+
+For the narrative note itself, the repository now also generates a small set of
+paper-ready vector figures directly from the same indicator CSVs used by the
+dashboard. These figures are exported as PDF/SVG via a
+\texttt{matplotlib}/\texttt{seaborn} pipeline so that the paper layer does not
+depend on browser screenshots or Plotly-specific rasterization. The aim is to
+preserve consistency with the dashboard while using a cleaner visual grammar
+for writing and citation.
+
+\IfFileExists{generated/theory_sm_tl_panels.pdf}{
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{generated/theory_sm_tl_panels.pdf}
+  \caption{Paper-ready regional panels for $S_M$ and $T_L$ rebuilt from the
+  dashboard indicator tables. Each line uses a winsorized median/MAD score
+  with smooth \texttt{asinh} compression within region, and the shaded windows reuse the shared event registry in
+  \texttt{data/report\_events.csv}.}
+\end{figure}
+}{%
+\paragraph{Paper-ready theory figures.}
+Run \texttt{python scripts/06\_make\_theory\_figures.py} (or rebuild
+\texttt{site/report.html}) to populate
+\texttt{tex/generated/theory\_sm\_tl\_panels.pdf}.
+}
+
+\IfFileExists{generated/theory_capacity_panels.pdf}{
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{generated/theory_capacity_panels.pdf}
+  \caption{Paper-ready regional panels for $X_C$ and loop dissipation rebuilt
+  from the dashboard indicator tables. Here $X_C$ first passes through a
+  trailing four-quarter rolling median and a light two-quarter mean, after
+  which the same winsorized median/MAD scaling with smooth \texttt{asinh}
+  compression, event registry, and regional filtering rules are applied so
+  that the paper layer and the dashboard remain aligned.}
+\end{figure}
+}{}
+
+\subsection{Dashboard takeaways for citation}
+
+The report build now also emits a small reuse layer for writing and slide
+workflows: a LaTeX snippet in \texttt{tex/generated/dashboard\_takeaways.tex},
+a machine-readable JSON payload in \texttt{site/dashboard\_takeaways.json}, and
+a PNG summary card in \texttt{tex/generated/dashboard\_takeaways.png} when the
+local image stack is available. This is intended to let the dashboard's latest
+interpretation notes be quoted in papers and memos without copy-editing the
+HTML by hand.
+
+\IfFileExists{generated/dashboard_takeaways.tex}{
+\paragraph{Auto-generated dashboard snapshot.}
+\input{generated/dashboard_takeaways.tex}
+}{%
+\paragraph{Auto-generated dashboard snapshot.}
+Regenerate \texttt{site/report.html} to populate
+\texttt{tex/generated/dashboard\_takeaways.tex}.
+}
+
+\IfFileExists{generated/dashboard_takeaways.png}{
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{generated/dashboard_takeaways.png}
+  \caption{Auto-generated dashboard takeaway card exported from the latest
+  report build.}
+\end{figure}
+}{}
 
 \subsection{Reproducibility and AI assistance}
 

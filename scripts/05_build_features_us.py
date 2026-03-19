@@ -267,15 +267,27 @@ def build_us(series_prefs: dict, project_config: dict) -> None:
         dates = cred["date"].drop_duplicates().sort_values()
         qdf = pd.DataFrame({"date": dates})
         default_weights = {
-            "q_households": 0.30,
-            "q_corporates": 0.35,
-            "q_public": 0.20,
-            "q_rest": 0.15,
+            "q_pay": 0.30,
+            "q_firm": 0.30,
+            "q_asset": 0.25,
+            "q_reserve": 0.15,
         }
         region_weights = allocation_weights(project_config, "us", default_weights)
-        for col, value in region_weights.items():
-            qdf[col] = float(value)
-        qdf.to_csv(alloc_path, index=False)
+        base_cols = ["q_pay", "q_firm", "q_asset", "q_reserve"]
+        for col in base_cols:
+            qdf[col] = float(region_weights.get(col, default_weights[col]))
+        base_sum = qdf[base_cols].sum(axis=1).replace(0, np.nan)
+        qdf[base_cols] = qdf[base_cols].div(base_sum, axis=0)
+        housing_share = 0.4
+        qdf["q_productive"] = qdf["q_firm"]
+        qdf["q_financial"] = qdf["q_asset"]
+        qdf["q_government"] = qdf["q_reserve"]
+        qdf["q_housing"] = qdf["q_pay"] * housing_share
+        qdf["q_consumption"] = (qdf["q_pay"] - qdf["q_housing"]).clip(lower=0)
+        mece_cols = ["q_productive", "q_housing", "q_consumption", "q_financial", "q_government"]
+        mece_sum = qdf[mece_cols].sum(axis=1).replace(0, np.nan)
+        qdf[mece_cols] = qdf[mece_cols].div(mece_sum, axis=0)
+        qdf[["date", *base_cols, *mece_cols]].to_csv(alloc_path, index=False)
 
     print("US feature CSVs built: money_us.csv, credit_us.csv, reg_pressure_us.csv (+ allocation_q_us.csv if new)")
 

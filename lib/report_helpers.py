@@ -22,6 +22,12 @@ CATEGORY_LABELS = {
     "q_financial": "Financial",
     "q_government": "Government",
 }
+EVENT_CATEGORY_COLORS = {
+    "bubble": "#f59e0b",
+    "crisis": "#ef4444",
+    "pandemic": "#0ea5e9",
+    "policy": "#8b5cf6",
+}
 
 ChartSpec = Tuple[Any, str, str, Optional[str]]
 
@@ -38,9 +44,16 @@ class CompareData:
 class CompareBuilder:
     """Build reusable compare data for JP/EU/US dashboards."""
 
-    def __init__(self, region_ctxs: Iterable[Dict[str, Any]], *, start_date: Optional[pd.Timestamp] = None):
+    def __init__(
+        self,
+        region_ctxs: Iterable[Dict[str, Any]],
+        *,
+        start_date: Optional[pd.Timestamp] = None,
+        events: Optional[Iterable[Dict[str, Any]]] = None,
+    ):
         self.region_ctxs = [ctx for ctx in region_ctxs if isinstance(ctx.get("frame"), pd.DataFrame)]
         self.start_date = start_date or _plot_start_date()
+        self.events = list(events or [])
 
     def build(self) -> Optional[CompareData]:
         data = self._collect()
@@ -139,6 +152,15 @@ class CompareBuilder:
             )
             _style_figure(fig)
             _apply_hover(fig, ".3f")
+            apply_event_overlays(
+                fig,
+                filter_dashboard_events(
+                    self.events,
+                    start_date=long_df["date"].min(),
+                    end_date=long_df["date"].max(),
+                    global_only=True,
+                ),
+            )
             short_label = title.replace("Compare – ", "Compare: ")
             interp = _chart_interpretation(short_label, long_df)
             raw_figs.append((fig, short_label, alt, interp))
@@ -182,6 +204,15 @@ class CompareBuilder:
                 )
                 _style_figure(fig_hat)
                 _apply_hover(fig_hat, ".3f")
+                apply_event_overlays(
+                    fig_hat,
+                    filter_dashboard_events(
+                        self.events,
+                        start_date=long_df_hat["date"].min(),
+                        end_date=long_df_hat["date"].max(),
+                        global_only=True,
+                    ),
+                )
                 interp = _chart_interpretation("Compare: S_M_hat", long_df_hat)
                 std_figs.append((fig_hat, "Compare: S_M_hat", "S_M_hat", interp))
 
@@ -225,6 +256,15 @@ class CompareBuilder:
             )
             _style_figure(figz)
             _apply_hover(figz, ".3f")
+            apply_event_overlays(
+                figz,
+                filter_dashboard_events(
+                    self.events,
+                    start_date=long_df_z["date"].min(),
+                    end_date=long_df_z["date"].max(),
+                    global_only=True,
+                ),
+            )
             short_label = title.replace("Compare – ", "Compare: ")
             interp = _chart_interpretation(short_label, long_df_z)
             std_figs.append((figz, short_label, alt, interp))
@@ -232,11 +272,187 @@ class CompareBuilder:
 
 
 def _plot_start_date() -> pd.Timestamp:
-    raw = os.getenv("REPORT_PLOT_START") or os.getenv("PLOT_START") or "2010-01-01"
+    raw = os.getenv("REPORT_PLOT_START") or os.getenv("PLOT_START") or "1998-01-01"
     try:
         return pd.to_datetime(raw)
     except Exception:
-        return pd.Timestamp("2010-01-01")
+        return pd.Timestamp("1998-01-01")
+
+
+def load_dashboard_events(path: str) -> List[Dict[str, Any]]:
+    """Load canonical dashboard event windows from CSV."""
+    if not path or not os.path.exists(path):
+        return []
+    try:
+        frame = pd.read_csv(path)
+    except Exception:
+        return []
+    events: List[Dict[str, Any]] = []
+    for row in frame.to_dict(orient="records"):
+        label = str(row.get("label") or "").strip()
+        if not label:
+            continue
+        start = pd.to_datetime(row.get("start_date"), errors="coerce")
+        end = pd.to_datetime(row.get("end_date"), errors="coerce")
+        if pd.isna(start):
+            continue
+        if pd.isna(end):
+            end = start
+        if end < start:
+            start, end = end, start
+        regions_raw = str(row.get("regions") or "all").strip().lower()
+        regions = [part.strip() for part in regions_raw.split(",") if part.strip()] or ["all"]
+        events.append(
+            {
+                "key": str(row.get("key") or "").strip(),
+                "label": label,
+                "start_date": start,
+                "end_date": end,
+                "regions": regions,
+                "category": str(row.get("category") or "crisis").strip().lower(),
+                "description": str(row.get("description") or "").strip(),
+            }
+        )
+    return events
+
+
+def filter_dashboard_events(
+    events: Iterable[Dict[str, Any]],
+    *,
+    region_key: str = "",
+    start_date: Optional[pd.Timestamp] = None,
+    end_date: Optional[pd.Timestamp] = None,
+    global_only: bool = False,
+) -> List[Dict[str, Any]]:
+    """Return events that overlap the requested region and date window."""
+    filtered: List[Dict[str, Any]] = []
+    norm_region = str(region_key or "").strip().lower()
+    norm_start = pd.to_datetime(start_date, errors="coerce") if start_date is not None else None
+    norm_end = pd.to_datetime(end_date, errors="coerce") if end_date is not None else None
+    for raw in events:
+        regions = [str(part).strip().lower() for part in raw.get("regions") or [] if str(part).strip()]
+        if not regions:
+            regions = ["all"]
+        is_global = "all" in regions
+        if global_only and not is_global:
+            continue
+        if not global_only and norm_region and not (is_global or norm_region in regions):
+            continue
+        start = pd.to_datetime(raw.get("start_date"), errors="coerce")
+        end = pd.to_datetime(raw.get("end_date"), errors="coerce")
+        if pd.isna(start) or pd.isna(end):
+            continue
+        if norm_start is not None and end < norm_start:
+            continue
+        if norm_end is not None and start > norm_end:
+            continue
+        visible_start = max(start, norm_start) if norm_start is not None else start
+        visible_end = min(end, norm_end) if norm_end is not None else end
+        enriched = dict(raw)
+        enriched["visible_start"] = visible_start
+        enriched["visible_end"] = visible_end
+        filtered.append(enriched)
+    return filtered
+
+
+def apply_event_overlays(fig: Any, events: Iterable[Dict[str, Any]]) -> None:
+    """Shade canonical event windows on a Plotly figure."""
+    for event in events:
+        x0 = pd.to_datetime(event.get("visible_start"), errors="coerce")
+        x1 = pd.to_datetime(event.get("visible_end"), errors="coerce")
+        if pd.isna(x0) or pd.isna(x1):
+            continue
+        category = str(event.get("category") or "crisis").strip().lower()
+        color = EVENT_CATEGORY_COLORS.get(category, "#94a3b8")
+        try:
+            fig.add_vrect(
+                x0=x0,
+                x1=x1,
+                fillcolor=color,
+                opacity=0.10,
+                line_width=0,
+                layer="below",
+                annotation_text=str(event.get("label") or ""),
+                annotation_position="top left",
+                annotation=dict(font=dict(size=10, color="#334155")),
+            )
+        except Exception:
+            continue
+
+
+def build_event_summary_html(events: Iterable[Dict[str, Any]], *, plot_start: Optional[pd.Timestamp] = None) -> str:
+    """Render a compact HTML summary of the canonical event registry."""
+    normalized = list(events)
+    if not normalized:
+        return ""
+    cards: List[str] = []
+    for event in normalized:
+        start = pd.to_datetime(event.get("start_date"), errors="coerce")
+        end = pd.to_datetime(event.get("end_date"), errors="coerce")
+        if pd.isna(start) or pd.isna(end):
+            continue
+        regions = event.get("regions") or ["all"]
+        scope = "Global" if "all" in regions else "/".join(str(part).upper() for part in regions)
+        category = str(event.get("category") or "crisis").strip().lower()
+        tone = html_lib.escape(category)
+        date_text = start.strftime("%Y-%m-%d")
+        if end != start:
+            date_text += " to " + end.strftime("%Y-%m-%d")
+        description = str(event.get("description") or "").strip()
+        cards.append(
+            "<article class=\"event-card\">"
+            f"<div class=\"event-head\"><span class=\"event-chip tone-{tone}\">{html_lib.escape(scope)}</span>"
+            f"<span class=\"event-chip tone-{tone}\">{html_lib.escape(category.title())}</span></div>"
+            f"<strong class=\"event-title\">{html_lib.escape(str(event.get('label') or ''))}</strong>"
+            f"<span class=\"event-date\">{html_lib.escape(date_text)}</span>"
+            f"<p class=\"event-note\">{html_lib.escape(description)}</p>"
+            "</article>"
+        )
+    if not cards:
+        return ""
+    lead = "<p class=\"note small\">Named event bands are drawn from a shared registry and overlaid on charts whenever the event window overlaps the visible period.</p>"
+    if plot_start is not None:
+        try:
+            lead = (
+                "<p class=\"note small\">Named event bands are drawn from a shared registry and overlaid on charts whenever the event window overlaps the visible period. "
+                f"This report currently starts at {html_lib.escape(pd.to_datetime(plot_start).strftime('%Y-%m-%d'))}.</p>"
+            )
+        except Exception:
+            pass
+    return '<section class="event-summary"><h2>Reference events</h2>' + lead + f'<div class="event-grid">{"".join(cards)}</div></section>'
+
+
+def render_dashboard_events_tex(
+    events: Iterable[Dict[str, Any]],
+    *,
+    source_path: str = "data/report_events.csv",
+) -> str:
+    """Render the canonical event registry as a LaTeX snippet."""
+    normalized = list(events)
+    lines = [
+        "% Auto-generated by scripts/03_make_report.py. Do not edit by hand.",
+        r"\noindent\textit{Canonical event windows used by the dashboard overlay layer. Source: \texttt{"
+        + latex_escape(source_path)
+        + "}.}",
+        "",
+        r"\begin{itemize}",
+    ]
+    for event in normalized:
+        start = pd.to_datetime(event.get("start_date"), errors="coerce")
+        end = pd.to_datetime(event.get("end_date"), errors="coerce")
+        if pd.isna(start) or pd.isna(end):
+            continue
+        scope = "global" if "all" in (event.get("regions") or []) else "/".join(str(part).upper() for part in event.get("regions") or [])
+        window = start.strftime("%Y-%m-%d")
+        if end != start:
+            window += " to " + end.strftime("%Y-%m-%d")
+        body = f"{event.get('label', '')} [{scope}; {window}]"
+        description = str(event.get("description") or "").strip()
+        if description:
+            body += f": {description}"
+        lines.append("  \\item " + latex_escape(body))
+    lines.append(r"\end{itemize}")
+    return "\n".join(lines).strip() + "\n"
 
 
 def _style_figure(fig) -> None:
@@ -353,7 +569,9 @@ def build_report_style_block(brand_bg: str, brand_bg2: str, brand_text: str) -> 
         /* Shared panel styling */
         .region-summary,
         .intro,
-        .inputs-summary {{
+        .inputs-summary,
+        .coverage-summary,
+        .event-summary {{
           background: var(--surface-bg);
           border: 1px solid var(--border-soft);
           border-radius: var(--radius-lg);
@@ -374,6 +592,178 @@ def build_report_style_block(brand_bg: str, brand_bg2: str, brand_text: str) -> 
         .note.small {{
           color: var(--text-soft);
           font-size: 0.85rem;
+        }}
+
+        .coverage-grid,
+        .event-grid,
+        .summary-grid,
+        .chart-grid {{
+          display: grid;
+          gap: 0.8rem;
+        }}
+
+        .coverage-grid {{
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          margin-top: 0.85rem;
+        }}
+
+        .event-grid {{
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          margin-top: 0.85rem;
+        }}
+
+        .summary-grid {{
+          grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+          margin: 0 0 0.9rem;
+        }}
+
+        .coverage-card,
+        .event-card,
+        .summary-card {{
+          border: 1px solid var(--border-soft);
+          border-radius: var(--radius-md);
+          background: linear-gradient(180deg, #ffffff, #f8fafc);
+          padding: 0.8rem 0.9rem;
+        }}
+
+        .coverage-card.tone-current,
+        .summary-card.tone-current {{
+          border-color: #b7e4c7;
+          background: linear-gradient(180deg, #ffffff, #f2fbf5);
+        }}
+
+        .coverage-card.tone-delayed,
+        .summary-card.tone-delayed {{
+          border-color: #fde68a;
+          background: linear-gradient(180deg, #ffffff, #fffaf0);
+        }}
+
+        .coverage-card.tone-stale,
+        .summary-card.tone-stale {{
+          border-color: #fecaca;
+          background: linear-gradient(180deg, #ffffff, #fff3f3);
+        }}
+
+        .coverage-head {{
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 0.75rem;
+          margin-bottom: 0.45rem;
+        }}
+
+        .coverage-region,
+        .summary-label {{
+          color: var(--text-muted);
+          font-size: 0.76rem;
+          font-weight: 600;
+          letter-spacing: 0.02em;
+          text-transform: uppercase;
+        }}
+
+        .coverage-date,
+        .summary-value {{
+          display: block;
+          color: var(--text-main);
+          font-size: 1.02rem;
+          line-height: 1.2;
+        }}
+
+        .coverage-note,
+        .event-note,
+        .summary-detail {{
+          display: block;
+          margin-top: 0.25rem;
+          color: var(--text-soft);
+          font-size: 0.78rem;
+          line-height: 1.4;
+        }}
+
+        .event-head {{
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.35rem;
+          margin-bottom: 0.45rem;
+        }}
+
+        .event-title {{
+          display: block;
+          color: var(--text-main);
+          font-size: 0.98rem;
+          line-height: 1.3;
+        }}
+
+        .event-date {{
+          display: block;
+          margin-top: 0.2rem;
+          color: var(--text-muted);
+          font-size: 0.8rem;
+        }}
+
+        .event-chip {{
+          display: inline-flex;
+          align-items: center;
+          border-radius: 999px;
+          padding: 0.16rem 0.52rem;
+          font-size: 0.7rem;
+          font-weight: 700;
+          border: 1px solid transparent;
+          background: #e2e8f0;
+          color: #334155;
+        }}
+
+        .event-chip.tone-bubble {{
+          background: #fef3c7;
+          border-color: #fcd34d;
+          color: #92400e;
+        }}
+
+        .event-chip.tone-crisis {{
+          background: #fee2e2;
+          border-color: #fca5a5;
+          color: #991b1b;
+        }}
+
+        .event-chip.tone-pandemic {{
+          background: #dbeafe;
+          border-color: #93c5fd;
+          color: #1d4ed8;
+        }}
+
+        .event-chip.tone-policy {{
+          background: #ede9fe;
+          border-color: #c4b5fd;
+          color: #6d28d9;
+        }}
+
+        .status-badge {{
+          display: inline-flex;
+          align-items: center;
+          border-radius: 999px;
+          padding: 0.18rem 0.55rem;
+          font-size: 0.72rem;
+          font-weight: 700;
+          border: 1px solid transparent;
+          background: #e5e7eb;
+          color: #374151;
+        }}
+
+        .status-badge.tone-current {{
+          background: #dcfce7;
+          border-color: #86efac;
+          color: #166534;
+        }}
+
+        .status-badge.tone-delayed {{
+          background: #fef3c7;
+          border-color: #fcd34d;
+          color: #92400e;
+        }}
+
+        .status-badge.tone-stale {{
+          background: #fee2e2;
+          border-color: #fca5a5;
+          color: #991b1b;
         }}
 
         /* Data tables */
@@ -448,6 +838,28 @@ def build_report_style_block(brand_bg: str, brand_bg2: str, brand_text: str) -> 
         .compare-block .pane.active,
         .region.active {{
           display: block;
+        }}
+
+        .chart-grid {{
+          grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+          margin-top: 1rem;
+        }}
+
+        figure.chart-card {{
+          margin: 0;
+          padding: 0.75rem;
+          background: var(--surface-bg);
+          border: 1px solid var(--border-soft);
+          border-radius: var(--radius-lg);
+          box-shadow: var(--shadow-soft);
+        }}
+
+        .chart-card .plotly-graph-div {{
+          min-height: 320px;
+        }}
+
+        .chart-card figcaption {{
+          margin-top: 0.55rem;
         }}
 
         /* Narrative helpers */
@@ -578,10 +990,16 @@ def build_report_style_block(brand_bg: str, brand_bg2: str, brand_text: str) -> 
           .region-summary,
           .intro,
           .inputs-summary,
+          .coverage-summary,
+          .event-summary,
           .brandbar,
           .footer-brand {{
             padding-left: 0.8rem;
             padding-right: 0.8rem;
+          }}
+
+          .chart-grid {{
+            grid-template-columns: 1fr;
           }}
 
           table.mini {{
@@ -642,6 +1060,216 @@ def build_report_script_block() -> str:
         </script>
         """
     ).strip()
+
+
+def latex_escape(text: Any) -> str:
+    """Escape plain text for safe inclusion in LaTeX snippets."""
+    replacements = {
+        "\\": r"\textbackslash{}",
+        "&": r"\&",
+        "%": r"\%",
+        "$": r"\$",
+        "#": r"\#",
+        "_": r"\_",
+        "{": r"\{",
+        "}": r"\}",
+        "~": r"\textasciitilde{}",
+        "^": r"\textasciicircum{}",
+        "Δ": "Delta ",
+        "≈": "approx. ",
+        "−": "-",
+        "→": "to",
+    }
+    return "".join(replacements.get(ch, ch) for ch in str(text))
+
+
+def build_dashboard_takeaway_sections(region_ctxs: Iterable[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Normalize dashboard takeaway lines into reusable structured sections."""
+    sections: List[Dict[str, Any]] = []
+    for ctx in region_ctxs:
+        label = str(ctx.get("label") or "").strip()
+        if not label:
+            continue
+        latest_date = ""
+        last_date = ctx.get("last_date")
+        if hasattr(last_date, "strftime"):
+            try:
+                latest_date = last_date.strftime("%Y-%m-%d")
+            except Exception:
+                latest_date = ""
+        bullets: List[str] = []
+        for raw in ctx.get("takeaway_lines") or []:
+            text = " ".join(str(raw).split())
+            if text and text not in bullets:
+                bullets.append(text)
+        if not bullets:
+            continue
+        sections.append(
+            {
+                "key": str(ctx.get("key") or "").strip(),
+                "label": label,
+                "latest_date": latest_date,
+                "bullets": bullets,
+            }
+        )
+    return sections
+
+
+def render_dashboard_takeaways_tex(
+    sections: Iterable[Dict[str, Any]],
+    *,
+    source_path: str = "site/report.html",
+    report_month: str = "",
+) -> str:
+    """Render dashboard takeaways as a LaTeX snippet that can be \\input{}."""
+    normalized = list(sections)
+    lines = [
+        "% Auto-generated by scripts/03_make_report.py. Do not edit by hand.",
+        r"\noindent\textit{Source: \texttt{"
+        + latex_escape(source_path)
+        + "}"
+        + (f", snapshot {latex_escape(report_month)}" if report_month else "")
+        + ".}",
+        "",
+    ]
+    for section in normalized:
+        label = latex_escape(section.get("label", ""))
+        latest_date = latex_escape(section.get("latest_date", ""))
+        heading = label + (f" (latest: {latest_date})" if latest_date else "")
+        lines.append(r"\paragraph{" + heading + "}")
+        lines.append(r"\begin{itemize}")
+        for bullet in section.get("bullets", []):
+            lines.append("  \\item " + latex_escape(bullet))
+        lines.append(r"\end{itemize}")
+        lines.append("")
+    return "\n".join(lines).strip() + "\n"
+
+
+def write_dashboard_takeaways_png(
+    path: str,
+    sections: Iterable[Dict[str, Any]],
+    *,
+    title: str = "Thermo-Credit Dashboard Takeaways",
+    subtitle: str = "",
+) -> bool:
+    """Write a simple PNG summary card for dashboard takeaways."""
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+    except Exception:
+        return False
+
+    normalized = list(sections)
+    if not normalized:
+        return False
+
+    def _load_font(size: int, *, bold: bool = False):
+        candidates = [
+            "/System/Library/Fonts/Supplemental/Helvetica.ttc",
+            "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        ]
+        if bold:
+            candidates.insert(0, "/System/Library/Fonts/Supplemental/Arial Bold.ttf")
+        else:
+            candidates.insert(0, "/System/Library/Fonts/Supplemental/Arial.ttf")
+        for candidate in candidates:
+            if candidate and os.path.exists(candidate):
+                try:
+                    return ImageFont.truetype(candidate, size=size)
+                except Exception:
+                    continue
+        return ImageFont.load_default()
+
+    title_font = _load_font(34, bold=True)
+    section_font = _load_font(24, bold=True)
+    body_font = _load_font(20)
+    meta_font = _load_font(18)
+
+    width = 1600
+    padding_x = 64
+    padding_y = 54
+    gutter = 16
+    section_gap = 24
+    line_height = 30
+
+    blocks: List[Tuple[str, str]] = [("title", title)]
+    if subtitle:
+        blocks.append(("meta", subtitle))
+    for section in normalized:
+        heading = str(section.get("label", "")).strip()
+        latest_date = str(section.get("latest_date", "")).strip()
+        if latest_date:
+            heading += f" ({latest_date})"
+        blocks.append(("section", heading))
+        for bullet in section.get("bullets", []):
+            wrapped = textwrap.wrap(str(bullet), width=92) or [str(bullet)]
+            first = True
+            for line in wrapped:
+                prefix = u"\u2022 " if first else "  "
+                blocks.append(("body", prefix + line))
+                first = False
+
+    height = padding_y * 2
+    for kind, _ in blocks:
+        if kind == "title":
+            height += 48 + gutter
+        elif kind == "section":
+            height += 34 + gutter
+        elif kind == "meta":
+            height += 28 + gutter
+        else:
+            height += line_height + 6
+    height += section_gap * max(len(normalized) - 1, 0)
+
+    image = Image.new("RGB", (width, height), color="#f6f8fb")
+    draw = ImageDraw.Draw(image)
+
+    # Header band
+    draw.rounded_rectangle(
+        (24, 24, width - 24, 172),
+        radius=28,
+        fill="#10243d",
+    )
+    y = 48
+    x = padding_x
+    for kind, text in blocks:
+        if kind == "title":
+            draw.text((x, y), text, fill="#ffffff", font=title_font)
+            y += 48 + gutter
+            continue
+        if kind == "meta":
+            draw.text((x, y), text, fill="#d8e4f2", font=meta_font)
+            y = max(y + 28 + gutter, 188)
+            continue
+        break
+
+    card_top = max(y + 8, 188)
+    draw.rounded_rectangle(
+        (24, card_top, width - 24, height - 24),
+        radius=28,
+        fill="#ffffff",
+        outline="#d9e2ef",
+        width=2,
+    )
+
+    y = card_top + 36
+    for kind, text in blocks:
+        if kind in {"title", "meta"}:
+            continue
+        if kind == "section":
+            draw.text((x, y), text, fill="#10243d", font=section_font)
+            y += 34 + gutter
+            continue
+        draw.text((x + 10, y), text, fill="#213042", font=body_font)
+        y += line_height + 6
+        if text.startswith("  "):
+            continue
+        # Small breathing room after each bullet block.
+        y += 2
+
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    image.save(path, format="PNG", optimize=True)
+    return True
 
 
 def _latest_numeric(frame: Optional[pd.DataFrame], column: str) -> Optional[float]:
@@ -1043,6 +1671,8 @@ def _augment_region_frame(frame: pd.DataFrame, effective_window: int, has_thermo
 
 
 def _figs_html(specs: List[ChartSpec]) -> str:
+    if not specs:
+        return ""
     parts: List[str] = []
     for fig, title, alt, interp in specs:
         html = fig.to_html(full_html=False, include_plotlyjs="cdn")
@@ -1050,9 +1680,9 @@ def _figs_html(specs: List[ChartSpec]) -> str:
         if interp:
             caption += f"<span class=\"chart-note-inline\">{html_lib.escape(interp)}</span>"
         parts.append(
-            f"<figure aria-label=\"{html_lib.escape(alt)}\">{html}<figcaption>{caption}</figcaption></figure>"
+            f"<figure class=\"chart-card\" aria-label=\"{html_lib.escape(alt)}\">{html}<figcaption>{caption}</figcaption></figure>"
         )
-    return "".join(parts)
+    return "<div class=\"chart-grid\">" + "".join(parts) + "</div>"
 
 
 def _selected_table(meta: Optional[Dict[str, Any]], header: str) -> str:
@@ -1072,4 +1702,3 @@ def _selected_table(meta: Optional[Dict[str, Any]], header: str) -> str:
         return ""
     table = pd.DataFrame(rows).to_html(index=False, border=0, classes="mini", escape=True)
     return f"<h2>{html_lib.escape(header)} Selected Input Series</h2>{table}"
-
