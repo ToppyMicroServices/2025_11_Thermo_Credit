@@ -67,18 +67,16 @@ jobs:
         run: python -m pip install --upgrade pip requests
 
       - name: Upload theory PDF to Zenodo
-        if: ${{ secrets.ZENODO_ACCESS_TOKEN != '' && vars.ZENODO_CONCEPT_RECORD_ID != '' }}
         env:
           ZENODO_ACCESS_TOKEN: ${{ secrets.ZENODO_ACCESS_TOKEN }}
           ZENODO_CONCEPT_RECORD_ID: ${{ vars.ZENODO_CONCEPT_RECORD_ID }}
           ZENODO_API_URL: ${{ vars.ZENODO_API_URL }}
         run: |
+          if [ -z "${ZENODO_ACCESS_TOKEN:-}" ] || [ -z "${ZENODO_CONCEPT_RECORD_ID:-}" ]; then
+            echo "Zenodo upload skipped because ZENODO_ACCESS_TOKEN secret or ZENODO_CONCEPT_RECORD_ID variable is not configured."
+            exit 0
+          fi
           python scripts/release_to_zenodo.py \
             --pdf tex/theory.pdf \
             --tag "${{ steps.meta.outputs.tag }}" \
             --release-url "${{ steps.meta.outputs.release_url }}"
-
-      - name: Zenodo configuration reminder
-        if: ${{ !(secrets.ZENODO_ACCESS_TOKEN != '' && vars.ZENODO_CONCEPT_RECORD_ID != '') }}
-        run: |
-          echo "Zenodo upload skipped because ZENODO_ACCESS_TOKEN secret or ZENODO_CONCEPT_RECORD_ID variable is not configured."

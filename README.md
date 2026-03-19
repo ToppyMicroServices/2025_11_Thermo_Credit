@@ -2,7 +2,7 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17778342.svg)](https://doi.org/10.5281/zenodo.17778342)
 
-Current version: v2.1 (Mar 2026)
+Current version: v2.1.1 (Mar 2026)
 
 Compute thermo‑credit indicators from public statistics (local CSVs or FRED API) and render a monthly, multi‑region dashboard.
 
