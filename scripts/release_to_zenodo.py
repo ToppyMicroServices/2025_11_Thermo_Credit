@@ -44,6 +44,31 @@ def _extract_numeric_id(raw: str) -> str:
     )
 
 
+def _extract_public_concept_record_id(record: Dict[str, Any]) -> str:
+    concept_record_id = str(record.get("conceptrecid") or "")
+    if concept_record_id:
+        return concept_record_id
+
+    parent = record.get("parent")
+    if isinstance(parent, dict):
+        concept_record_id = str(parent.get("id") or "")
+        if concept_record_id:
+            return concept_record_id
+
+    metadata = record.get("metadata")
+    if isinstance(metadata, dict):
+        related_parent = metadata.get("parent")
+        if isinstance(related_parent, dict):
+            concept_record_id = str(related_parent.get("id") or "")
+            if concept_record_id:
+                return concept_record_id
+
+    _fail(
+        "Zenodo public record response did not expose a concept record id. "
+        "Use ZENODO_CONCEPT_RECORD_ID explicitly."
+    )
+
+
 def _request_json(
     session: requests.Session,
     method: str,
@@ -100,19 +125,13 @@ def _resolve_concept_record_id(
         _fail("ZENODO_CONCEPT_RECORD_ID or ZENODO_SEED_RECORD_ID_OR_DOI is required.")
 
     record_id = _extract_numeric_id(seed_record_id_or_doi)
-    deposition = _request_json(
+    public_record = _request_json(
         session,
         "GET",
-        f"{api_url}/deposit/depositions/{record_id}",
+        f"{api_url}/records/{record_id}",
         expected=[200],
     )
-    concept_record_id = str(deposition.get("conceptrecid") or "")
-    if not concept_record_id:
-        _fail(
-            "Zenodo record "
-            f"{record_id} did not expose conceptrecid. Use ZENODO_CONCEPT_RECORD_ID explicitly."
-        )
-    return concept_record_id
+    return _extract_public_concept_record_id(public_record)
 
 
 def _existing_draft_deposition(
