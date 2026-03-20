@@ -100,22 +100,32 @@ def test_sanitize_metadata_for_update_removes_dates_when_all_invalid():
     assert "dates" not in cleaned
 
 
-def test_discard_draft_prefers_discard_link(monkeypatch):
+def test_linked_latest_draft_ignores_same_id(monkeypatch):
+    module = _load_module()
+    latest = {
+        "id": 17778342,
+        "links": {"latest_draft": "https://zenodo.org/api/deposit/depositions/17778342"},
+    }
+    assert module._linked_latest_draft(requests.Session(), "https://zenodo.org/api", latest) is None
+
+
+def test_linked_latest_draft_fetches_distinct_draft(monkeypatch):
     module = _load_module()
     calls = []
 
     def fake_request_json(session, method, url, *, expected=None, **kwargs):
         calls.append((method, url, expected, kwargs))
-        return None
+        return {"id": 18888888, "submitted": False}
 
     monkeypatch.setattr(module, "_request_json", fake_request_json)
-    module._discard_draft(
-        requests.Session(),
-        "https://zenodo.org/api",
-        {"links": {"discard": "https://zenodo.org/api/deposit/depositions/199/actions/discard"}},
-    )
+    latest = {
+        "id": 17778342,
+        "links": {"latest_draft": "https://zenodo.org/api/deposit/depositions/18888888"},
+    }
+    draft = module._linked_latest_draft(requests.Session(), "https://zenodo.org/api", latest)
+    assert draft == {"id": 18888888, "submitted": False}
     assert calls == [
-        ("POST", "https://zenodo.org/api/deposit/depositions/199/actions/discard", [201, 202, 204], {})
+        ("GET", "https://zenodo.org/api/deposit/depositions/18888888", [200], {})
     ]
 
 

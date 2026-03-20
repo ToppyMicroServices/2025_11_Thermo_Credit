@@ -29,7 +29,7 @@ def _extract_deposition_id(url: str) -> int:
 def _resource_deposition_id(resource: Dict[str, Any]) -> int:
     links = resource.get("links")
     if isinstance(links, dict):
-        for key in ("latest_draft", "self", "edit", "publish"):
+        for key in ("self", "edit", "publish", "latest_draft"):
             raw = str(links.get(key) or "")
             if "/deposit/depositions/" in raw:
                 return _extract_deposition_id(raw.rsplit("/actions/", 1)[0])
@@ -149,57 +149,48 @@ def _resolve_concept_record_id(
     return _extract_public_concept_record_id(public_record)
 
 
-def _existing_draft_deposition(
+def _linked_latest_draft(
     session: requests.Session,
     api_url: str,
-    concept_record_id: str,
+    latest: Dict[str, Any],
 ) -> Optional[Dict[str, Any]]:
-    results = _request_json(
+    links = latest.get("links")
+    if not isinstance(links, dict):
+        return None
+
+    latest_draft_url = str(links.get("latest_draft") or "")
+    if "/deposit/depositions/" not in latest_draft_url:
+        return None
+
+    latest_id_raw = latest.get("id")
+    if isinstance(latest_id_raw, int):
+        latest_id = latest_id_raw
+    elif isinstance(latest_id_raw, str) and latest_id_raw.isdigit():
+        latest_id = int(latest_id_raw)
+    else:
+        latest_id = _resource_deposition_id(latest)
+    draft_id = _extract_deposition_id(latest_draft_url)
+    if draft_id == latest_id:
+        return None
+
+    return _request_json(
         session,
         "GET",
-        f"{api_url}/deposit/depositions",
+        f"{api_url}/deposit/depositions/{draft_id}",
         expected=[200],
-        params={
-            "q": f"conceptrecid:{concept_record_id}",
-            "status": "draft",
-            "sort": "mostrecent",
-            "all_versions": 1,
-            "size": 1,
-        },
-    )
-    return results[0] if results else None
-
-
-def _discard_draft(
-    session: requests.Session,
-    api_url: str,
-    draft: Dict[str, Any],
-) -> None:
-    links = draft.get("links")
-    if isinstance(links, dict):
-        discard_url = str(links.get("discard") or "")
-        if discard_url:
-            _request_json(session, "POST", discard_url, expected=[201, 202, 204])
-            return
-    deposition_id = _resource_deposition_id(draft)
-    _request_json(
-        session,
-        "POST",
-        f"{api_url}/deposit/depositions/{deposition_id}/actions/discard",
-        expected=[201, 202, 204],
     )
 
 
-def _ensure_fresh_draft(
+def _ensure_draft(
     session: requests.Session,
     api_url: str,
     concept_record_id: str,
 ) -> Dict[str, Any]:
-    draft = _existing_draft_deposition(session, api_url, concept_record_id)
-    if draft is not None:
-        _discard_draft(session, api_url, draft)
-
     latest = _latest_published_deposition(session, api_url, concept_record_id)
+    linked_draft = _linked_latest_draft(session, api_url, latest)
+    if linked_draft is not None:
+        return linked_draft
+
     created = _request_json(
         session,
         "POST",
@@ -386,7 +377,7 @@ def main() -> None:
         seed_record_id_or_doi=args.seed_record_id_or_doi,
     )
 
-    draft = _ensure_fresh_draft(session, api_url, concept_record_id)
+    draft = _ensure_draft(session, api_url, concept_record_id)
     draft = _update_metadata(
         session,
         api_url,
