@@ -65,6 +65,27 @@ def test_resolve_concept_record_id_prefers_explicit_value():
     )
 
 
+def test_sanitize_metadata_for_update_drops_invalid_dates():
+    module = _load_module()
+    metadata = {
+        "title": "Example",
+        "dates": [
+            {"type": "issued"},
+            {"type": "accepted", "date": ""},
+            {"type": "collected", "date": "2026-03-20"},
+        ],
+    }
+    cleaned = module._sanitize_metadata_for_update(metadata)
+    assert cleaned["dates"] == [{"type": "collected", "date": "2026-03-20"}]
+
+
+def test_sanitize_metadata_for_update_removes_dates_when_all_invalid():
+    module = _load_module()
+    metadata = {"title": "Example", "dates": [{"type": "issued"}]}
+    cleaned = module._sanitize_metadata_for_update(metadata)
+    assert "dates" not in cleaned
+
+
 def test_extract_public_concept_record_id_fails_cleanly():
     module = _load_module()
     with pytest.raises(SystemExit, match="did not expose a concept record id"):

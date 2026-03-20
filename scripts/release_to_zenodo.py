@@ -191,6 +191,25 @@ def _maybe_update_description(description: str, tag: str, release_url: str) -> s
     return description + suffix if description else suffix
 
 
+def _sanitize_metadata_for_update(metadata: Dict[str, Any]) -> Dict[str, Any]:
+    cleaned = dict(metadata)
+    raw_dates = cleaned.get("dates")
+    if isinstance(raw_dates, list):
+        valid_dates = []
+        for item in raw_dates:
+            if not isinstance(item, dict):
+                continue
+            date_value = str(item.get("date") or "").strip()
+            if not date_value:
+                continue
+            valid_dates.append(item)
+        if valid_dates:
+            cleaned["dates"] = valid_dates
+        else:
+            cleaned.pop("dates", None)
+    return cleaned
+
+
 def _update_metadata(
     session: requests.Session,
     api_url: str,
@@ -199,7 +218,7 @@ def _update_metadata(
     tag: str,
     release_url: str,
 ) -> Dict[str, Any]:
-    metadata = dict(draft.get("metadata") or {})
+    metadata = _sanitize_metadata_for_update(dict(draft.get("metadata") or {}))
     version = tag.split("/")[-1]
     metadata["version"] = version
     description = str(metadata.get("description") or "")
