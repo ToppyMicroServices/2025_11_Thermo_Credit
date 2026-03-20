@@ -70,10 +70,11 @@ jobs:
         env:
           ZENODO_ACCESS_TOKEN: ${{ secrets.ZENODO_ACCESS_TOKEN }}
           ZENODO_CONCEPT_RECORD_ID: ${{ vars.ZENODO_CONCEPT_RECORD_ID }}
+          ZENODO_SEED_RECORD_ID_OR_DOI: ${{ vars.ZENODO_SEED_RECORD_ID_OR_DOI }}
           ZENODO_API_URL: ${{ vars.ZENODO_API_URL }}
         run: |
-          if [ -z "${ZENODO_ACCESS_TOKEN:-}" ] || [ -z "${ZENODO_CONCEPT_RECORD_ID:-}" ]; then
-            echo "Zenodo upload skipped because ZENODO_ACCESS_TOKEN secret or ZENODO_CONCEPT_RECORD_ID variable is not configured."
+          if [ -z "${ZENODO_ACCESS_TOKEN:-}" ] || { [ -z "${ZENODO_CONCEPT_RECORD_ID:-}" ] && [ -z "${ZENODO_SEED_RECORD_ID_OR_DOI:-}" ]; }; then
+            echo "Zenodo upload skipped because ZENODO_ACCESS_TOKEN and either ZENODO_CONCEPT_RECORD_ID or ZENODO_SEED_RECORD_ID_OR_DOI are not configured."
             exit 0
           fi
           python scripts/release_to_zenodo.py \

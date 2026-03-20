@@ -40,7 +40,7 @@ The MCP dependency is enabled for Python `3.10` to `3.13`. The existing local `.
 - GitHub release asset workflow: `.github/workflows/release-theory.yml`
 - Release-time Zenodo upload script: `scripts/release_to_zenodo.py`
 - Required GitHub secret: `ZENODO_ACCESS_TOKEN`
-- Required GitHub variable: `ZENODO_CONCEPT_RECORD_ID`
+- Required GitHub variable: `ZENODO_CONCEPT_RECORD_ID` or `ZENODO_SEED_RECORD_ID_OR_DOI`
 - Optional GitHub variable: `ZENODO_API_URL` (`https://zenodo.org/api` for production, `https://sandbox.zenodo.org/api` for testing)
 
 When a GitHub release is published, the workflow uploads `tex/theory.pdf` to the release as `theory.pdf` and, if the Zenodo settings are present, creates/publishes a new Zenodo version for the same concept record.

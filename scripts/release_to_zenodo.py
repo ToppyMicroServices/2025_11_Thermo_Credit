@@ -26,6 +26,24 @@ def _extract_deposition_id(url: str) -> int:
     return int(match.group(1))
 
 
+def _extract_numeric_id(raw: str) -> str:
+    cleaned = str(raw or "").strip()
+    if not cleaned:
+        return ""
+    if cleaned.isdigit():
+        return cleaned
+    match = re.search(r"zenodo\.(\d+)$", cleaned)
+    if match:
+        return match.group(1)
+    match = re.search(r"/records/(\d+)$", cleaned)
+    if match:
+        return match.group(1)
+    _fail(
+        "Could not extract a Zenodo record id from "
+        f"{cleaned}. Use a numeric id, DOI, or /records/<id> URL."
+    )
+
+
 def _request_json(
     session: requests.Session,
     method: str,
@@ -67,6 +85,34 @@ def _latest_published_deposition(
             f"{concept_record_id}. Check ZENODO_CONCEPT_RECORD_ID."
         )
     return results[0]
+
+
+def _resolve_concept_record_id(
+    session: requests.Session,
+    api_url: str,
+    *,
+    explicit_concept_record_id: str,
+    seed_record_id_or_doi: str,
+) -> str:
+    if explicit_concept_record_id:
+        return explicit_concept_record_id
+    if not seed_record_id_or_doi:
+        _fail("ZENODO_CONCEPT_RECORD_ID or ZENODO_SEED_RECORD_ID_OR_DOI is required.")
+
+    record_id = _extract_numeric_id(seed_record_id_or_doi)
+    deposition = _request_json(
+        session,
+        "GET",
+        f"{api_url}/deposit/depositions/{record_id}",
+        expected=[200],
+    )
+    concept_record_id = str(deposition.get("conceptrecid") or "")
+    if not concept_record_id:
+        _fail(
+            "Zenodo record "
+            f"{record_id} did not expose conceptrecid. Use ZENODO_CONCEPT_RECORD_ID explicitly."
+        )
+    return concept_record_id
 
 
 def _existing_draft_deposition(
@@ -239,6 +285,11 @@ def main() -> None:
         help="Zenodo concept record id that should receive new versions.",
     )
     parser.add_argument(
+        "--seed-record-id-or-doi",
+        default=os.getenv("ZENODO_SEED_RECORD_ID_OR_DOI", ""),
+        help="A current Zenodo record id, DOI, or /records/<id> URL used to resolve conceptrecid automatically.",
+    )
+    parser.add_argument(
         "--access-token",
         default=os.getenv("ZENODO_ACCESS_TOKEN", ""),
         help="Zenodo personal access token.",
@@ -250,14 +301,17 @@ def main() -> None:
         _fail(f"theory PDF not found: {pdf_path}")
     if not args.access_token:
         _fail("ZENODO_ACCESS_TOKEN is required.")
-    if not args.concept_record_id:
-        _fail("ZENODO_CONCEPT_RECORD_ID is required.")
-
     api_url = _clean_api_url(args.api_url or "https://zenodo.org/api")
     session = requests.Session()
     session.headers.update({"Authorization": f"Bearer {args.access_token}"})
+    concept_record_id = _resolve_concept_record_id(
+        session,
+        api_url,
+        explicit_concept_record_id=args.concept_record_id,
+        seed_record_id_or_doi=args.seed_record_id_or_doi,
+    )
 
-    draft = _ensure_draft(session, api_url, args.concept_record_id)
+    draft = _ensure_draft(session, api_url, concept_record_id)
     draft = _update_metadata(
         session,
         api_url,
