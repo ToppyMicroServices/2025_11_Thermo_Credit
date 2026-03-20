@@ -26,6 +26,21 @@ def _extract_deposition_id(url: str) -> int:
     return int(match.group(1))
 
 
+def _resource_deposition_id(resource: Dict[str, Any]) -> int:
+    links = resource.get("links")
+    if isinstance(links, dict):
+        for key in ("latest_draft", "self", "edit", "publish"):
+            raw = str(links.get(key) or "")
+            if "/deposit/depositions/" in raw:
+                return _extract_deposition_id(raw.rsplit("/actions/", 1)[0])
+    resource_id = resource.get("id")
+    if isinstance(resource_id, int):
+        return resource_id
+    if isinstance(resource_id, str) and resource_id.isdigit():
+        return int(resource_id)
+    _fail("Could not determine deposition id from Zenodo resource.")
+
+
 def _extract_numeric_id(raw: str) -> str:
     cleaned = str(raw or "").strip()
     if not cleaned:
@@ -223,10 +238,11 @@ def _update_metadata(
     metadata["version"] = version
     description = str(metadata.get("description") or "")
     metadata["description"] = _maybe_update_description(description, tag, release_url)
+    deposition_id = _resource_deposition_id(draft)
     return _request_json(
         session,
         "PUT",
-        f"{api_url}/deposit/depositions/{draft['id']}",
+        f"{api_url}/deposit/depositions/{deposition_id}",
         expected=[200],
         json={"metadata": metadata},
         headers={"Content-Type": "application/json"},
@@ -240,6 +256,7 @@ def _delete_matching_files(
     *,
     filename: str,
 ) -> None:
+    deposition_id = _resource_deposition_id(draft)
     for file_info in draft.get("files") or []:
         file_id = file_info.get("id")
         key = str(file_info.get("filename") or file_info.get("key") or file_info.get("name") or "")
@@ -247,7 +264,7 @@ def _delete_matching_files(
             _request_json(
                 session,
                 "DELETE",
-                f"{api_url}/deposit/depositions/{draft['id']}/files/{file_id}",
+                f"{api_url}/deposit/depositions/{deposition_id}/files/{file_id}",
                 expected=[204],
             )
 
@@ -359,7 +376,7 @@ def main() -> None:
     )
     _delete_matching_files(session, api_url, draft, filename=pdf_path.name)
     _upload_file(session, draft, file_path=pdf_path)
-    published = _publish(session, api_url, int(draft["id"]))
+    published = _publish(session, api_url, _resource_deposition_id(draft))
     _write_summary(published)
 
 

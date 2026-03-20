@@ -22,6 +22,20 @@ def test_extract_public_concept_record_id_from_top_level_field():
     assert module._extract_public_concept_record_id(record) == "17563220"
 
 
+def test_resource_deposition_id_prefers_links():
+    module = _load_module()
+    resource = {
+        "id": 17778342,
+        "links": {"self": "https://zenodo.org/api/deposit/depositions/18888888"},
+    }
+    assert module._resource_deposition_id(resource) == 18888888
+
+
+def test_resource_deposition_id_falls_back_to_numeric_id():
+    module = _load_module()
+    assert module._resource_deposition_id({"id": "17778342"}) == 17778342
+
+
 def test_extract_public_concept_record_id_from_parent_field():
     module = _load_module()
     record = {"id": 17778342, "parent": {"id": "17563220"}}
