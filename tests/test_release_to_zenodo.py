@@ -100,6 +100,25 @@ def test_sanitize_metadata_for_update_removes_dates_when_all_invalid():
     assert "dates" not in cleaned
 
 
+def test_discard_draft_prefers_discard_link(monkeypatch):
+    module = _load_module()
+    calls = []
+
+    def fake_request_json(session, method, url, *, expected=None, **kwargs):
+        calls.append((method, url, expected, kwargs))
+        return None
+
+    monkeypatch.setattr(module, "_request_json", fake_request_json)
+    module._discard_draft(
+        requests.Session(),
+        "https://zenodo.org/api",
+        {"links": {"discard": "https://zenodo.org/api/deposit/depositions/199/actions/discard"}},
+    )
+    assert calls == [
+        ("POST", "https://zenodo.org/api/deposit/depositions/199/actions/discard", [201, 202, 204], {})
+    ]
+
+
 def test_extract_public_concept_record_id_fails_cleanly():
     module = _load_module()
     with pytest.raises(SystemExit, match="did not expose a concept record id"):

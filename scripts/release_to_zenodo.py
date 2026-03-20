@@ -170,14 +170,34 @@ def _existing_draft_deposition(
     return results[0] if results else None
 
 
-def _ensure_draft(
+def _discard_draft(
+    session: requests.Session,
+    api_url: str,
+    draft: Dict[str, Any],
+) -> None:
+    links = draft.get("links")
+    if isinstance(links, dict):
+        discard_url = str(links.get("discard") or "")
+        if discard_url:
+            _request_json(session, "POST", discard_url, expected=[201, 202, 204])
+            return
+    deposition_id = _resource_deposition_id(draft)
+    _request_json(
+        session,
+        "POST",
+        f"{api_url}/deposit/depositions/{deposition_id}/actions/discard",
+        expected=[201, 202, 204],
+    )
+
+
+def _ensure_fresh_draft(
     session: requests.Session,
     api_url: str,
     concept_record_id: str,
 ) -> Dict[str, Any]:
     draft = _existing_draft_deposition(session, api_url, concept_record_id)
     if draft is not None:
-        return draft
+        _discard_draft(session, api_url, draft)
 
     latest = _latest_published_deposition(session, api_url, concept_record_id)
     created = _request_json(
@@ -366,7 +386,7 @@ def main() -> None:
         seed_record_id_or_doi=args.seed_record_id_or_doi,
     )
 
-    draft = _ensure_draft(session, api_url, concept_record_id)
+    draft = _ensure_fresh_draft(session, api_url, concept_record_id)
     draft = _update_metadata(
         session,
         api_url,
