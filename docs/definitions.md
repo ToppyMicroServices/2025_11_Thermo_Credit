@@ -8,9 +8,9 @@ estimation pipeline is added.
 | Symbol | Name | Type | Units | Operational definition | Current repo status |
 | --- | --- | --- | --- | --- | --- |
 | `C_t` | Total new credit flow | observed / derived | local currency per period | New lending flow when available; otherwise first difference of nominal private credit stock | partial proxy available |
-| `q_t` | Real-credit share | proxy / latent | share in `[0, 1]` | Share of `C_t` flowing to real activity rather than asset markets | not yet implemented |
-| `C_t^R` | Real-directed credit flow | derived | local currency per period | `q_t C_t` | not yet implemented |
-| `C_t^A` | Asset-directed credit flow | derived | local currency per period | `(1 - q_t) C_t` | not yet implemented |
+| `q_t` | GDP-linked credit share | proxy / latent | share in `[0, 1]` | Share of `C_t` flowing to GDP-linked transactions rather than existing-asset transactions | not yet implemented |
+| `C_t^R` | GDP-linked credit flow | derived | local currency per period | `q_t C_t` | not yet implemented |
+| `C_t^A` | Existing-asset credit flow | derived | local currency per period | `(1 - q_t) C_t` | not yet implemented |
 | `Y_t^N` | Nominal output proxy | observed / proxy | local currency | Nominal GDP or value-added proxy aligned to credit frequency | partial proxy available |
 | `Y_t^R` | Real activity proxy | observed / proxy | index or real currency | Real GDP, industrial production, or equivalent real-activity target | not yet implemented |
 | `P_t` | Price level / inflation | observed | index or percent | CPI, GDP deflator, or equivalent broad price measure | not yet implemented |
@@ -41,6 +41,10 @@ estimation pipeline is added.
 
 - `q_t` is the central missing variable. It should not be conflated with the
   entropy allocation buckets already used for `S_M`.
+- In the Werner-style reading used here, `C_t^R` is credit tied to GDP-linked
+  transactions, while `C_t^A` is credit mainly used to purchase existing
+  assets. Construction credit may need a partial weight instead of a hard
+  bucket.
 - `S_t` can start as a weighted stress proxy built from existing spread and
   volatility series, then migrate to a latent state-space estimate later.
 - `eta_t`, `d_t`, and `sigma_t` are intentionally simple at first. Their role is

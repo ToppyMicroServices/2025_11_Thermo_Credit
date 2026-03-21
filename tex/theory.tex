@@ -36,82 +36,79 @@
 
 \title{Thermo-Credit Theory: A Credit-First Thermodynamic Mapping}
 \author{ToppyMicroServices O\"U}
-\date{Version 3.1 -- March 2026 (measurement-first and MCP distribution update)}
+\date{Version 3.2 -- March 2026 (measurement-first calibration update)}
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-This note develops Thermo Credit as a measurement-first macro-credit model of
-how the destination of new credit alters the transformation of credit expansion
-into output, inflation, asset-price acceleration, and fragility. The framework
-combines (i) an SFC-style conservation backbone based on balance-sheet
-identities with (ii) a non-equilibrium ``credit thermodynamics'' layer in which
-irreversibility and hysteresis are first-class objects. We introduce a minimal
-state description built around credit partition, capacity, and stress,
-including an internal bookkeeping potential $U(S_{\mathrm{M}},V_{\mathrm{C}},\xi,\ldots)$
-with memory variable $\xi$, and we define operational gauges such as
-Helmholtz-style free energy $F_{\mathrm{C}}$ and exergy-like availability
-$X_{\mathrm{C}}$. Maxwell-like integrability is treated as a local-equilibrium
-limit rather than a law; persistent violations are interpreted as measurable
-non-equilibrium ``vorticity'' in the $(S_{\mathrm{M}},V_{\mathrm{C}})$ state
-plane. The construction is deliberately practice-first: quantities are intended
-to be computable from public data, judged by forecast usefulness and
-falsifiability, and distributed in recalculable form through specification,
-code, and AI-facing interfaces rather than through narrative alone.
+This note presents Thermo Credit as a measurement-first macro-credit
+framework. The central question is simple: when new credit goes to different
+destinations, how does that change growth, inflation, asset-price pressure,
+and fragility? The model has two parts. The first is a stock-flow-consistent
+accounting base built from balance-sheet identities. The second is a credit
+state layer that tracks capacity, stress, persistence, and adjustment costs.
+We use a compact state built around credit partition, capacity, and stress,
+including a bookkeeping potential $U(S_{\mathrm{M}},V_{\mathrm{C}},\xi,\ldots)$
+with memory variable $\xi$. We also define practical gauges such as
+free-energy-like $F_{\mathrm{C}}$ and exergy-like $X_{\mathrm{C}}$. A
+Maxwell-like condition is used as a local consistency check, not as a general
+law. When it fails, we read the gap as observable non-equilibrium behaviour in
+the $(S_{\mathrm{M}},V_{\mathrm{C}})$ plane. The aim is practical: the
+quantities should be computable from public data, tested by forecast value,
+and released in a form that others can recalculate. In this revision,
+region-specific reference parameters are treated as tunable values rather than
+fixed constants, and the note states the implicit relation and the calibration
+objective more directly.
 \end{abstract}
 
 \section{Problem Statement and Scope}
 
-Classical money-first views such as the Quantity Theory of Money (QTM)
-explain nominal dynamics in terms of a money stock, its velocity, and shocks
-or policy actions \cite{Fisher1911,Friedman1956,Laidler1985}. More recent
-credit-first views, notably the Quantity Theory of Credit (QTC), emphasize
-that banks create deposits when they lend and that the use of credit (real
-vs.\ financial, productive vs.\ speculative) matters for macro-financial
-outcomes \cite{Werner2012,BoE2014}. In parallel, both information theory and
-statistical mechanics have inspired analogies for income and wealth
-distributions \cite{Theil1967,Foley1994,DragulescuYakovenko2000,Shannon1948,Jaynes1957}.
+Classical money-first views such as the Quantity Theory of Money (QTM) explain
+nominal dynamics through the money stock, its velocity, and policy or shock
+terms \cite{Fisher1911,Friedman1956,Laidler1985}. Credit-first views, notably
+the Quantity Theory of Credit (QTC), stress that banks create deposits when
+they lend and that the use of credit matters for macro-financial outcomes
+\cite{Werner2012,BoE2014}. In parallel, information theory and statistical
+mechanics have inspired useful analogies for allocation and dispersion
+\cite{Theil1967,Foley1994,DragulescuYakovenko2000,Shannon1948,Jaynes1957}.
 
-
-This note takes a minimal and operational step: we build a thermodynamic-style
-state description that (i) separates scale and dispersion of
-monetary/credit uses, (ii) introduces an explicit capacity variable for bank
-balance sheets, and (iii) yields testable constraints and early-warning
-gauges. The aim is not to claim that macro data obey physical laws, but to
-provide a disciplined bookkeeping analogy useful for supervision, stress
-testing\K{18}, and systematic monitoring.
+This note takes a limited and practical step. We build a thermodynamic-style
+state description that separates scale from dispersion, adds an explicit
+capacity variable for bank balance sheets, and yields testable constraints and
+early-warning gauges. The claim is not that macro data follow physical laws.
+The claim is narrower: a disciplined bookkeeping analogy can help supervision,
+stress testing\K{18}, and systematic monitoring.
 
 \subsection*{Research target and use cases}
 
-The measurement-first revision narrows the framework to one research question:
-how does the destination of new credit alter the transformation of credit
-expansion into growth, inflation, asset-price acceleration, and fragility?
-Operationally, the current version is designed for three immediate use cases:
+The measurement-first revision narrows the framework to one question: how does
+the destination of new credit change the path from credit expansion to growth,
+inflation, asset-price acceleration, and fragility? In practical terms, the
+current version serves three use cases:
 \begin{enumerate}
   \item early-warning signals for asset inflation and systemic fragility;
-  \item description of the real-versus-asset credit mix rather than credit
-        volume alone;
+  \item description of the GDP-linked versus existing-asset credit mix rather
+        than credit volume alone;
   \item forecast improvement relative to total-credit-only baselines.
 \end{enumerate}
-This keeps the theory tied to a concrete mapping from inputs to outputs and
-prevents the thermodynamic analogy from drifting into a purely descriptive
-vocabulary.
+This keeps the theory tied to a concrete mapping from inputs to outputs. It
+also stops the thermodynamic language from turning into a loose metaphor.
 
 \subsection*{Related Work}
 
-Several strands of research motivate the thermodynamic-style mapping used in this note.  
-First, high-frequency microstructure studies have explored temperature- and entropy-like summaries of order-book dynamics.  
-For example, Li et al.\ (2024) define “market temperature’’ and “market entropy’’ from depth, imbalance, and turnover in limit-order books, showing that these quantities track short-term liquidity conditions and stress episodes.  
-These approaches remain at the micro (tick-by-tick) level and do not involve credit allocation or regulatory constraints.
+Several research strands motivate this mapping. Market microstructure work has
+already proposed temperature- and entropy-like summaries of liquidity, but it
+mainly stays at the order-book level and does not address credit allocation or
+regulatory headroom \cite{Li2024}. Work on model risk also uses
+thermodynamic-style language, but not in a bank balance-sheet setting
+\cite{Feng2019}.
 
-Second, Feng (2019) develops a thermodynamic representation of model risk using entropy flows and worst-case expectations.  
-This work treats market uncertainty as an information-theoretic source of dissipation within pricing models.  
-It is conceptually related through the shared use of temperature- and energy-like ideas, but it does not address credit capacity, bank balance sheets, or sectoral allocation.
-
-The present note differs in scope: we apply a coarse-grained, macro-credit state description aimed at supervision and early-warning applications.  
-Our variables $(S_M, V_C, T_L, p_C)$ are built from balance-sheet aggregates and dispersion measures, not from high-frequency order-book dynamics or pricing-model uncertainty.  
-Loop area in the $(p_C, V_C)$ plane plays the role of dissipation at the macro-credit level, and the quality-factor construction introduced here has no direct analogue in existing microstructure or model-risk thermodynamic papers.
+This note works at a coarser scale. It builds $(S_M,V_C,T_L,p_C)$ from
+balance-sheet aggregates, credit allocation shares, and market-stress proxies.
+The aim is not to reproduce thermodynamics in full. It is to create a compact
+macro-credit state description that can be tested against growth, spread, and
+fragility outcomes.
 
 \section{Credit Partition and State Variables}
 
@@ -126,21 +123,24 @@ securities margin, etc.), with
 
 \subsection{Measurement-first overlay: credit partition and targets}
 
-To make the framework operational, we add a minimal measurement-first overlay
-whose purpose is narrower than the full thermodynamic analogy. The immediate
-question is: how does the destination of new credit change the transformation
-of credit expansion into output, prices, asset prices, and fragility?
+To make the framework operational, we add a minimal measurement-first overlay.
+Its purpose is narrower than the full thermodynamic analogy. The working
+question is: how does the destination of new credit change the translation of
+credit expansion into output, prices, asset prices, and fragility? In that
+sense, the overlay is close to Werner's destination-of-credit view: the main
+issue is not credit in the abstract, but whether new credit funds GDP-linked
+transactions or mainly bids up existing assets.
 
 The smallest useful state vector is
 \[
   \left( C_t, q_t, Y_t^N, Y_t^R, P_t, A_t, S_t \right),
 \]
 where $C_t$ denotes new credit flow during period $t$, $q_t \in [0,1]$ is the
-share of that flow directed to real activity, $Y_t^N$ is a nominal output
-proxy used for accounting ratios, $Y_t^R$ is a real-activity target, $P_t$ is
-a broad price-level proxy, $A_t$ is an asset-price or balance-sheet
-accumulation proxy, and $S_t$ is a stress / fragility state.
-The coarse real-versus-asset split is then
+share of that flow directed to GDP-linked transactions, $Y_t^N$ is a nominal
+output proxy used for accounting ratios, $Y_t^R$ is a real-activity target,
+$P_t$ is a broad price-level proxy, $A_t$ is an asset-price or balance-sheet
+accumulation proxy for existing assets, and $S_t$ is a stress / fragility
+state. The coarse GDP-linked-versus-existing-asset split is then
 \begin{equation}
   C_t^R = q_t C_t,
   \qquad
@@ -148,17 +148,25 @@ The coarse real-versus-asset split is then
   \label{eq:credit_partition}
 \end{equation}
 
-This partition share $q_t$ should not be conflated with the entropy shares
-$\{q_i\}$ used below. The scalar $q_t$ classifies \emph{new credit flows} into
-real and asset destinations, whereas $\{q_i\}$ partitions broader
-money/credit uses for the entropy construction. They are related empirical
-objects, but they are not identical.
+This partition share $q_t$ should not be confused with the entropy shares
+$\{q_i\}$ used below. The scalar $q_t$ classifies \emph{new credit flows}
+into GDP-linked and existing-asset destinations. By contrast, $\{q_i\}$
+partitions broader money and credit uses for the entropy construction. The two
+objects are related, but they are not the same.
 
-Identification of $q_t$ is best treated in layers: (i) direct observation from
+The labels should also be read with care. In the present note, $C_t^R$ is
+short for credit that is closely linked to current output, income, or new
+production. $C_t^A$ is short for credit that mainly finances purchases of
+existing land, existing housing, or financial assets. Construction credit sits
+between these two cases: it can add to current GDP, but it can also feed
+collateral and land-price cycles. In applied work it may therefore need a
+partial weight rather than a hard bucket.
+
+Identification of $q_t$ is best handled in layers: (i) direct observation from
 sectoral lending and loan-purpose data when available, (ii) proxy inference
-from housing, equity, investment, and stress variables when direct splits are
-incomplete, and (iii) latent-state estimation only after the reduced-form
-version is stable.
+from housing, land, equity, investment, and stress variables when direct
+splits are incomplete, and (iii) latent-state estimation only after the
+reduced-form version is stable.
 
 % (Section break remains unchanged)
 \subsection{Monetary dispersion entropy}
@@ -282,7 +290,7 @@ index is available, a normalized alternative is
   \label{eq:dt_proxy_def}
 \end{equation}
 
-To give the ``Thermo'' label empirical bite, we also need a minimal
+To make the ``Thermo'' label empirically useful, we also need a minimal
 irreversibility block. The reduced-form version used in the current v2 draft is
 \begin{align}
   \eta_t
@@ -295,55 +303,28 @@ irreversibility block. The reduced-form version used in the current v2 draft is
       + \varepsilon_{S,t},
     \label{eq:stress_dyn}
 \end{align}
-so that asset-directed credit raises fragility while accumulated stress lowers
-next-period conversion efficiency.
+so that credit flowing into existing-asset transactions raises fragility while
+accumulated stress lowers next-period conversion efficiency.
 
-These expressions are not presented as a complete structural law. They are a
+These expressions are not presented as a full structural law. They are a
 measurement-first bridge from theory to data. Existing diagnostics such as
 $\SM$, $\TL$, $\pC$, loop area, $U$, $\FC$, and $\XC$ should therefore be read
-as companion indicators and candidate inputs into the stress block $S_t$,
-rather than as substitutes for the partition variables
-$(C_t^R, C_t^A, q_t)$.
+as companion indicators and possible inputs into the stress block $S_t$, not
+as substitutes for the partition variables $(C_t^R, C_t^A, q_t)$.
 
 \subsection{Depth and turnover proxies}
 
-In order to construct the liquidity temperature $\TL$ and related gauges
-from observable quantities, we introduce two derived inputs:
-a \emph{depth} proxy $D$ and a \emph{turnover} proxy $\Theta$.
-They are not state variables on their own, but they are treated as
-diagnostic inputs whose behaviour should be consistent with the thermodynamic
-picture.
-
-Conceptually, depth $D$ captures the scale of credit outstanding relative to
-the system under study (e.g.\ private non-financial credit stocks) and
-therefore measures how ``thick'' the market is.
-In the absence of high-quality external depth series, we treat $D$ as a
-rescaled version of real credit stocks $L_{\mathrm{real}}$,
-so that, up to a calibration constant $d_0$,
-\[
-  D(t) \propto L_{\mathrm{real}}(t),
-\]
-with the constant chosen so that the median depth over the sample is near
-the desired reference level.
-
-Turnover $\Theta$ is intended to capture how quickly the system recycles
-capacity: it is dimensionless and increases when credit capacity is deployed
-and repaid more rapidly.
-In the simplest case we use a ratio of the form
-\[
-  \Theta(t) \propto \frac{U(t)}{L_{\mathrm{real}}(t)},
-\]
-which compares a capacity-like quantity $U$ with the underlying stock
-$L_{\mathrm{real}}$.
-In practice this raw ratio is stabilised by replacing pathological values
-(division by zero, missing data) with a reference level and clipping to a
-reasonable band, so that extreme outliers do not dominate the temperature
-construction.
-These choices emphasise the interpretation of $\TL$ as a relative index
-rather than an absolute physical temperature.
+To construct the liquidity temperature $\TL$ and related gauges from observable
+series, we introduce two derived inputs: a \emph{depth} proxy $D$ and a
+\emph{turnover} proxy $\Theta$. They are practical inputs rather than state
+variables in their own right. Depth is usually a rescaled version of
+$L_{\mathrm{real}}$, while turnover is usually a safe version of
+$U/L_{\mathrm{real}}$. The implementation clips or fills pathological cases so
+that one noisy observation does not dominate the temperature measure.
 
 \paragraph{Design of the liquidity temperature.}
-The liquidity temperature is designed to be high when spreads are narrow, markets are deep, and turnover is brisk, and to fall sharply when any one
+The liquidity temperature is designed to be high when spreads are narrow,
+markets are deep, and turnover is brisk. It should fall sharply when any one
 of these ingredients becomes stressed.
 To this end we combine standardized components
 $(z_s,z_d,z_t)$---the z-scores of inverse spreads, inverse depth, and
@@ -352,62 +333,19 @@ turnover---into a composite
   \hat T_{\mathrm{mult}}(t) = z_s(t)\,z_d(t)\,\bigl(1 + \tfrac{1}{2} z_t(t)\bigr),
 \]
 and then rescale to $T_{\mathrm{L}} \in [0,1]$ by min--max normalisation.
-In what follows we use this multiplicative construction as the baseline and denote it simply by $\hat T$ when no confusion arises.
-An additive alternative would be
-\[
-  \hat T_{\mathrm{add}}(t)
-    = w_s z_s(t) + w_d z_d(t) + w_t z_t(t),
-\]
-with weights $w_s,w_d,w_t$; we prefer the multiplicative form at this
-stage because it enforces a ``weakest link'' logic (a single severely
-stressed component can pull the product down), while still allowing
-turnover to modulate the combined index via the $(1+\frac{1}{2}z_t)$
-factor.
-The coefficient $\tfrac{1}{2}$ is a pragmatic choice that keeps turnover
-influence comparable in scale to the spread/depth product without
-dominating it.
-Appendix-style robustness checks with $\hat T_{\mathrm{add}}$ and other
-variants are natural next steps; empirically we treat the present
-construction as a deliberately simple, economically interpretable starting
-point rather than a uniquely correct functional form, and we do not use the additive alternative in baseline indicators.
+We use this multiplicative form as the baseline because it encodes a simple
+``weakest link'' logic: severe stress in one component should pull the whole
+temperature measure down.
 
 \subsection{Units and scaling conventions}
 
-All core quantities are defined to have consistent, but ultimately
-conventional, units. The money stock $\Min$ and credit stocks such as
-$L_{\mathrm{real}}$ are measured in currency units (e.g.\ trillions of
-yen); the allocation shares $q_i$ are dimensionless, so the entropy
-index $H(q)$ is measured in nats and $S_{\mathrm{M}} = k \Min H(q)$ has
-units of ``currency $\times$ nats''. Since $H(q)$ is $\mathcal{O}(1)$ for
-typical partitions, $S_{\mathrm{M}}$ scales essentially like $\Min$.
-
-The capacity variable $\VC$ is expressed in the same monetary units as
-the underlying balance-sheet aggregates (e.g.\ CET1-based headroom),
-while the pressure $\pC = -(\partial U/\partial \VC)_{\SM}$ inherits
-units of ``U per unit of volume''. In practice $U$ and $\VC$ are both
-constructed from nominal stocks so that $\pC$ is dimensionless and
-interpreted as an index of tightness; the liquidity temperature $\TL$ is
-explicitly normalised to be dimensionless and lie in $[0,1]$.
-
-When regulatory headroom components are available, a representative
-example is the capital headroom
-\[
-  H_{\mathrm{cap}}(t)
-    \approx V_R(t)\,\bigl(1 - \alpha_{\mathrm{cap}}\,p_R(t)\bigr),
-\]
-with $V_R$ a balance-sheet volume proxy and $p_R$ a regulatory pressure
-proxy; analogous constructions apply for liquidity and funding headroom.
-The effective capacity is then taken as
-$\VC(t) = \min_j H_j(t)$ over such components.
-
-The internal-energy gauge $U$ and the derived free energies $\FC$ and
-exergy-like $\XC$ share the same nominal scale (currency units), up to
-the choice of the scaling constants $k$, $T_0$, and $p_0$. These
-constants are treated as knobs that set the overall magnitude of the
-potentials rather than objects of primary interest: in applications we
-focus on signs, relative levels, and changes (e.g.\ $\Delta \FC$,
-$X_C^+$, $X_C^-$) rather than on any claim that the absolute values of
-``credit energy'' carry direct economic meaning.
+The units are consistent but conventional. $\Min$, $L_{\mathrm{real}}$, $U$,
+and $\VC$ are monetary or currency-like aggregates; $\TL$ and $\pC$ are
+dimensionless indices; and $S_M = k\Min H(q)$ scales with money volume and
+dispersion. In applications, signs, changes, and relative levels matter more
+than absolute magnitudes. That is why the empirical section reports a tuned
+implicit headroom score rather than treating raw nominal $X_C$ levels as
+directly comparable across regions.
 
 \section{Thermodynamic Interpretation}
 
@@ -421,6 +359,7 @@ constructs. Heat- and work-like pieces are defined for bookkeeping only.
   \centering
   \caption{Thermodynamic--QTM--QTC correspondence (analogy-level).}
   \label{tab:correspondence}
+  \resizebox{\textwidth}{!}{%
   \begin{tabular}{@{}llll@{}}
     \toprule
     Variable &
@@ -462,7 +401,7 @@ constructs. Heat- and work-like pieces are defined for bookkeeping only.
     $\Delta \UM = T_0 \Delta \SM + W + \varepsilon$ &
     $\Delta U = \bar{T}_{\!L} \Delta \SM + W + \varepsilon$ \\
     Second-law tendency &
-    $\Delta S \ge 0$ (closed, irreversible) &
+    $\Delta S \ge 0$\footnotemark &
     $\dot \SM=\Phi_S+\sigma_S,\ \sigma_S\ge0$ &
     $\dot \SM=\Phi_S+\sigma_S,\ \sigma_S\ge0$ \\
     Helmholtz free energy &
@@ -475,22 +414,22 @@ constructs. Heat- and work-like pieces are defined for bookkeeping only.
     $\XC = \Delta U + p_0 \Delta \VC - T_0 \Delta \SM$ \\
     \bottomrule
   \end{tabular}
+  }
 \end{table}
+\footnotetext{The textbook thermodynamic statement refers to a closed irreversible system. In this note the macro-financial system is open, so the operational form is the entropy-balance expression in \eqref{eq:SM_balance}.}
 
 The construction is chosen so that: (i) $\SM$ is extensive and sensitive to
 dispersion; (ii) $\VC$ carries explicit capacity/headroom information; (iii)
 QTC---unlike classic QTM---naturally admits a pressure-like channel $\pC$.
 
 
-\subsection{Conservation backbone and energy-like balance}
-
 \subsection{SFC conservation backbone (accounting first law)}
 \label{sec:sfc_backbone}
 
-For early-warning use we anchor the framework in stock--flow consistent (SFC)
-accounting. This is the non-negotiable conservation layer: it is not an analogy
-but a set of identities implied by double-entry bookkeeping and flow-of-funds
-accounts.
+For early-warning use, we anchor the framework in stock--flow consistent (SFC)
+accounting. This is the non-negotiable conservation layer. It is not an
+analogy, but a set of identities implied by double-entry bookkeeping and
+flow-of-funds accounts.
 
 \paragraph{Sectoral financial balances.}
 Let $B_s(t)$ denote the net lending/borrowing (financial balance) of sector $s$
@@ -523,10 +462,10 @@ revisions.
 
 \paragraph{Interpretation inside Thermo-Credit.}
 Equations \eqref{eq:sfc_balance}--\eqref{eq:sfc_stockflow} provide the hard
-constraint layer. The ``energy-like'' decomposition that follows is then a
-structured attribution of observed movements to dispersion ($\SM$), capacity
-($\VC$), policy work, and non-equilibrium losses, while respecting the SFC
-accounting backbone.
+constraint layer. The ``energy-like'' decomposition that follows is a
+structured way to attribute observed movements to dispersion ($\SM$), capacity
+($\VC$), policy work, and non-equilibrium losses, while still respecting the
+SFC backbone.
 
 When a bank grants a new loan, it simultaneously creates a matching deposit.
 On the joint bank--customer system, this is a pure accounting operation
@@ -564,9 +503,8 @@ Credit creation phases (new lending $>$ repayments) and contraction phases
 (repayments $>$ new lending) then exhibit characteristic sign patterns for
 $(\Delta \Min, \Delta \SM, \Delta \VC, -\bar{p}_{\mathrm{C}} \Delta \VC)$,
 which can be tabulated and compared with data. The value of
-\eqref{eq:first_law} is diagnostic: it forces us to attribute changes either
-to dispersion, capacity use, or policy work\K{14}, rather than conflating
-them. 
+\eqref{eq:first_law} is diagnostic. It forces us to attribute changes to
+dispersion, capacity use, or policy work\K{14} instead of conflating them.
 
 For intuition it is useful to summarize typical sign patterns.
 Table~\ref{tab:sign_patterns} collects a minimal classification in terms
@@ -628,12 +566,11 @@ paths in $(\pC,\VC)$ space exhibit pronounced hysteresis and stress.
 
 \subsection{Dissipation and a credit quality factor $Q$}
 
-In the data, irreversibility shows up as non-zero loop area in the
-$(p_{\mathrm{C}},V_{\mathrm{C}})$ plane.
-In physics, a similar idea is captured by the quality factor $Q$ of an
-oscillator: it compares the energy stored in the system with the energy
-lost in one cycle. Here we define an analogous quality factor for the
-credit system.
+In the data, irreversibility appears as non-zero loop area in the
+$(p_{\mathrm{C}},V_{\mathrm{C}})$ plane. In physics, a similar idea is
+captured by the quality factor $Q$ of an oscillator: it compares stored
+energy with the energy lost in one cycle. Here we define an analogous
+quality factor for the credit system.
 
 Let $\mathrm{loop\_area}(t)$ be the dissipative part of the policy or
 credit cycle in period $t$ and let $X_{\mathrm{C}}(t)$ be the
@@ -654,11 +591,9 @@ We then define the credit quality factor
 \end{equation}
 
 A large $Q_{\mathrm{C}}$ means that the system loses only a small share of
-its usable credit capacity in each cycle: policy loops move credit around
-with limited long-run damage.
-A small $Q_{\mathrm{C}}$ means that even modest policy loops destroy a
-non-trivial part of $X_{\mathrm{C}}$, which is consistent with a fragile
-or strongly path-dependent credit structure.
+usable credit capacity in each cycle. A small $Q_{\mathrm{C}}$ means that even
+modest policy loops destroy a meaningful part of $X_{\mathrm{C}}$, which is
+consistent with a fragile or strongly path-dependent credit structure.
 
 For mechanical oscillators, a standard first-order approximation is
 \(
@@ -682,9 +617,9 @@ In the abstract decomposition \eqref{eq:first_law}, $W_{\mathrm{policy}}$
 collects structured interventions (policy-rate shifts, large-scale asset
 purchases, regulatory changes) that are not captured by the dispersion and
 capacity-use terms.
-In the reference implementation we do not attempt to estimate
-$W_{\mathrm{policy}}(t)$ separately inside the indicator pipeline; instead
-we compute the finite-difference terms
+In the reference implementation we do not estimate
+$W_{\mathrm{policy}}(t)$ separately inside the indicator pipeline. Instead we
+compute the finite-difference terms
 $\Delta U$, $\bar T_{\!L}\Delta \SM$, and $-\bar p_{\mathrm{C}}\Delta \VC$
 and treat the residual $\Delta U - (\bar T_{\!L}\Delta \SM - \bar
 p_{\mathrm{C}}\Delta \VC)$ (the ``first-law residual'') as a combined bucket
@@ -767,10 +702,9 @@ when capacity constraints are explicit (cf.\ exergy notions in
 
 
 \paragraph{External coupling.}
-In applications we also allow the credit system to be coupled to an
-external ``pressure bath'' and ``temperature bath''.
-The coupling is constructed in two stages.
-First, we map a small set of market driver series into standardized
+In applications we also allow the credit system to couple to an external
+``pressure bath'' and ``temperature bath''. The coupling is built in two
+stages. First, we map a small set of market driver series into standardised
 monthly processes.
 For JP, the pressure drivers are conceptually:
 \begin{itemize}
@@ -784,15 +718,14 @@ For JP, the pressure drivers are conceptually:
 \end{itemize}
 The temperature driver is the VIX equity volatility index, again mapped
 to monthly frequency.
-Each raw series $X_k(t)$ is aggregated to month-start, transformed
-according to its role (level, spread, log-return), and converted to a
-z-score
+Each raw series $X_k(t)$ is aggregated to month-start, transformed according
+to its role (level, spread, log-return), and converted to a z-score
 \[
   Z_k(t) = \frac{X_k(t) - \mathbb{E}[X_k]}{\sigma[X_k]},
 \]
 using sample mean and standard deviation over the available history.
 Second, we form composite indices by simple averaging over the available
-standardized drivers:
+standardised drivers:
 \[
   E_p(t) = \frac{1}{K_p} \sum_{k \in \mathcal{P}} Z_k(t),
   \qquad
@@ -802,13 +735,13 @@ where $\mathcal{P}$ indexes pressure drivers and $\mathcal{T}$ indexes
 temperature drivers.
 Missing values in individual $Z_k$ are ignored on each date so long as at
 least one driver remains.
-Equal weights reflect an agnostic prior about the relative importance of
-each driver: with only a handful of series, more elaborate factor models
-or time-varying loadings would be weakly identified and risk overfitting,
-so the unweighted mean serves as a transparent, robust first pass.
-In future work one could replace this averaging with a statistically
-estimated factor structure or region-specific loadings once longer
-histories and stronger identification are available.
+Equal weights reflect an agnostic prior about the relative importance of each
+driver. With only a handful of series, more elaborate factor models or
+time-varying loadings would be weakly identified and would risk overfitting.
+The unweighted mean therefore serves as a transparent first pass. In future
+work one could replace this averaging with a statistically estimated factor
+structure or region-specific loadings once longer histories and stronger
+identification are available.
 
 Given $E_p$ and $E_T$ we work with effective fields
 \[
@@ -888,9 +821,8 @@ behaviour with fixed $\xi$), whereas persistent large $|\Omega|$ indicates stron
 path dependence / structural distortions and motivates modelling $\xi$
 explicitly rather than forcing a single-potential representation.
 
-This also clarifies the Legendre structure.
-Starting from $U(\SM,\VC)$ we can, in principle, define a potential
-written in terms of the intensive variables,
+This also clarifies the Legendre structure. Starting from $U(\SM,\VC)$ we can,
+in principle, define a potential written in terms of the intensive variables,
 \[
   \Phi(\TL,\pC)
     \equiv U(\SM,\VC) - \TL \SM + \pC \VC,
@@ -909,19 +841,21 @@ and
 \(
   (\partial \Phi / \partial \pC)_{\TL} = \VC
 \).
-This Legendre transform from $(\SM,\VC)$ to $(\TL,\pC)$ is locally well-defined (on an approximately integrable manifold) only when \eqref{eq:Maxwell} holds; the free-energy-type
-potentials introduced in \S5 (such as $\FC$ and $\GC$) can then be
-viewed as partially Legendre-transformed versions of $U$ evaluated at
-fixed environmental parameters $(T_0,p_0)$.
+This Legendre transform from $(\SM,\VC)$ to $(\TL,\pC)$ is locally well-defined
+only when \eqref{eq:Maxwell} holds on an approximately integrable manifold.
+The free-energy-type potentials introduced in \S5, such as $\FC$ and $\GC$,
+can then be viewed as partially Legendre-transformed versions of $U$
+evaluated at fixed environmental parameters $(T_0,p_0)$.
 
 Empirically, one can estimate $\TL(\SM,\VC)$ and $\pC(\SM,\VC)$ from proxy
-series and test whether \eqref{eq:Maxwell} approximately holds.
-Because $U$, $T_L$, and $p_C$ are constructed from partially independent
-proxies rather than being derived from a single fitted potential, the
-relation is not enforced by construction; instead it functions as an
-integrability diagnostic. Persistent, large violations indicate non-equilibrium behaviour (path dependence / structural distortions, i.e. changing $\xi$) and/or proxy misspecification. In this sense, the analogy is falsifiable rather
-than purely rhetorical, and Section~\ref{sec:insights} summarizes a simple
-set of operational diagnostics built from this condition.
+series and test whether \eqref{eq:Maxwell} approximately holds. Because $U$,
+$T_L$, and $p_C$ are built from partly independent proxies rather than from a
+single fitted potential, the relation is not enforced by construction.
+Instead, it works as an integrability diagnostic. Persistent, large violations
+suggest non-equilibrium behaviour, changing $\xi$, or proxy misspecification.
+In this sense, the analogy is falsifiable rather than purely rhetorical, and
+Section~\ref{sec:insights} summarizes a simple set of operational diagnostics
+built from this condition.
 
 \section{Practical Tests and Falsifiability}\label{sec:insights}
 
@@ -955,9 +889,9 @@ The mapping yields several operational diagnostics:
 \end{enumerate}
 
 All of these rely on observable or reconstructible quantities from public
-balance-sheet and market data. Implementation details (exact proxy choices,
-normalization, robustness checks) are part of ongoing empirical work and
-should be reported alongside results.
+balance-sheet and market data. Implementation details such as proxy choices,
+normalisation, and robustness checks remain part of ongoing empirical work and
+should be reported alongside any results.
 
 \subsection{Testable hypotheses}
 
@@ -967,8 +901,8 @@ predictive hypotheses rather than by conceptual elegance alone:
   \item \textbf{H1.} Lower $q_t$ should predict stronger asset-price
         acceleration before it predicts stronger real growth.
   \item \textbf{H2.} Higher $C_t$ with lower $q_t$ should show weaker
-        pass-through to inflation and real activity than equally large credit
-        expansions with higher $q_t$.
+        pass-through to inflation and GDP-linked activity than equally large
+        credit expansions with higher $q_t$.
   \item \textbf{H3.} High $C_t^A$ combined with high $S_t$ should predict
         greater future volatility, spread widening, or contraction risk.
 \end{itemize}
@@ -984,123 +918,197 @@ the model, the framework is weakened if:
         beyond the existing thermo-monitoring indicators.
 \end{itemize}
 
+\subsection{Implicit state relation and iterative calibration}
+
+At this point the practical weakness is clear. If $(T_0,p_0,U_0,V_0,S_0)$ are
+left as fixed convenience constants, then $X_C$ is only a transformation of
+existing series and can easily lose economic meaning. The operational version
+therefore treats the state as \emph{implicitly} defined by observables and a
+region-specific parameter vector
+\[
+  \theta_r \equiv (T_{0,r}, p_{0,r}, U_{0,r}, V_{0,r}, S_{0,r}).
+\]
+The minimum implicit system is
+\begin{align}
+  0 &= g_{1,t}(\theta_r)
+     \equiv X_C^{\theta_r}(t)
+       - \Bigl[(U_t-U_{0,r}) + p_{0,r}(V_{C,t}-V_{0,r})
+       - T_{0,r}(S_{M,t}-S_{0,r})\Bigr],
+     \label{eq:implicit_xc} \\
+  0 &= g_{2,t}(\theta_r)
+     \equiv \eta_t - \eta_0 + \alpha(1-q_t) + \beta S_{t-1},
+     \label{eq:implicit_eta} \\
+  0 &= g_{3,t}(\theta_r)
+     \equiv S_t - \rho S_{t-1}
+       - \gamma C_t^A/Y_t^N + \delta C_t^R/Y_t^N.
+     \label{eq:implicit_stress}
+\end{align}
+Equations \eqref{eq:implicit_xc}--\eqref{eq:implicit_stress} are not a full
+structural model. They are a practical identification layer. They say that the
+headline variables only become useful when the reference parameters and the
+latent states are tied back to data.
+
+In plain language, this block does three jobs. Equation
+\eqref{eq:implicit_xc} says that headroom is not observed directly. We infer
+it from output, capacity, and entropy after we choose a regional reference
+point. Equation \eqref{eq:implicit_eta} says that efficiency should fall when
+asset-directed credit and stress become too strong. Equation
+\eqref{eq:implicit_stress} says that fragility should rise when asset-directed
+credit keeps building up, and should ease when credit moves back to
+GDP-linked uses.
+
+For the current repository implementation we therefore use a lightweight,
+iterative calibration step rather than a one-time manual choice. For each
+region $r$, the working objective is
+\begin{align}
+  \mathcal{L}_r(\theta_r)
+   &= w_g \Bigl[1-\operatorname{corr}\!\bigl(X_C^{\theta_r}(t), \Delta U_{t+h}\bigr)\Bigr]
+    + w_s \Bigl[1+\operatorname{corr}\!\bigl(X_C^{\theta_r}(t), \Delta \mathrm{spread}_{t+h}\bigr)\Bigr] \nonumber \\
+   &\quad
+    + w_\ell \Bigl[1+\operatorname{corr}\!\bigl(X_C^{\theta_r}(t), |\mathrm{loop\_area}_{t+h}|\bigr)\Bigr]
+    + w_T \Bigl[1-\operatorname{corr}\!\bigl(X_C^{\theta_r}(t), T_{L,t}\bigr)\Bigr]
+    + w_R \|\theta_r-\theta_r^{(0)}\|^2,
+  \label{eq:calibration_objective}
+\end{align}
+with horizon $h=4$ quarters in the current empirical pass and
+$\theta_r^{(0)}$ denoting the configuration defaults. In simple terms, a useful
+$X_C$ should move with later capacity growth, move against later spread
+widening and dissipation, and still stay close enough to the default scale to
+remain readable. The present code implements this as a small coordinate search,
+not as a claim of final identification. That is deliberate: the immediate goal
+is to stop $X_C$ from becoming a decorative transform and to make the
+parameter choice open to testing.
+
+In the implementation, the level anchors $(U_0,V_0,S_0)$ are first re-centered
+on each region's own sample medians before the iterative search begins. This is
+important in practice. Public regional panels often mix quantities with very
+different nominal scales, and the raw configuration constants can otherwise
+make $X_C$ look like a unit-conversion artifact. The tuned score should
+therefore be read as an \emph{implicit headroom index}: it keeps the sign logic
+of $X_C$, but it is identified from local deviations around observed regional
+baselines rather than from fixed absolute constants.
+
+This also gives a simple reading rule for the results section. If the tuned
+implicit headroom score moves while the raw pipeline $X_C$ stays flat or
+clipped, the original fixed-parameter transform is too rigid for that region.
+If the tuned score still fails to improve the relation to future growth or
+stress, then the thermo-style layer is not adding enough value.
+
 \section{Limits, Identification, and Scope}\label{sec:limitations}
 This construction is intentionally modest. Key limitations include:
 \begin{itemize}
   \item \textbf{Category dependence.} $\SM$ depends on the chosen partition
-        of uses. Robustness across reasonable partitions must be checked.
+        of uses. Results should be checked across other reasonable partitions.
 
   \item \textbf{Proxy noise.} $\TL$, $\VC$, $\pC$ are built from noisy
         proxies, and $U$ itself is instantiated from GDP- or
         credit-like aggregates. Measurement error or proxy misspecification
         can break \eqref{eq:Maxwell} and distort the decomposition
         \eqref{eq:first_law}; in practice these relations are treated as
-        reference structures and integrability checks rather than hard
+        reference structures and consistency checks rather than hard
         identities.
 
   \item \textbf{Local-equilibrium vs. non-equilibrium.} Fast crises and regime
         shifts violate smooth state-variable assumptions. We therefore interpret
-        the Maxwell-like relations as local-equilibrium limit cases and treat
-        vorticity and hysteresis measures as primary non-equilibrium outputs.
+        the Maxwell-like relations as local limit cases and treat
+        vorticity and hysteresis measures as the main non-equilibrium outputs.
 
   \item \textbf{Non-physical.} We do not assume microscopic ``money
         particles'' or claim that macro-financial data obey physical first/
-        second laws. The mapping is analogy-level and judged only by
+        second laws. The mapping is an analogy and is judged only by
         empirical usefulness.
 
   \item \textbf{Identification challenges.} Policy, expectations, and shocks
-        act jointly. Causal claims require careful research design beyond
+        act jointly. Causal claims need careful research design beyond
         the bookkeeping framework presented here.
 
   \item \textbf{Partition measurement.} The coarse split $(C_t^R,C_t^A)$ is
         often only partially observed in public data. In many applications,
         $q_t$ must be proxy-estimated or treated as a latent state, so reported
-        results should distinguish direct observation from inferred quantities.
+        results should separate direct observations from inferred quantities.
+        This matters especially for construction credit, which often sits
+        between GDP-linked and existing-asset uses.
 
   \item \textbf{Scaling conventions.} Constants such as $k$ are
         conventional. Report normalized metrics and sensitivity checks.
 \end{itemize}
 
 This version should therefore be read as a theory-and-implementation note with
-explicit rejection conditions. If the partition variables $(C_t^R,C_t^A,q_t)$
-and the stress state $S_t$ fail to improve empirical discrimination relative to
-simpler credit-volume baselines, the measurement-first version of Thermo Credit
-should be simplified or rejected in that application. A more systematic
-empirical evaluation for the JP configuration will follow in a later revision.
+explicit rejection conditions. If the partition variables
+$(C_t^R,C_t^A,q_t)$ and the stress state $S_t$ fail to improve empirical
+discrimination relative to simpler credit-volume baselines, the
+measurement-first version of Thermo Credit should be simplified or rejected in
+that application. A more systematic empirical evaluation for the JP
+configuration is left to a later revision.
 
-\section{Data Mapping, Reproducibility, and AI Assistance}
+\section{Data Sources and Reproducibility}
 
-\subsection{Repository-side data mapping}
+\subsection{Public data sources}
 
-The measurement-first implementation layer is intentionally separated from the
-broader theory note. In the repository, variable meanings are fixed in
-\texttt{docs/definitions.md}, source and status mappings are recorded in
-\texttt{data/data\_dictionary.csv}, and the AI-facing interface layer is
-outlined in \texttt{docs/thermo\_credit\_mcp\_spec.md}. Connection patterns for
-local and remote AI clients are documented in
-\texttt{docs/mcp\_connection\_guide.md}, while \texttt{llms.txt} provides a
-short machine-facing reading order. Together these files distinguish directly
-observed quantities, proxy-estimated quantities, and future latent-state
-estimates, and they provide the shortest path from theory to recalculable
-outputs.
+The current build draws on public macro-financial sources and stores harmonised
+tables in the repository. Credit stocks come from BIS private non-financial
+credit series and the region-specific credit tables under \texttt{data/}.
+Nominal output proxies are taken from World Bank caches and, for the euro area
+when available, ECB quarterly GDP. Money and balance-sheet scale proxies are
+selected from central-bank balance sheets or broad-money series (BoJ, ECB, Fed)
+through the region builders. Market-stress inputs include long-term government
+yields, ICE BofA high-yield spreads, VIX, and selected foreign-exchange and
+yield-spread series used in the external-coupling block. The repo-level mapping
+of symbols, status, and construction rules is recorded in
+\texttt{data/data\_dictionary.csv}.
 
-\subsection{Publication stack and interface layers}
+\subsection{Empirical snapshot from the current build}
 
-The repository now separates four publication layers:
-\begin{enumerate}
-  \item \texttt{report.html} for narrative interpretation and plots;
-  \item \texttt{docs/definitions.md} and
-        \texttt{data/data\_dictionary.csv} for fixed variable meanings and
-        identification rules;
-  \item \texttt{scripts/} and \texttt{tests/} for recalculation and empirical
-        validation;
-  \item an AI-facing resource/tool layer built from schemas, structured
-        examples, and an MCP wrapper.
-\end{enumerate}
-This fourth layer should be understood as a \emph{distribution} mechanism
-rather than a validation mechanism. It makes Thermo Credit easier for AI
-systems to query and reuse, but it does not by itself establish the theory's
-empirical correctness. Validation still depends on the forecasting tests,
-identification strategy, and falsifiability criteria stated above.
+The theory note now reads back a small empirical summary from the same
+indicator tables used by the dashboard, so that the text does not stop at
+definitions alone. The aim of the snapshot is narrow but useful: it reports
+where the latest regional coverage ends, whether the tuned implicit headroom
+signal says anything that the raw pipeline $X_C$ does not, and whether the
+current data support a directional read on stress and dissipation.
 
-\subsection{Canonical event windows}
-
-To make chart reading and case-study writing more stable across the HTML
-dashboard and this note, the repository now keeps a small shared event
-registry in \texttt{data/report\_events.csv}. The intent is not to impose a
-single historical taxonomy, but to keep major windows such as the IT bubble
-unwind, the Lehman / global financial crisis, the euro sovereign debt crisis,
-and the COVID-19 pandemic shock aligned across outputs. Dashboard charts shade
-these windows whenever they overlap the visible sample, while this note can
-quote the same registry directly.
-
-\IfFileExists{generated/dashboard_events.tex}{
-\paragraph{Canonical dashboard event registry.}
-\input{generated/dashboard_events.tex}
+\IfFileExists{generated/theory_empirical_snapshot.tex}{
+\paragraph{Latest cross-region snapshot.}
+\input{generated/theory_empirical_snapshot.tex}
 }{%
-\paragraph{Canonical dashboard event registry.}
-Regenerate \texttt{site/report.html} to populate
-\texttt{tex/generated/dashboard\_events.tex}.
+\paragraph{Latest cross-region snapshot.}
+Run \texttt{python scripts/07\_calibrate\_theory\_model.py} to populate
+\texttt{tex/generated/theory\_empirical\_snapshot.tex}.
 }
 
-\subsection{Paper-ready figures from dashboard data}
+\subsection{Illustrative calibration output}
+
+The current repository pass also emits a lightweight calibration table for the
+region-specific reference parameters. This is not yet a final estimator, but it
+makes the tuning step visible and reproducible. In particular, the table should
+be read together with the snapshot above: the important question is not whether
+the fitted constants look elegant, but whether the tuned signal improves the
+forward-looking relation to growth and stress relative to the raw dashboard
+transform.
+
+\IfFileExists{generated/theory_calibration.tex}{
+\input{generated/theory_calibration.tex}
+}{%
+Run \texttt{python scripts/07\_calibrate\_theory\_model.py} to populate
+\texttt{tex/generated/theory\_calibration.tex}.
+}
+
+\subsection{Paper-ready figures}
 
 For the narrative note itself, the repository now also generates a small set of
 paper-ready vector figures directly from the same indicator CSVs used by the
 dashboard. These figures are exported as PDF/SVG via a
 \texttt{matplotlib}/\texttt{seaborn} pipeline so that the paper layer does not
-depend on browser screenshots or Plotly-specific rasterization. The aim is to
-preserve consistency with the dashboard while using a cleaner visual grammar
-for writing and citation.
+depend on browser screenshots or Plotly-specific rasterization.
 
 \IfFileExists{generated/theory_sm_tl_panels.pdf}{
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=\textwidth]{generated/theory_sm_tl_panels.pdf}
-  \caption{Paper-ready regional panels for $S_M$ and $T_L$ rebuilt from the
-  dashboard indicator tables. Each line uses a winsorized median/MAD score
-  with smooth \texttt{asinh} compression within region, and the shaded windows reuse the shared event registry in
-  \texttt{data/report\_events.csv}.}
+  \caption{Regional panels for $S_M$ and $T_L$, rebuilt from the dashboard
+  indicator tables. Lines are shown as winsorized median/MAD scores with
+  smooth \texttt{asinh} compression, and shaded windows reuse
+  \texttt{data/report\_events.csv}. The build may use a fresher git ref when
+  a feature branch carries stale regional CSVs.}
 \end{figure}
 }{%
 \paragraph{Paper-ready theory figures.}
@@ -1113,59 +1121,28 @@ Run \texttt{python scripts/06\_make\_theory\_figures.py} (or rebuild
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=\textwidth]{generated/theory_capacity_panels.pdf}
-  \caption{Paper-ready regional panels for $X_C$ and loop dissipation rebuilt
-  from the dashboard indicator tables. Here $X_C$ first passes through a
-  trailing four-quarter rolling median and a light two-quarter mean, after
-  which the same winsorized median/MAD scaling with smooth \texttt{asinh}
-  compression, event registry, and regional filtering rules are applied so
-  that the paper layer and the dashboard remain aligned.}
+  \caption{Regional panels for $X_C$ and loop dissipation, rebuilt from the
+  dashboard indicator tables. For $X_C$, the paper version applies a trailing
+  four-quarter rolling median and a light two-quarter mean before the same
+  winsorized median/MAD scaling and event overlay used elsewhere. This panel
+  remains a visual proxy from the dashboard build; the tuned implicit
+  headroom score discussed in the text is reported in the empirical snapshot
+  and calibration table below.}
 \end{figure}
 }{}
 
-\subsection{Dashboard takeaways for citation}
-
-The report build now also emits a small reuse layer for writing and slide
-workflows: a LaTeX snippet in \texttt{tex/generated/dashboard\_takeaways.tex},
-a machine-readable JSON payload in \texttt{site/dashboard\_takeaways.json}, and
-a PNG summary card in \texttt{tex/generated/dashboard\_takeaways.png} when the
-local image stack is available. This is intended to let the dashboard's latest
-interpretation notes be quoted in papers and memos without copy-editing the
-HTML by hand.
-
-\IfFileExists{generated/dashboard_takeaways.tex}{
-\paragraph{Auto-generated dashboard snapshot.}
-\input{generated/dashboard_takeaways.tex}
-}{%
-\paragraph{Auto-generated dashboard snapshot.}
-Regenerate \texttt{site/report.html} to populate
-\texttt{tex/generated/dashboard\_takeaways.tex}.
-}
-
-\IfFileExists{generated/dashboard_takeaways.png}{
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=\textwidth]{generated/dashboard_takeaways.png}
-  \caption{Auto-generated dashboard takeaway card exported from the latest
-  report build.}
-\end{figure}
-}{}
-
-\subsection{Reproducibility and AI assistance}
+\subsection{Reproducibility}
 
 This note is designed to accompany an openly available codebase and data
-snapshots (e.g.\ monthly reports computed from public sources). The
-reference implementation lives in the repository
-\texttt{2025\_11\_Thermo\_Credit} and is intended to make all reported
-figures and indicators reproducible.
+snapshots such as monthly reports computed from public sources. The reference
+implementation lives in the repository \texttt{2025\_11\_Thermo\_Credit} and is
+intended to make all reported figures and indicators reproducible.
 
 At a high level:
 \begin{itemize}
   \item a Python pipeline computes $\SM$, $\TL$, $\VC$, $\FC$, $\XC$, and
         the diagnostics from public time series using shared configuration
         files and scripts;
-  \item a measurement-first tool layer now exposes the compact model spec,
-        variable definitions, core metric calculations, scenario evaluation,
-        and regime comparisons through structured JSON interfaces;
   \item minimal synthetic CSVs are provided so that tests and examples can
         run without external API keys, while real data are fetched from
         standard sources (e.g.\ FRED, World Bank) when credentials are
@@ -1175,15 +1152,12 @@ At a high level:
         report can be regenerated from a fixed environment.
 \end{itemize}
 Further implementation details (module structure, configuration roles, CI
-layout, and synthetic data conventions) are documented in the repository
-README and configuration files, and can be treated as an implementation
-guide for practitioners wishing to reproduce or extend the system.
+layout, data-source routing, and synthetic-data conventions are summarised in
+Appendix~A.
 
-Drafting and editing of the present text used a GPT-based large language
-model as a tool at low randomness. All equations, definitions, and claims
-are curated and are the responsibility of the authors. Readers should rely
-on the archived PDF and associated repository for the citable version and
-reproducible code.
+Drafting support from a GPT-based large language model was used as an editing
+tool. All equations, definitions, and claims remain the responsibility of the
+authors.
 
 \bigskip
 
@@ -1195,13 +1169,25 @@ advice, and does not create a client relationship or any regulated financial
 service. Users are responsible for compliance with applicable laws in their
 jurisdiction.
 
+\newpage
 \appendix
 
-\section*{Appendix: Implementation Notes (Modules \& CI)}
+\section*{Appendix A: Data Sources and Implementation Notes}
 
-This appendix summarizes the main implementation modules for readers who
-wish to reproduce or extend the reference pipeline.
-It is not required for understanding the theoretical sections.
+This appendix summarizes the main implementation modules for readers who wish
+to reproduce or extend the reference pipeline. It is not required for reading
+the theoretical sections.
+
+\paragraph{Data-source map.}
+The region builders write harmonised intermediate tables under
+\texttt{data/}. In the current repository, Japan mainly uses BoJ balance-sheet
+and yield proxies together with World Bank GDP caches; the euro area uses ECB
+or FRED/World-Bank mirrors for money, GDP, and yields, plus BIS credit series;
+and the United States uses Federal Reserve balance-sheet or M2 proxies, US
+Treasury yields, BIS credit, and the same World Bank GDP layer. Cross-market
+stress inputs used in the external-coupling block include ICE BofA high-yield
+spreads, VIX, and selected FX / yield-spread series. The exact symbol-to-file
+mapping is stored in \texttt{data/data\_dictionary.csv}.
 
 \begin{itemize}
   \item \textbf{Raw and feature tables.} Region-specific builder scripts
@@ -1215,36 +1201,22 @@ It is not required for understanding the theoretical sections.
         (e.g.\ \texttt{money*.csv}, \texttt{credit*.csv},
         \texttt{reg\_pressure*.csv}, \texttt{allocation\_q*.csv}).
   \item \textbf{Entropy and temperature.} The module
-        \texttt{lib/entropy.py} implements the definition
-        $\SM = k \Min H(q)$ in \eqref{eq:SM_def} with
-        $H(q) = -\sum_i \tilde q_i \log \tilde q_i$ where
-        $\tilde q_i = \max\{q_i,0\} / \sum_j \max\{q_j,0\}$, and also
-        computes
-        $S_{\mathrm{M,in}} = k M_{\mathrm{in}} H(q)$,
-        $S_{\mathrm{M,out}} = k M_{\mathrm{out}} H(q)$,
-        $S_{\mathrm{M,hat}} = H(q)/\log K$ (with $K$ buckets), and optional
-        per-bucket contributions
-        $S_{\mathrm{M,in}}^{(i)} = k M_{\mathrm{in}} \tilde q_i$.
-        The module \texttt{lib/temperature.py} builds $\TL$ from credit
-        spreads, depth, and turnover by forming
-        $z_s = Z(1/(\mathrm{spread}+\epsilon))$,
-        $z_d = Z(1/(\mathrm{depth}+\epsilon))$,
-        $z_t = Z(\mathrm{turnover})$, combining
-        $\hat T = z_s z_d (1 + \tfrac{1}{2} z_t)$, and finally
-        min--max normalising to obtain
-        $T_{\mathrm{L}} = (\hat T - \min \hat T) / (\max \hat T - \min \hat T)$.
+        \texttt{lib/entropy.py} implements $\SM = k \Min H(q)$ from
+        \eqref{eq:SM_def} and also computes
+        $S_{\mathrm{M,in}}$, $S_{\mathrm{M,out}}$,
+        $S_{\mathrm{M,hat}} = H(q)/\log K$, and optional per-bucket
+        contributions. The module \texttt{lib/temperature.py} builds $\TL$
+        from credit spreads, depth, and turnover, combines the standardised
+        inputs into $\hat T = z_s z_d (1 + \tfrac{1}{2} z_t)$, and then
+        applies min--max normalisation.
   \item \textbf{Internal-energy gauge.}
-        Within the credit tables the column $U(t)$ is used as the
-        internal-energy / capacity proxy entering \eqref{eq:first_law},
-        \eqref{eq:FC_def}, and \eqref{eq:XC_def}.
-        When a dedicated $U$ series is not available, the code fills it
-        by combining available quantities in a conservative order
-        (preferring an explicit $U$ column, then GDP-like series
-        such as $U_{\text{gdp\_only}}$ or $Y$, and only as a last resort
-        falling back to $L_{\mathrm{real}}$).
-        An optional detrended version $U^\star$ is produced by subtracting
-        a no-lookahead rolling mean so that diagnostics can focus on
-        fluctuations around a slowly varying baseline.
+        In the credit tables, the column $U(t)$ acts as the internal-energy or
+        capacity proxy used in \eqref{eq:first_law}, \eqref{eq:FC_def}, and
+        \eqref{eq:XC_def}. When a dedicated $U$ series is missing, the code
+        fills it conservatively: first from an explicit $U$ column, then from
+        GDP-like series such as $U_{\text{gdp\_only}}$ or $Y$, and only as a
+        last resort from $L_{\mathrm{real}}$. An optional detrended version
+        $U^\star$ subtracts a no-lookahead rolling mean.
   \item \textbf{Depth and turnover enrichment.}
         When region-specific depth/turnover series are not supplied, the
         helper \texttt{lib/credit\_enrichment.py} constructs depth and
@@ -1252,18 +1224,18 @@ It is not required for understanding the theoretical sections.
         and capacity proxy $U$ as described in the main text.
   \item \textbf{Measurement-first tool layer.}
         The module \texttt{lib/thermo\_credit\_tools.py} provides the compact
-        v2 interface used by the current repository-side AI layer:
-        theory overview, variable definitions, metric computation,
-        scenario evaluation, and regime comparison. The script
+        v2 interface used by the repository-side AI layer: theory overview,
+        variable definitions, metric computation, scenario evaluation, and
+        regime comparison. The script
         \texttt{scripts/thermo\_credit\_cli.py} exposes the same layer as a
-        JSON CLI for local reproducibility checks.
+        JSON CLI for local checks.
   \item \textbf{MCP distribution wrapper.}
         The module \texttt{lib/thermo\_credit\_mcp.py} wraps the same core
         calculations as MCP resources, tools, and prompt templates, and
         \texttt{scripts/thermo\_credit\_mcp\_server.py} provides a runnable
-        server entrypoint. This layer is designed for AI accessibility and
-        structured reuse; it is not a substitute for the empirical validation
-        logic discussed in the main text.
+        server entrypoint. This layer is meant for AI accessibility and
+        structured reuse. It does not replace the empirical validation logic in
+        the main text.
   \item \textbf{Capacity, headroom, and coupling.} The core constructor
         \texttt{lib/indicators.py} merges money, allocation, credit, and
         regulatory tables, renames regulatory quantities into
@@ -1296,136 +1268,141 @@ It is not required for understanding the theoretical sections.
         \texttt{scripts/02\_compute\_indicators\_us.py}, and the helper
         \texttt{lib/regions.py} assemble the inputs for JP/EU/US and write
         \texttt{site/indicators*.csv} used by the dashboard and tests.
-  \item \textbf{Fallbacks and CI reproducibility.} To keep tests and
-        scheduled builds deterministic, \texttt{scripts/ci\_prepare\_minimal\_data.py}
+  \item \textbf{Theory calibration layer.}
+        The module \texttt{lib/theory\_calibration.py} and script
+        \texttt{scripts/07\_calibrate\_theory\_model.py} perform a lightweight
+        iterative search over $(T_0,p_0,U_0,V_0,S_0)$, write
+        \texttt{data/calibrated\_theory\_params.json}, and emit the
+        LaTeX snippets consumed in the empirical snapshot and calibration
+        sections of the note.
+  \item \textbf{Fallbacks and CI reproducibility.} To keep tests and scheduled
+        builds deterministic, \texttt{scripts/ci\_prepare\_minimal\_data.py}
         seeds tiny synthetic CSVs when real inputs are absent, and the
-        continuous-integration workflows (GitHub Actions) re-run the
-        pipeline under pinned dependencies so that indicators and the
-        report can be regenerated from a fixed environment.
+        GitHub Actions workflows re-run the pipeline under pinned
+        dependencies so that indicators and the report can be regenerated
+        from a fixed environment.
 \end{itemize}
 
-\section*{Appendix: Glossary (For Physicists New to Finance)}
+\newpage
+\section*{Appendix B: Glossary (For Physicists New to Finance)}
 
 \paragraph{Numbering.}
 Each term is assigned a unique K-number (K1, K2, \ldots) in the order it is
 first referenced in the main text. Use the superscript K\# markers to jump
 back here; headings show the same inline K\#.
 
-This glossary explains the main banking, credit, and regulatory terms used
-in this note for readers with a physics background. Definitions are informal
-and intuition-friendly. When helpful, we include analogies to thermodynamics
-or dynamical systems. These are aids to intuition, not strict identities.
+This glossary explains the main banking, credit, and regulatory terms used in
+this note for readers with a physics background. The definitions are informal
+and written for intuition. Where useful, we add analogies to thermodynamics or
+dynamical systems. These analogies are only guides, not literal identities.
 
 \subsection*{1.\ Regulation and Bank Balance Sheets}
 
 \paragraph{K1 CET1 (Common Equity Tier 1).}
-Core equity capital of a bank (common shares, retained earnings). It absorbs
-losses and underpins solvency. Analogy: the bank's fundamental ``energy
-reserve''.
+This is the core equity capital of a bank, such as common shares and retained
+earnings. It absorbs losses and supports solvency. Analogy: the bank's basic
+``energy reserve''.
 
 \paragraph{K2 RWA (Risk-Weighted Assets).}
-Total assets weighted by regulatory risk factors. Riskier exposures receive
-higher weights. The ratio CET1/RWA is a key prudential metric. Analogy: an
-effective load or mass adjusted for fragility.
+These are total assets weighted by regulatory risk factors. Riskier exposures
+get higher weights. The ratio CET1/RWA is one of the main prudential metrics.
+Analogy: an effective load or mass adjusted for fragility.
 
 \paragraph{K3 CET1/RWA ratio and slack.}
-CET1/RWA indicates how much high-quality capital backs risk-weighted assets.
-Regulation sets a minimum. The slack is the excess above this minimum and
-represents capacity to expand or absorb shocks. Analogy: safety margin or
-unused headroom in a constrained system.
+The CET1/RWA ratio shows how much high-quality capital backs risk-weighted
+assets. Regulation sets a minimum. The slack is the amount above that minimum,
+and it measures capacity to expand or absorb shocks. Analogy: a safety margin
+or unused headroom in a constrained system.
 
 \paragraph{K4 Credit capacity / Headroom ($\VC$).}
-Effective room for additional lending, given capital, liquidity, and internal
-limits. In this note $\VC$ is the state-like variable capturing this
-remaining capacity. Analogy: effective volume available before hitting hard
-walls.
+This is the effective room for additional lending, given capital, liquidity,
+and internal limits. In this note, $\VC$ is the state-like variable that
+captures that remaining room. Analogy: usable volume before the system hits a
+hard wall.
 
 \paragraph{K5 Credit pressure ($\pC$).}
-Shadow price of capacity: the marginal cost or value of relaxing or
-tightening $\VC$. Defined in analogy to
+This is the shadow price of capacity: the marginal cost or value of relaxing
+or tightening $\VC$. It is defined by analogy to
 $\pC = -(\partial U / \partial \VC)_{\SM}$ or $-\partial F / \partial \VC$.
-Analogy: thermodynamic pressure; tighter constraints $\Rightarrow$ higher
-$\pC$.
+Analogy: thermodynamic pressure; tighter constraints imply higher $\pC$.
 
 \paragraph{K6 HQLA (High Quality Liquid Assets).}
-Very liquid, low-risk assets (e.g.\ government bonds) that can be sold
-quickly in stress. They support liquidity ratios and crisis resilience.
+These are very liquid, low-risk assets, such as government bonds, that can be
+sold quickly in stress. They support liquidity ratios and crisis resilience.
 Analogy: high-grade stored energy that can be tapped on demand.
 
 \paragraph{K7 Liquidity buffer.}
-Cash plus HQLA held as an emergency reserve to withstand sudden outflows or
+This is cash plus HQLA held as an emergency reserve against sudden outflows or
 market stress. Analogy: a backup battery or safety reservoir.
 
 \paragraph{K8 LCR (Liquidity Coverage Ratio).}
-Regulatory ratio: HQLA divided by projected net cash outflows over a
-30-day stress scenario. It tests short-term liquidity robustness. Analogy:
-can the system run for 30 days under worst-case load?
+This regulatory ratio is HQLA divided by projected net cash outflows over a
+30-day stress scenario. It tests short-term liquidity robustness. Analogy: can
+the system keep running for 30 days under worst-case load?
 
 \paragraph{K9 NSFR (Net Stable Funding Ratio).}
-Regulatory ratio over a one-year horizon: stable funding relative to
-required stable funding. It limits excessive maturity mismatch. Analogy:
-ensuring long-lived assets are backed by sufficiently slow-decaying sources.
+This regulatory ratio looks over a one-year horizon. It compares stable
+funding with required stable funding and limits excessive maturity mismatch.
+Analogy: making sure long-lived assets are backed by sufficiently slow-decaying
+sources.
 
 \subsection*{2.\ Money, Credit, and Flow Concepts}
 
 \paragraph{K10 Money-in-circulation.}
-An operational measure of money that is actually circulating in the selected
-system and horizon (e.g.\ deposits used in payments), not merely base money
-on the central bank balance sheet. Analogy: active particles taking part in
-interactions.
+This is an operational measure of money that is actually circulating in the
+chosen system and horizon, for example deposits used in payments. It is not
+just base money on the central bank balance sheet. Analogy: active particles
+taking part in interactions.
 
 \paragraph{K11 Credit stocks and flows.}
-Stocks: outstanding amounts of loans or credit at a given time. Flows:
-changes per period (new lending, repayments, net issuance). Analogy:
-internal energy vs.\ power / energy flux.
+Stocks are the outstanding amounts of loans or credit at a given time. Flows
+are the changes per period, such as new lending, repayments, or net issuance.
+Analogy: internal energy versus power or energy flux.
 
 \paragraph{K12 Margin credit / Securities financing.}
-Credit used to finance positions in securities (e.g.\ margin loans, certain
-repos). It amplifies leverage in financial markets and is often separated
-from credit to the real economy.
+This is credit used to finance positions in securities, such as margin loans
+or some repo activity. It amplifies leverage in financial markets and is often
+separated from credit to the real economy.
 
 \paragraph{K13 Commercial Paper (CP).}
-Short-term unsecured debt issued by firms. Provides funding outside
-traditional bank loans. Analogy: an alternative branch in the credit
-circuit.
+This is short-term unsecured debt issued by firms. It provides funding outside
+traditional bank loans. Analogy: an alternative branch in the credit circuit.
 
 \paragraph{K14 Policy work ($W_{\mathrm{policy}}$).}
-Deliberate interventions by central banks, regulators, or governments:
-interest rate changes, asset purchases, guarantees, capital rule
-adjustments, and similar actions. In our decomposition this is the
-structured, intentional part of ``work''. Analogy: externally applied work
-on the system.
+This covers deliberate interventions by central banks, regulators, or
+governments: rate changes, asset purchases, guarantees, capital-rule changes,
+and similar actions. In our decomposition, this is the structured and
+intentional part of ``work''. Analogy: externally applied work on the system.
 
 \subsection*{3.\ Structural and Analytical Concepts}
 
 \paragraph{K15 MECE (Mutually Exclusive, Collectively Exhaustive).}
-A rule for defining categories: (i) no overlaps between categories,
-(ii) no gaps in coverage. For the entropy
-$\SM = k \Min H(q)$, the allocation shares $q_i$ should be MECE, otherwise
-$\SM$ is distorted by double counting or omissions.
+This is a rule for defining categories: no overlaps and no gaps. For the
+entropy $\SM = k \Min H(q)$, the allocation shares $q_i$ should be MECE.
+Otherwise $\SM$ is distorted by double counting or omissions.
 
 \paragraph{K16 State variable and proxy.}
-A state variable is determined by the current state, not by the detailed
-path. In practice, finance uses observable proxies (e.g.\ ratios, indices)
-to approximate such variables. Our Maxwell-like relation
-\eqref{eq:Maxwell} tests whether chosen proxies behave as if they came from
-a consistent potential $U(\SM,\VC,\ldots)$.
+A state variable is determined by the current state, not by the full path that
+led there. In practice, finance uses observable proxies such as ratios and
+indices to approximate such variables. Our Maxwell-like relation
+\eqref{eq:Maxwell} tests whether the chosen proxies behave as if they came
+from a consistent potential $U(\SM,\VC,\ldots)$.
 
 \paragraph{K17 Hysteresis and loop area.}
 If trajectories in the $(\pC,\VC)$ plane form loops with non-zero area over
-policy or credit cycles, this indicates irreversibility or
-dissipation-like effects (e.g.\ stress, misallocation, or path dependence).
-Analogy: magnetic hysteresis, frictional cycles, or inelastic processes.
+policy or credit cycles, this suggests irreversibility or dissipation-like
+effects, such as stress, misallocation, or path dependence. Analogy: magnetic
+hysteresis, frictional cycles, or inelastic processes.
 
 \paragraph{K18 Stress testing and early-warning indicators.}
 Stress tests simulate severe but plausible scenarios to see whether banks or
-systems survive. Early-warning indicators attempt to flag fragility in
-advance. Within this framework, quantities like $\FC$, $\XC$, and loop
-areas are intended as structured candidates to complement such tools.
+systems can survive them. Early-warning indicators try to flag fragility in
+advance. Within this framework, quantities like $\FC$, $\XC$, and loop areas
+are meant as structured candidates to complement such tools.
 
 \paragraph{K19 Money vs.\ credit (QTM vs.\ QTC perspective).}
-In traditional Quantity Theory of Money (QTM), money is primary and credit
-is often treated as derived. In the Quantity Theory of Credit (QTC) and in
+In traditional Quantity Theory of Money (QTM), money is primary and credit is
+often treated as derivative. In the Quantity Theory of Credit (QTC), and in
 this note, credit creation is primary: bank lending creates deposits, and
 money is an accounting outcome of credit decisions. This shift motivates
 tracking credit capacity and dispersion as state-like objects.

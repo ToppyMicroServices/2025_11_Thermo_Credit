@@ -1,0 +1,207 @@
+[
+  {
+    "region_key": "jp",
+    "region_label": "Japan (JP)",
+    "coverage_start": "1998-06-30",
+    "coverage_end": "2025-03-31",
+    "source_ref": null,
+    "params": {
+      "T0": 0.29339375,
+      "p0": 1.7066062499999999,
+      "U0": 809879.04695625,
+      "V0": 1072697.5256626958,
+      "S0": 2313837.1741647227
+    },
+    "defaults": {
+      "T0": 1.0,
+      "p0": 1.0,
+      "U0": 872981.25,
+      "V0": 1380427.9209666667,
+      "S0": 2313837.1741647227
+    },
+    "scales": {
+      "U": 151392.30000000005,
+      "V": 3699238.4108666675,
+      "S": 6558993.868628595
+    },
+    "objective": 3.9650139618684266,
+    "diagnostics": {
+      "growth_corr": 0.494615031468363,
+      "stress_corr": 0.3810773381232429,
+      "loop_corr": 0.3453975212719881,
+      "liquidity_corr": 0.04909247392130044,
+      "negative_share": 0.0,
+      "dispersion": 0.6215449573468401,
+      "regularization": 1.179237605390625,
+      "growth_pairs": 104.0,
+      "stress_pairs": 104.0,
+      "loop_pairs": 104.0,
+      "liquidity_pairs": 108.0
+    },
+    "baseline_diagnostics": {
+      "growth_corr": -0.7467944783769105,
+      "stress_corr": -0.40038587723052954,
+      "loop_corr": -0.22198155028353567,
+      "growth_pairs": 104.0,
+      "stress_pairs": 104.0,
+      "loop_pairs": 104.0
+    },
+    "latest": {
+      "S_M": 11351004.321727185,
+      "T_L": 0.3998126809889496,
+      "X_C_calibrated": 1.994016823928204,
+      "X_C_pipeline": 1090132.075245984,
+      "loop_area": 2808931.5555758867
+    },
+    "deltas_4q": {
+      "S_M": -414618.203978315,
+      "T_L": 0.001973641432259421,
+      "X_C_calibrated": 0.08928047842187548,
+      "loop_area": -1147515.7166292942
+    },
+    "notes": [
+      "coverage through 2025-03-31",
+      "T_L is currently high in its own regional history",
+      "implicit headroom is rising over the last four quarters",
+      "loop dissipation is easing over the last four quarters",
+      "forward-growth correlation improves from -0.747 to 0.495"
+    ]
+  },
+  {
+    "region_key": "eu",
+    "region_label": "Euro Area (EU)",
+    "coverage_start": "1999-03-31",
+    "coverage_end": "2025-09-30",
+    "source_ref": null,
+    "params": {
+      "T0": 1.0433124999999999,
+      "p0": 1.618125,
+      "U0": 2052593.62405279,
+      "V0": 50.16173118424173,
+      "S0": 160.64644904810683
+    },
+    "defaults": {
+      "T0": 1.0,
+      "p0": 1.5,
+      "U0": 2456956.60913064,
+      "V0": 81.69706592616231,
+      "S0": 160.64644904810683
+    },
+    "scales": {
+      "U": 808725.9701557001,
+      "V": 63.07066948384116,
+      "S": 90.52492771215714
+    },
+    "objective": 3.185873252425312,
+    "diagnostics": {
+      "growth_corr": 0.2694316046063389,
+      "stress_corr": 0.17803327489867116,
+      "loop_corr": -0.5982238152229911,
+      "liquidity_corr": -0.07337176919749801,
+      "negative_share": 0.0,
+      "dispersion": 0.5729091338249077,
+      "regularization": 0.50807753515625,
+      "growth_pairs": 103.0,
+      "stress_pairs": 103.0,
+      "loop_pairs": 103.0,
+      "liquidity_pairs": 107.0
+    },
+    "baseline_diagnostics": {
+      "growth_corr": 0.0,
+      "stress_corr": 0.0,
+      "loop_corr": 0.0,
+      "growth_pairs": 103.0,
+      "stress_pairs": 103.0,
+      "loop_pairs": 103.0
+    },
+    "latest": {
+      "S_M": 281.9458000224948,
+      "T_L": 0.5032155656293386,
+      "X_C_calibrated": 1.9383616546471418,
+      "X_C_pipeline": 0.0,
+      "loop_area": 105.51143465506436
+    },
+    "deltas_4q": {
+      "S_M": 7.63116984163446,
+      "T_L": 0.0009511937394950376,
+      "X_C_calibrated": 0.03803991119196204,
+      "loop_area": 7.568671144583405
+    },
+    "notes": [
+      "coverage through 2025-09-30",
+      "T_L is currently high in its own regional history",
+      "implicit headroom is roughly flat over the last four quarters",
+      "loop dissipation is worsening over the last four quarters",
+      "forward-growth correlation improves from 0.000 to 0.269",
+      "pipeline X_C is clipped at zero at the sample end, so calibration is doing real work"
+    ]
+  },
+  {
+    "region_key": "us",
+    "region_label": "United States (US)",
+    "coverage_start": "2003-03-31",
+    "coverage_end": "2025-03-31",
+    "source_ref": null,
+    "params": {
+      "T0": 1.086625,
+      "p0": 1.85514375,
+      "U0": 21585.286999999997,
+      "V0": 1891556.0483600001,
+      "S0": 6059078.588701777
+    },
+    "defaults": {
+      "T0": 1.0,
+      "p0": 2.0,
+      "U0": 30230.057999999997,
+      "V0": 3483099.1344,
+      "S0": 6059078.588701777
+    },
+    "scales": {
+      "U": 17289.541999999998,
+      "V": 3183086.1720799995,
+      "S": 5156769.900001254
+    },
+    "objective": 4.076021628614287,
+    "diagnostics": {
+      "growth_corr": -0.07647888586599774,
+      "stress_corr": 0.02418909597582481,
+      "loop_corr": 0.0,
+      "liquidity_corr": -0.1639591574066323,
+      "negative_share": 0.0,
+      "dispersion": 8.837009877919307,
+      "regularization": 0.598855083971447,
+      "growth_pairs": 85.0,
+      "stress_pairs": 85.0,
+      "loop_pairs": 85.0,
+      "liquidity_pairs": 89.0
+    },
+    "baseline_diagnostics": {
+      "growth_corr": 0.11262851779327959,
+      "stress_corr": 0.06064604638416311,
+      "loop_corr": 0.0,
+      "growth_pairs": 85.0,
+      "stress_pairs": 85.0,
+      "loop_pairs": 85.0
+    },
+    "latest": {
+      "S_M": 10586505.906924931,
+      "T_L": 0.9207998214479012,
+      "X_C_calibrated": 1.4774431821956384,
+      "X_C_pipeline": 3560611.5292644147,
+      "loop_area": 0.0
+    },
+    "deltas_4q": {
+      "S_M": -1169318.9315924682,
+      "T_L": -0.07920017855187,
+      "X_C_calibrated": -20.46251913454019,
+      "loop_area": NaN
+    },
+    "notes": [
+      "coverage through 2025-03-31",
+      "T_L is currently high in its own regional history",
+      "implicit headroom is falling over the last four quarters",
+      "loop dissipation is unclear over the last four quarters",
+      "forward-growth correlation does not yet improve over pipeline X_C (-0.076 versus 0.113)"
+    ]
+  }
+]

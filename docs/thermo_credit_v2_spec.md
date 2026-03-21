@@ -17,13 +17,14 @@ changes the transformation of credit expansion into:
 
 The primary research question is:
 
-How does the partition of new credit between real activity and asset markets
-change growth, prices, asset prices, and instability over time?
+How does the partition of new credit between GDP-linked transactions and
+existing-asset transactions change growth, prices, asset prices, and
+instability over time?
 
 The model should stay focused on three use cases:
 
 1. early-warning signals for asset inflation and fragility,
-2. description of the real-versus-asset credit mix,
+2. description of the GDP-linked versus existing-asset credit mix,
 3. forecast improvement relative to credit-volume-only models.
 
 ## 2. Minimal State Vector
@@ -31,8 +32,8 @@ The model should stay focused on three use cases:
 The baseline state vector is intentionally small.
 
 - `C_t`: new credit flow over period `t`
-- `q_t in [0, 1]`: share of new credit flowing to real activity
-- `1 - q_t`: share of new credit flowing to asset markets
+- `q_t in [0, 1]`: share of new credit flowing to GDP-linked transactions
+- `1 - q_t`: share of new credit flowing to existing-asset transactions
 - `Y_t^N`: nominal output proxy used for accounting ratios
 - `Y_t^R`: real activity proxy used for forecast targets
 - `P_t`: general price level or inflation proxy
@@ -98,7 +99,7 @@ S_t = rho S_{t-1} + gamma (C_t^A / Y_t^N) - delta (C_t^R / Y_t^N) + eps_S,t
 
 Interpretation:
 
-- more asset-directed credit raises the future stress state,
+- more credit flowing into existing-asset transactions raises the future stress state,
 - accumulated stress lowers next-period conversion efficiency,
 - the same amount of new credit becomes less productive in a stressed regime.
 
@@ -125,6 +126,7 @@ should be estimated in three layers.
 
 - sectoral lending flows,
 - household housing credit,
+- credit for new construction when available,
 - lending to non-financial firms,
 - commercial real-estate credit,
 - central-bank balance-sheet aggregates,
@@ -141,6 +143,13 @@ should be estimated in three layers.
 
 - `q_t` as a latent partition share when direct loan-purpose data are incomplete,
 - `S_t` as a latent fragility state estimated with a state-space model.
+
+Werner-style interpretation:
+
+- `C_t^R` should be read as credit linked to GDP transactions.
+- `C_t^A` should be read as credit linked to purchases of existing assets.
+- Construction credit may need to be split across the two buckets rather than
+  forced into only one.
 
 Recommended order:
 

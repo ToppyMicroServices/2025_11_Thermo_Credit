@@ -17,6 +17,7 @@ def main() -> None:
         output_dir=ROOT / "tex" / "generated",
         events_path=ROOT / "data" / "report_events.csv",
         start_date=os.getenv("THEORY_PLOT_START") or os.getenv("REPORT_PLOT_START") or "1998-01-01",
+        source_ref=os.getenv("THEORY_SOURCE_REF") or None,
     )
     if not outputs:
         raise SystemExit("No theory figures were generated.")

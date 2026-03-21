@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import os
+import io
+import subprocess
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -90,13 +92,7 @@ def configure_theory_plot_style() -> None:
     )
 
 
-def _load_indicator_csv(path: Path) -> Optional[pd.DataFrame]:
-    if not path.exists():
-        return None
-    try:
-        frame = pd.read_csv(path)
-    except Exception:
-        return None
+def _coerce_indicator_frame(frame: pd.DataFrame) -> Optional[pd.DataFrame]:
     if frame.empty or "date" not in frame.columns:
         return None
     frame = frame.copy().assign(date=pd.to_datetime(frame["date"], errors="coerce"))
@@ -104,13 +100,51 @@ def _load_indicator_csv(path: Path) -> Optional[pd.DataFrame]:
     return frame if not frame.empty else None
 
 
-def load_region_frames(site_dir: Path) -> List[RegionFrame]:
+def _load_indicator_csv(path: Path) -> Optional[pd.DataFrame]:
+    if not path.exists():
+        return None
+    try:
+        frame = pd.read_csv(path)
+    except Exception:
+        return None
+    return _coerce_indicator_frame(frame)
+
+
+def _load_indicator_csv_from_ref(repo_root: Path, relative_path: str, source_ref: str) -> Optional[pd.DataFrame]:
+    try:
+        raw = subprocess.check_output(
+            ["git", "-C", str(repo_root), "show", f"{source_ref}:{relative_path}"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        )
+    except Exception:
+        return None
+    try:
+        frame = pd.read_csv(io.StringIO(raw))
+    except Exception:
+        return None
+    return _coerce_indicator_frame(frame)
+
+
+def load_region_frames(site_dir: Path, source_ref: str | None = None) -> List[RegionFrame]:
     """Load the best available indicator frame for each region."""
     frames: List[RegionFrame] = []
+    repo_root = site_dir.parent
     for key, label, candidates in REGION_SPECS:
         frame: Optional[pd.DataFrame] = None
         for candidate in candidates:
-            maybe = _load_indicator_csv(site_dir / candidate)
+            local_frame = _load_indicator_csv(site_dir / candidate)
+            ref_frame = None
+            if source_ref:
+                ref_frame = _load_indicator_csv_from_ref(repo_root, f"{site_dir.name}/{candidate}", source_ref)
+            if local_frame is None:
+                maybe = ref_frame
+            elif ref_frame is None:
+                maybe = local_frame
+            else:
+                local_end = pd.to_datetime(local_frame["date"].max(), errors="coerce")
+                ref_end = pd.to_datetime(ref_frame["date"].max(), errors="coerce")
+                maybe = ref_frame if pd.notna(ref_end) and (pd.isna(local_end) or ref_end > local_end) else local_frame
             if maybe is not None and not maybe.empty:
                 frame = maybe
                 break
@@ -363,9 +397,10 @@ def build_theory_figures(
     output_dir: Path,
     events_path: Path,
     start_date: str = "1998-01-01",
+    source_ref: str | None = None,
 ) -> List[Path]:
     """Generate all paper-ready figures used by the LaTeX note."""
-    region_frames = load_region_frames(site_dir)
+    region_frames = load_region_frames(site_dir, source_ref=source_ref)
     if not region_frames:
         return []
     events = load_dashboard_events(str(events_path))
@@ -391,7 +426,7 @@ def build_theory_figures(
             events,
             ("X_C", "loop_area"),
             title="Thermo-Credit Capacity and Dissipation Panels",
-            subtitle="X_C uses a trailing 4-quarter rolling median plus a light 2-quarter mean before the same winsorized median/MAD score with smooth asinh compression; policy and crisis windows reuse dashboard event definitions.",
+            subtitle="X_C here is the smoothed dashboard proxy, shown with the same winsorized median/MAD score and smooth asinh compression; the tuned implicit headroom score is summarized separately in the theory snapshot.",
             output_stem=output_dir / "theory_capacity_panels",
             start_date=plot_start,
         )
