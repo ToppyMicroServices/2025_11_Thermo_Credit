@@ -59,7 +59,9 @@ quantities should be computable from public data, tested by forecast value,
 and released in a form that others can recalculate. In this revision,
 region-specific reference parameters are treated as tunable values rather than
 fixed constants, and the note states the implicit relation and the calibration
-objective more directly.
+objective more directly. The credit split is also sharpened: the theory now
+distinguishes GDP-linked credit, construction credit, and credit used to buy
+existing assets such as land, housing, and financial claims.
 \end{abstract}
 
 \section{Problem Statement and Scope}
@@ -148,6 +150,30 @@ state. The coarse GDP-linked-versus-existing-asset split is then
   \label{eq:credit_partition}
 \end{equation}
 
+For empirical work, however, the two-way split is often still too coarse.
+Following the destination-of-credit logic, a more operational decomposition is
+\begin{equation}
+  C_t = C_t^G + C_t^B + C_t^E,
+  \label{eq:credit_three_way}
+\end{equation}
+where $C_t^G$ funds GDP-linked transactions such as working capital and
+business investment, $C_t^B$ funds construction and development, and $C_t^E$
+funds purchases of existing assets such as land, existing housing, or
+financial claims. The two-way quantities in \eqref{eq:credit_partition} can
+then be recovered as
+\begin{equation}
+  C_t^R = C_t^G + \lambda_B C_t^B,
+  \qquad
+  C_t^A = C_t^E + (1-\lambda_B) C_t^B,
+  \qquad
+  q_t = \frac{C_t^R}{C_t},
+  \label{eq:credit_partition_weighted}
+\end{equation}
+with $\lambda_B \in [0,1]$ representing the share of construction credit that
+behaves like current output formation rather than like collateral-driven asset
+inflation. This keeps the theory simple at the top level while allowing the
+measurement layer to treat construction as a genuine intermediate case.
+
 This partition share $q_t$ should not be confused with the entropy shares
 $\{q_i\}$ used below. The scalar $q_t$ classifies \emph{new credit flows}
 into GDP-linked and existing-asset destinations. By contrast, $\{q_i\}$
@@ -167,6 +193,13 @@ sectoral lending and loan-purpose data when available, (ii) proxy inference
 from housing, land, equity, investment, and stress variables when direct
 splits are incomplete, and (iii) latent-state estimation only after the
 reduced-form version is stable.
+
+The practical mapping should follow loan purpose rather than borrower labels
+alone. Credit to non-financial firms can still be asset-directed if it mainly
+funds land acquisition or leveraged purchases of existing property. Conversely,
+some real-estate credit is GDP-linked when it finances new building activity.
+This is why the loan-purpose map in \eqref{eq:credit_three_way} is more useful
+than a simple household-versus-firm split.
 
 % (Section break remains unchanged)
 \subsection{Monetary dispersion entropy}
@@ -305,6 +338,13 @@ irreversibility block. The reduced-form version used in the current v2 draft is
 \end{align}
 so that credit flowing into existing-asset transactions raises fragility while
 accumulated stress lowers next-period conversion efficiency.
+
+Under the three-way partition in \eqref{eq:credit_three_way}, the same idea can
+be written more explicitly by replacing $C_t^A$ with
+$C_t^E + (1-\lambda_B)C_t^B$ and replacing $C_t^R$ with
+$C_t^G + \lambda_B C_t^B$. The stress block is therefore meant to react most
+strongly to credit that supports prices of existing assets, not to all
+property-related credit indiscriminately.
 
 These expressions are not presented as a full structural law. They are a
 measurement-first bridge from theory to data. Existing diagnostics such as
@@ -899,7 +939,8 @@ The reduced-form version of Thermo Credit should be judged by a short list of
 predictive hypotheses rather than by conceptual elegance alone:
 \begin{itemize}
   \item \textbf{H1.} Lower $q_t$ should predict stronger asset-price
-        acceleration before it predicts stronger real growth.
+        acceleration, especially in land, housing, and other existing-asset
+        markets, before it predicts stronger real growth.
   \item \textbf{H2.} Higher $C_t$ with lower $q_t$ should show weaker
         pass-through to inflation and GDP-linked activity than equally large
         credit expansions with higher $q_t$.
@@ -952,8 +993,8 @@ In plain language, this block does three jobs. Equation
 \eqref{eq:implicit_xc} says that headroom is not observed directly. We infer
 it from output, capacity, and entropy after we choose a regional reference
 point. Equation \eqref{eq:implicit_eta} says that efficiency should fall when
-asset-directed credit and stress become too strong. Equation
-\eqref{eq:implicit_stress} says that fragility should rise when asset-directed
+existing-asset credit and stress become too strong. Equation
+\eqref{eq:implicit_stress} says that fragility should rise when existing-asset
 credit keeps building up, and should ease when credit moves back to
 GDP-linked uses.
 
@@ -1027,7 +1068,9 @@ This construction is intentionally modest. Key limitations include:
         $q_t$ must be proxy-estimated or treated as a latent state, so reported
         results should separate direct observations from inferred quantities.
         This matters especially for construction credit, which often sits
-        between GDP-linked and existing-asset uses.
+        between GDP-linked and existing-asset uses. In practice the weighting
+        parameter $\lambda_B$ is itself part of identification rather than a
+        universal constant.
 
   \item \textbf{Scaling conventions.} Constants such as $k$ are
         conventional. Report normalized metrics and sensitivity checks.

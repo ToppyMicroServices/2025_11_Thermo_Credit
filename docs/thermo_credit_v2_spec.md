@@ -47,6 +47,23 @@ C_t^R = q_t C_t
 C_t^A = (1 - q_t) C_t
 ```
 
+Operational refinement:
+
+```text
+C_t = C_t^G + C_t^B + C_t^E
+
+C_t^R = C_t^G + lambda_B C_t^B
+C_t^A = C_t^E + (1 - lambda_B) C_t^B
+q_t   = C_t^R / C_t
+```
+
+Interpretation:
+
+- `C_t^G`: credit linked to GDP transactions
+- `C_t^B`: construction and development credit
+- `C_t^E`: credit used to buy existing assets
+- `lambda_B`: share of construction credit treated as GDP-linked
+
 Implementation note:
 
 - `Y_t^R` should remain the main real-economy outcome.
@@ -127,6 +144,7 @@ should be estimated in three layers.
 - sectoral lending flows,
 - household housing credit,
 - credit for new construction when available,
+- land and existing-property acquisition credit when available,
 - lending to non-financial firms,
 - commercial real-estate credit,
 - central-bank balance-sheet aggregates,
