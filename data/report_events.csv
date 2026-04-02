@@ -1,0 +1,15 @@
+key,label,start_date,end_date,regions,category,description
+dotcom,IT Bubble unwind,2000-03-01,2002-10-31,all,bubble,Nasdaq-led correction and post-bubble deleveraging phase.
+lehman,Lehman / Global Financial Crisis,2008-09-15,2009-06-30,all,crisis,Global funding stress after the Lehman Brothers collapse.
+jp_bank_cleanup,Japanese banking cleanup and deflation tail,1998-04-01,2003-03-31,jp,crisis,Balance-sheet repair and persistent deflation pressure after the late-1990s banking crisis.
+us_housing_boom,US housing and subprime credit boom,2004-06-01,2007-06-30,us,bubble,Housing-led leverage build-up before the subprime unwind.
+euro_debt,Euro sovereign debt crisis,2010-04-01,2012-07-31,eu,crisis,Euro-area sovereign and bank stress centered on peripheral spreads and balance-sheet repair.
+jp_quake,Great East Japan Earthquake,2011-03-11,2011-09-30,jp,crisis,Supply-chain disruption and reconstruction shock after the March 2011 earthquake and tsunami.
+eu_omt,Draghi / OMT stabilization window,2012-07-26,2014-06-30,eu,policy,Backstop signaling and sovereign-spread compression after the whatever-it-takes commitment.
+jp_qqe,Abenomics and QQE launch,2013-04-04,2014-12-31,jp,policy,Regime shift toward large-scale easing and reflation management under the Bank of Japan.
+us_qe1,Fed QE1 and crisis backstop,2008-11-25,2010-03-31,us,policy,Large-scale asset purchases and emergency support during the post-Lehman stabilization phase.
+eu_qe,ECB asset purchase expansion,2015-03-01,2018-12-31,eu,policy,Extended quantitative easing and balance-sheet support during low-inflation stagnation.
+jp_ycc,Yield Curve Control introduction,2016-09-21,2017-12-31,jp,policy,Early phase of yield-curve control as the BoJ shifted from quantity targets to rate-shape control.
+pandemic,COVID-19 pandemic shock,2020-02-01,2021-03-31,all,pandemic,Pandemic shutdowns and emergency stabilization policies.
+tightening,Inflation and rate shock,2022-02-01,2023-03-31,all,policy,Energy shock and rapid tightening cycle across major central banks.
+us_regional_banks,US regional bank stress,2023-03-01,2023-05-31,us,crisis,Deposit flight and funding stress around Silicon Valley Bank and peer institutions.
