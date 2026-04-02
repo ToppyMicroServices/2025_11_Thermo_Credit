@@ -238,6 +238,81 @@ def _plot_start_date() -> pd.Timestamp:
         return pd.Timestamp("2010-01-01")
 
 
+def load_dashboard_events(path: str) -> List[Dict[str, Any]]:
+    """Load the shared event registry used by the dashboard and theory figures."""
+    try:
+        frame = pd.read_csv(path)
+    except Exception:
+        return []
+    if frame.empty:
+        return []
+
+    events: List[Dict[str, Any]] = []
+    for _, row in frame.iterrows():
+        key = str(row.get("key") or "").strip()
+        label = str(row.get("label") or "").strip()
+        start = pd.to_datetime(row.get("start_date"), errors="coerce")
+        end = pd.to_datetime(row.get("end_date"), errors="coerce")
+        if not key or not label or pd.isna(start) or pd.isna(end):
+            continue
+
+        raw_regions = str(row.get("regions") or "all").strip().lower()
+        regions = [part.strip() for part in raw_regions.split(",") if part.strip()]
+        if not regions:
+            regions = ["all"]
+
+        events.append(
+            {
+                "key": key,
+                "label": label,
+                "start_date": start,
+                "end_date": end,
+                "regions": regions,
+                "category": str(row.get("category") or "").strip().lower(),
+                "description": str(row.get("description") or "").strip(),
+            }
+        )
+    events.sort(key=lambda item: (item["start_date"], item["end_date"], item["key"]))
+    return events
+
+
+def filter_dashboard_events(
+    events: Sequence[Dict[str, Any]],
+    *,
+    region_key: Optional[str] = None,
+    start_date: Optional[pd.Timestamp] = None,
+    end_date: Optional[pd.Timestamp] = None,
+) -> List[Dict[str, Any]]:
+    """Filter the shared event registry to the visible window for one region."""
+    region = (region_key or "").strip().lower()
+    window_start = pd.to_datetime(start_date, errors="coerce") if start_date is not None else pd.NaT
+    window_end = pd.to_datetime(end_date, errors="coerce") if end_date is not None else pd.NaT
+
+    visible: List[Dict[str, Any]] = []
+    for event in events:
+        regions = event.get("regions") or ["all"]
+        if region and "all" not in regions and region not in regions:
+            continue
+
+        start = pd.to_datetime(event.get("start_date"), errors="coerce")
+        end = pd.to_datetime(event.get("end_date"), errors="coerce")
+        if pd.isna(start) or pd.isna(end):
+            continue
+
+        visible_start = max(start, window_start) if pd.notna(window_start) else start
+        visible_end = min(end, window_end) if pd.notna(window_end) else end
+        if visible_start > visible_end:
+            continue
+
+        item = dict(event)
+        item["visible_start"] = visible_start
+        item["visible_end"] = visible_end
+        visible.append(item)
+
+    visible.sort(key=lambda item: (item["visible_start"], item["visible_end"], item["key"]))
+    return visible
+
+
 def _style_figure(fig) -> None:
     fig.update_layout(
         template="plotly_white",
@@ -685,5 +760,4 @@ def _selected_table(meta: Optional[Dict[str, Any]], header: str) -> str:
         return ""
     table = pd.DataFrame(rows).to_html(index=False, border=0, classes="mini", escape=True)
     return f"<h2>{html_lib.escape(header)} Selected Input Series</h2>{table}"
-
 
