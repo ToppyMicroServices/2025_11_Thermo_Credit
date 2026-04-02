@@ -50,6 +50,7 @@ data/*.csv
 !data/series_selected_eu.json
 !data/series_selected_us.json
 !data/sources.json
+!data/report_events.csv
 data/worldbank_cache_*.json
 !data/worldbank_cache_USA_NY.GDP.MKTP.CN.json
 !data/worldbank_cache_JPN_NY.GDP.MKTP.CN.json
