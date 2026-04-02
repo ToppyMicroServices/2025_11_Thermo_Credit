@@ -1,7 +1,7 @@
 import os
 import json
 import html as html_lib
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 import numpy as np
 import pandas as pd
@@ -760,4 +760,3 @@ def _selected_table(meta: Optional[Dict[str, Any]], header: str) -> str:
         return ""
     table = pd.DataFrame(rows).to_html(index=False, border=0, classes="mini", escape=True)
     return f"<h2>{html_lib.escape(header)} Selected Input Series</h2>{table}"
-
