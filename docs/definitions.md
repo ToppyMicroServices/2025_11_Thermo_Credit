@@ -11,6 +11,10 @@ estimation pipeline is added.
 | `q_t` | GDP-linked credit share | proxy / latent | share in `[0, 1]` | Share of `C_t` flowing to GDP-linked transactions rather than existing-asset transactions | not yet implemented |
 | `C_t^R` | GDP-linked credit flow | derived | local currency per period | `q_t C_t` | not yet implemented |
 | `C_t^A` | Existing-asset credit flow | derived | local currency per period | `(1 - q_t) C_t` | not yet implemented |
+| `C_t^G` | GDP-transaction credit | observed / latent | local currency per period | Credit tied to current production, income, and business spending | not yet implemented |
+| `C_t^B` | Construction credit | observed / latent | local currency per period | Credit for new building and development; intermediate between GDP-linked and asset-linked uses | not yet implemented |
+| `C_t^E` | Existing-asset credit | observed / latent | local currency per period | Credit used to acquire existing land, housing, CRE, or financial assets | not yet implemented |
+| `lambda_B` | Construction weight | calibrated / design | share in `[0, 1]` | Share of `C_t^B` treated as GDP-linked when forming `C_t^R` and `C_t^A` | not yet implemented |
 | `Y_t^N` | Nominal output proxy | observed / proxy | local currency | Nominal GDP or value-added proxy aligned to credit frequency | partial proxy available |
 | `Y_t^R` | Real activity proxy | observed / proxy | index or real currency | Real GDP, industrial production, or equivalent real-activity target | not yet implemented |
 | `P_t` | Price level / inflation | observed | index or percent | CPI, GDP deflator, or equivalent broad price measure | not yet implemented |
@@ -45,6 +49,9 @@ estimation pipeline is added.
   transactions, while `C_t^A` is credit mainly used to purchase existing
   assets. Construction credit may need a partial weight instead of a hard
   bucket.
+- A practical implementation can therefore start from the three-way split
+  `C_t = C_t^G + C_t^B + C_t^E` and only then collapse it into `C_t^R` and
+  `C_t^A` with `lambda_B`.
 - `S_t` can start as a weighted stress proxy built from existing spread and
   volatility series, then migrate to a latent state-space estimate later.
 - `eta_t`, `d_t`, and `sigma_t` are intentionally simple at first. Their role is
