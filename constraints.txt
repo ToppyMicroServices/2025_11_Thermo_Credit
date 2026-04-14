@@ -7,7 +7,7 @@ matplotlib==3.10.8
 seaborn==0.13.2
 requests==2.33.0
 kaleido==0.2.1
-Pillow==12.1.1
+Pillow==12.2.0
 pluggy==1.6.0
 
 # Tooling pinned for CI
