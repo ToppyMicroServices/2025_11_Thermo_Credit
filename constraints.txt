@@ -11,6 +11,6 @@ Pillow==12.1.1
 pluggy==1.6.0
 
 # Tooling pinned for CI
-pytest==8.4.2
+pytest==9.0.3
 pip-audit==2.7.3
 cyclonedx-bom==4.5.0
