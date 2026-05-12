@@ -733,7 +733,12 @@ def _augment_region_frame(frame: pd.DataFrame, effective_window: int, has_thermo
 def _figs_html(specs: List[ChartSpec]) -> str:
     parts: List[str] = []
     for fig, title, alt, interp in specs:
-        html = fig.to_html(full_html=False, include_plotlyjs="cdn")
+        html = fig.to_html(
+            full_html=False,
+            include_plotlyjs="cdn",
+            default_height="420px",
+            config={"responsive": True, "displaylogo": False},
+        )
         caption = f"<strong>{html_lib.escape(title)}</strong>"
         if interp:
             caption += f"<span class=\"chart-note-inline\">{html_lib.escape(interp)}</span>"
