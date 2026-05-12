@@ -738,9 +738,11 @@ def _figs_html(specs: List[ChartSpec]) -> str:
         if interp:
             caption += f"<span class=\"chart-note-inline\">{html_lib.escape(interp)}</span>"
         parts.append(
-            f"<figure aria-label=\"{html_lib.escape(alt)}\">{html}<figcaption>{caption}</figcaption></figure>"
+            f"<figure class=\"chart-card\" aria-label=\"{html_lib.escape(alt)}\">{html}<figcaption>{caption}</figcaption></figure>"
         )
-    return "".join(parts)
+    if not parts:
+        return ""
+    return "<div class=\"chart-grid\">" + "".join(parts) + "</div>"
 
 
 def _selected_table(meta: Optional[Dict[str, Any]], header: str) -> str:

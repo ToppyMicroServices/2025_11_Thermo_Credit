@@ -49,3 +49,27 @@ def test_raw_inputs_interpretation_is_static_message():
     text = mod._chart_interpretation("Raw Inputs (first=100)", None)
 
     assert "rebased to 100" in text
+
+
+def test_region_summary_items_render_as_cards():
+    mod = _load_report_module()
+
+    html = mod._summary_cards_html(["Latest date: 2025-03-31", "S_M: 12.3"])
+
+    assert 'class="summary-grid"' in html
+    assert 'class="summary-card tone-neutral"' in html
+    assert "Most recent observation" in html
+
+
+def test_coverage_summary_flags_stale_region():
+    mod = _load_report_module()
+    contexts = [
+        {"label": "Japan (JP)", "last_date": pd.Timestamp("2025-03-31")},
+        {"label": "Euro Area (EU)", "last_date": pd.Timestamp("2020-03-31")},
+    ]
+
+    html = mod._build_coverage_summary(contexts)
+
+    assert "Data freshness" in html
+    assert "tone-current" in html
+    assert "tone-stale" in html
