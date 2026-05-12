@@ -2,6 +2,7 @@ import importlib.util
 from pathlib import Path
 
 import pandas as pd
+import plotly.graph_objects as go
 
 
 def _load_report_module():
@@ -73,3 +74,14 @@ def test_coverage_summary_flags_stale_region():
     assert "Data freshness" in html
     assert "tone-current" in html
     assert "tone-stale" in html
+
+
+def test_figures_render_with_readable_height():
+    mod = _load_report_module()
+    fig = go.Figure(data=go.Scatter(x=[1, 2], y=[3, 4]))
+
+    html = mod._figs_html([(fig, "Example chart", "Example", "Short note")])
+
+    assert 'class="chart-grid"' in html
+    assert "height:420px" in html
+    assert '"displaylogo": false' in html
