@@ -37,6 +37,8 @@ from lib.report_helpers import (
     _figs_html,
     _filter_placeholders,
     _latest_numeric,
+    filter_dashboard_events,
+    load_dashboard_events,
     _load_csv,
     _load_json,
     _mask_to_ranges,
@@ -91,7 +93,21 @@ def _build_compare_context(region_ctxs: List[Dict[str, Any]]) -> Optional[Dict[s
         headline = (
             f"<p><strong>At the latest date</strong>{' (' + latest_dt_str + ')' if latest_dt_str else ''}, this section compares dispersion (S<sub>M</sub>), liquidity temperature (T<sub>L</sub>), loop dissipation, and remaining credit exergy (X<sub>C</sub>) across regions. The table below gives exact values.</p>"
         )
-        summary_html = headline + "<h2>Compare – Latest snapshot</h2>" + latest_df.to_html(index=False, border=0, classes="mini", float_format=lambda x: f"{x:.4g}")
+        snapshot = latest_df.to_html(index=False, border=0, classes="mini", float_format=lambda x: f"{x:.4g}")
+        highlight_rows: List[str] = []
+        for metric, label in [
+            ("S_M", "Highest dispersion"),
+            ("T_L", "Hottest liquidity"),
+            ("loop_area", "Largest loop"),
+            ("X_C", "Most headroom"),
+        ]:
+            if metric in latest_df.columns:
+                vals = pd.to_numeric(latest_df[metric], errors="coerce")
+                if vals.notna().any():
+                    row = latest_df.loc[vals.idxmax()]
+                    highlight_rows.append(_summary_card(label, str(row.get("Region", "")), f"{metric} = {float(row[metric]):.4g}"))
+        highlights = '<div class="summary-grid compare-highlights">' + "".join(highlight_rows) + "</div>" if highlight_rows else ""
+        summary_html = headline + highlights + "<h2>Compare – Latest snapshot</h2>" + _table_scroll(snapshot)
 
     raw_charts_html = _figs_html(compare_data.raw_figs)
     std_charts_html = _figs_html(compare_data.std_figs) if compare_data.std_figs else ""
@@ -165,6 +181,191 @@ def _role_label(role: str) -> str:
     return mapping.get(base, role)
 
 
+def _summary_card(label: str, value: str, detail: str, tone: str = "neutral") -> str:
+    return (
+        f'<article class="summary-card tone-{html_lib.escape(tone)}">'
+        f'<span class="summary-label">{html_lib.escape(label)}</span>'
+        f'<strong class="summary-value">{html_lib.escape(value)}</strong>'
+        f'<span class="summary-detail">{html_lib.escape(detail)}</span>'
+        "</article>"
+    )
+
+
+def _summary_cards_html(items: List[str]) -> str:
+    details = {
+        "Latest date": "Most recent observation in this panel.",
+        "S_M": "Dispersion and allocation spread.",
+        "T_L": "Liquidity temperature.",
+        "Loop area": "Dissipation along the policy loop.",
+        "U": "Stored potential.",
+        "X_C": "Remaining adjustment room.",
+        "F_C": "Free-energy proxy.",
+        "Maxwell gap": "Proxy consistency diagnostic.",
+        "First-law resid": "Energy-balance residual.",
+    }
+    cards: List[str] = []
+    for item in items:
+        label, _, value = item.partition(":")
+        label = label.strip()
+        value = value.strip() or "n/a"
+        display_label = "Latest" if label == "Latest date" else label
+        cards.append(_summary_card(display_label, value, details.get(label, "Latest reading.")))
+    if not cards:
+        return ""
+    return '<div class="summary-grid">' + "".join(cards) + "</div>"
+
+
+def _table_scroll(html: str) -> str:
+    return f'<div class="table-scroll">{html}</div>' if html else ""
+
+
+def _last_metric_row(ctx: Dict[str, Any]) -> Dict[str, Any]:
+    frame = ctx.get("frame")
+    if not isinstance(frame, pd.DataFrame) or frame.empty:
+        return {}
+    row = frame.iloc[-1]
+    out: Dict[str, Any] = {
+        "label": ctx.get("label", ""),
+        "date": row.get("date"),
+    }
+    for col in ("S_M", "T_L", "loop_area", "X_C", "F_C"):
+        if col in frame.columns:
+            try:
+                val = float(pd.to_numeric(frame[col], errors="coerce").dropna().iloc[-1])
+            except Exception:
+                val = np.nan
+            out[col] = val if np.isfinite(val) else np.nan
+    return out
+
+
+def _build_dashboard_summary(region_ctxs: List[Dict[str, Any]]) -> str:
+    rows = [_last_metric_row(ctx) for ctx in region_ctxs]
+    rows = [row for row in rows if row]
+    if not rows:
+        return ""
+
+    def leader(metric: str) -> Optional[Dict[str, Any]]:
+        vals = [row for row in rows if metric in row and pd.notna(row.get(metric))]
+        if not vals:
+            return None
+        return max(vals, key=lambda row: float(row[metric]))
+
+    def fmt(v: Any) -> str:
+        return f"{float(v):.4g}" if pd.notna(v) else "n/a"
+
+    latest_dates = [pd.to_datetime(row.get("date"), errors="coerce") for row in rows]
+    latest_dates = [d for d in latest_dates if pd.notna(d)]
+    latest_date = max(latest_dates).strftime("%Y-%m-%d") if latest_dates else "n/a"
+    stale = []
+    if latest_dates:
+        freshest = max(latest_dates)
+        for row in rows:
+            dt = pd.to_datetime(row.get("date"), errors="coerce")
+            if pd.notna(dt) and (freshest - dt).days > 365:
+                stale.append(str(row.get("label", "")))
+
+    cards = [_summary_card("Freshest data", latest_date, "Use this date as the report's current edge.")]
+    for metric, label, detail in [
+        ("S_M", "Highest dispersion", "Largest money/credit dispersion."),
+        ("T_L", "Hottest liquidity", "Highest liquidity temperature."),
+        ("loop_area", "Largest loop", "Most policy-loop dissipation."),
+        ("X_C", "Most headroom", "Largest remaining adjustment room."),
+    ]:
+        item = leader(metric)
+        if item:
+            cards.append(_summary_card(label, str(item.get("label", "")), f"{metric} = {fmt(item.get(metric))}"))
+    stale_note = ""
+    if stale:
+        stale_note = (
+            '<p class="note small"><strong>Data freshness note:</strong> '
+            + html_lib.escape(", ".join(stale))
+            + " is more than one year behind the freshest regional panel.</p>"
+        )
+    return (
+        '<section class="decision-summary"><h2>Read first</h2>'
+        '<p class="note">Start with these cards, then use the Compare tab for charts and each region tab for diagnostics.</p>'
+        '<div class="summary-grid">' + "".join(cards) + "</div>" + stale_note + "</section>"
+    )
+
+
+def _build_coverage_summary(region_ctxs: List[Dict[str, Any]]) -> str:
+    dated: List[Tuple[Dict[str, Any], pd.Timestamp]] = []
+    for ctx in region_ctxs:
+        dt = pd.to_datetime(ctx.get("last_date"), errors="coerce")
+        if pd.notna(dt):
+            dated.append((ctx, dt))
+    if not dated:
+        return ""
+    freshest = max(dt for _, dt in dated)
+    cards: List[str] = []
+    for ctx, dt in dated:
+        lag_days = int((freshest - dt).days)
+        if lag_days <= 45:
+            tone, label, note = "current", "Current", "Aligned with the freshest regional data in this report."
+        elif lag_days <= 365:
+            tone, label, note = "delayed", "Delayed", f"{lag_days} days behind the freshest region in this report."
+        else:
+            tone, label, note = "stale", "Stale", f"{lag_days} days behind the freshest region in this report."
+        cards.append(
+            '<article class="coverage-card tone-' + tone + '">'
+            '<div class="coverage-head">'
+            f'<span class="coverage-region">{html_lib.escape(str(ctx.get("label", "")))}</span>'
+            f'<span class="status-badge tone-{tone}">{label}</span>'
+            "</div>"
+            f'<strong class="coverage-date">{dt.strftime("%Y-%m-%d")}</strong>'
+            f'<p class="coverage-note">{html_lib.escape(note)}</p>'
+            "</article>"
+        )
+    return (
+        '<section class="coverage-summary"><h2>Data freshness</h2>'
+        '<p class="note small">This shows whether regional panels are aligned before comparing the charts.</p>'
+        '<div class="coverage-grid">' + "".join(cards) + "</div></section>"
+    )
+
+
+def _build_event_summary(region_ctxs: List[Dict[str, Any]]) -> str:
+    events = load_dashboard_events(os.path.join(DATA_DIR, "report_events.csv"))
+    if not events:
+        return ""
+    starts: List[pd.Timestamp] = []
+    ends: List[pd.Timestamp] = []
+    for ctx in region_ctxs:
+        frame = ctx.get("frame")
+        if isinstance(frame, pd.DataFrame) and "date" in frame.columns and not frame.empty:
+            dates = pd.to_datetime(frame["date"], errors="coerce").dropna()
+            if not dates.empty:
+                starts.append(dates.min())
+                ends.append(dates.max())
+    visible = filter_dashboard_events(
+        events,
+        start_date=min(starts) if starts else None,
+        end_date=max(ends) if ends else None,
+    )
+    if not visible:
+        return ""
+    cards: List[str] = []
+    for event in visible[:8]:
+        category = str(event.get("category") or "event").lower()
+        tone = category if category in {"bubble", "crisis", "pandemic", "policy"} else "event"
+        regions = ", ".join(str(x).upper() for x in event.get("regions", []) if x)
+        cards.append(
+            '<article class="event-card">'
+            '<div class="event-head">'
+            f'<span class="event-chip tone-{html_lib.escape(tone)}">{html_lib.escape(regions or "ALL")}</span>'
+            f'<span class="event-chip tone-{html_lib.escape(tone)}">{html_lib.escape(category.title())}</span>'
+            "</div>"
+            f'<strong class="event-title">{html_lib.escape(str(event.get("label", "")))}</strong>'
+            f'<span class="event-date">{event["start_date"].strftime("%Y-%m-%d")} to {event["end_date"].strftime("%Y-%m-%d")}</span>'
+            f'<p class="event-note">{html_lib.escape(str(event.get("description", "")))}</p>'
+            "</article>"
+        )
+    return (
+        '<details class="event-summary"><summary>Reference events</summary>'
+        '<p class="note small">Event bands are used as reading context for the visible chart window.</p>'
+        '<div class="event-grid">' + "".join(cards) + "</div></details>"
+    )
+
+
 def _build_inputs_summary(region_ctxs: List[Dict[str, Any]]) -> str:
     rows: List[str] = []
     for ctx in region_ctxs:
@@ -199,7 +400,7 @@ def _build_inputs_summary(region_ctxs: List[Dict[str, Any]]) -> str:
             rows.append(row_html)
     if not rows:
         return ""
-    return '<section class="inputs-summary"><h2>Inputs summary</h2>' + "".join(rows) + "</section>"
+    return '<details class="inputs-summary"><summary>Inputs summary</summary>' + "".join(rows) + "</details>"
 
 
 def _selected_summary_sentence(prefix: str, meta: Optional[Dict[str, Any]]) -> Optional[str]:
@@ -560,7 +761,7 @@ def _build_region_context(
         summary_items.append(f"Maxwell gap: {fmt(last_row.get('maxwell_gap'))}")
     if has_thermo and "firstlaw_resid" in local.columns:
         summary_items.append(f"First-law resid: {fmt(last_row.get('firstlaw_resid'))}")
-    summary_html = "<ul>" + "".join(f"<li>{html_lib.escape(item)}</li>" for item in summary_items) + "</ul>"
+    summary_html = _summary_cards_html(summary_items)
 
     try:
         last_sm = float(pd.to_numeric(local.get("S_M"), errors="coerce").dropna().iloc[-1]) if "S_M" in local.columns else None
@@ -663,14 +864,14 @@ def _build_region_context(
     if mini_cols:
         mini_tail = local[["date"] + mini_cols].tail(6).copy()
         mini_tail["date"] = mini_tail["date"].dt.strftime("%Y-%m-%d")
-        mini_html = mini_tail.to_html(index=False, border=0, classes="mini", escape=True)
+        mini_html = _table_scroll(mini_tail.to_html(index=False, border=0, classes="mini", escape=True))
 
     diagnostics_html = ""
     if has_derivatives and effective_window >= 3 and deriv_cols_present:
         diag_subset = local[["date"] + deriv_cols_present].dropna().tail(6)
         if not diag_subset.empty:
             diag_subset["date"] = diag_subset["date"].dt.strftime("%Y-%m-%d")
-            diagnostics_html += f"<h2>Diagnostics – Maxwell-like (window={effective_window})</h2>" + diag_subset.to_html(index=False, border=0, classes="mini", escape=True)
+            diagnostics_html += f"<h2>Diagnostics – Maxwell-like (window={effective_window})</h2>" + _table_scroll(diag_subset.to_html(index=False, border=0, classes="mini", escape=True))
             if out_of_spec_ranges:
                 spans = ", ".join([f"{s.strftime('%Y-%m-%d')} → {e.strftime('%Y-%m-%d')}" for s, e in out_of_spec_ranges])
                 diagnostics_html += f"<p class=\"note\"><strong>Out-of-spec / crisis / proxy invalid zone</strong>: {html_lib.escape(spans)}</p>"
@@ -683,7 +884,7 @@ def _build_region_context(
         if not fl.empty:
             fl = fl.rename(columns={"W_like": "minus_pV"})
             fl["date"] = fl["date"].dt.strftime("%Y-%m-%d")
-            diagnostics_html += "<h2>Diagnostics – First-law</h2>" + fl.to_html(index=False, border=0, classes="mini", escape=True)
+            diagnostics_html += "<h2>Diagnostics – First-law</h2>" + _table_scroll(fl.to_html(index=False, border=0, classes="mini", escape=True))
 
     selected_table_html = _selected_table(selected_meta, label)
 
@@ -871,8 +1072,10 @@ def main() -> None:
     )
     sources_html = _sources_table(sources_meta)
 
-    selected_summary_html = ""
     inputs_summary_html = _build_inputs_summary(regions)
+    dashboard_summary_html = _build_dashboard_summary(regions)
+    coverage_summary_html = _build_coverage_summary(regions)
+    event_summary_html = _build_event_summary(regions)
 
     # Optional: add a Compare tab if at least two regions have frames (even if one is placeholder, charts are gated by data presence)
     compare_ctx = _build_compare_context([ctx for ctx in regions if isinstance(ctx.get("frame"), pd.DataFrame)])
@@ -942,45 +1145,36 @@ def main() -> None:
     BRAND_TEXT = os.getenv("BRAND_TEXT", "#ffffff")
 
     style_block = (
-        "body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;line-height:1.5;margin:1.25rem;background:#f6f8fb}"
-        "h1{font-size:1.6rem;margin:0 0 .5rem}h2{font-size:1.1rem;margin:1.25rem 0 .5rem}.wrap{max-width:1100px;margin:0 auto}"
-        ".note{color:#333;margin:.5rem 0 1rem}.note.small{font-size:.85rem;color:#666}figure{margin:1rem 0}figcaption{font-size:.8rem;color:#555}"
-        ".region-summary{background:#fff;border:1px solid #eee;border-radius:8px;padding:.85rem 1rem}"
-        "table.mini{border-collapse:collapse;margin:.5rem 0}table.mini td,table.mini th{padding:.25rem .5rem;border-bottom:1px solid:#ddd;text-align:right}table.mini th:first-child,table.mini td:first-child{text-align:left}"
-        ".tabs{display:flex;gap:.5rem;margin:.75rem 0 1rem}.tabs button{border:1px solid #888;background:#f8f8f8;padding:.4rem .75rem;cursor:pointer;font-size:.8rem;border-radius:4px}.tabs button.active{background:#333;color:#fff}"
-        ".subtabs{display:flex;gap:.4rem;margin:.5rem 0 .75rem}.subtabs button{border:1px solid #aaa;background:#f6f7f9;padding:.3rem .6rem;font-size:.78rem;border-radius:999px;cursor:pointer}.subtabs button.active{background:#333;color:#fff;border-color:#333}"
-        ".compare-block .pane{display:none}.compare-block .pane.active{display:block}"
-        ".region{display:none}.region.active{display:block}"
-    ".chart-notes{background:#f1f4fb;border:1px solid #dce3f1;border-radius:6px;padding:.4rem .7rem;margin:.8rem 0}"
-    ".chart-note{display:flex;flex-direction:column;margin:.2rem 0;font-size:.82rem}"
-    ".chart-note strong{font-weight:600;color:#1b2a43}"
-    ".chart-note span{color:#333;font-size:.78rem}"
-    ".chart-note-inline{display:block;font-size:.78rem;color:#444;margin-top:.2rem}"
-        ".intro{background:#eef2f7;border:1px solid #dde4ee;padding:.85rem 1rem;border-radius:8px;margin:1rem 0}"
-        ".intro ul{margin:.5rem 0 .75rem;padding-left:1.1rem}"
-        ".intro li{margin:.3rem 0}"
-        "details{margin:.5rem 0}details>summary{cursor:pointer;list-style:none;font-weight:600}details>summary::-webkit-details-marker{display:none}"
-        ".inputs-summary{background:#fafafa;border:1px solid #eee;padding:.75rem;border-radius:6px;margin:.75rem 0 1rem}"
-        ".inputs-summary .inputs-row{margin:.35rem 0}.inputs-summary .region-tag{display:inline-block;background:#333;color:#fff;border-radius:3px;padding:.15rem .4rem;font-size:.75rem;margin-right:.4rem}"
-        ".inputs-summary .pill-list{display:inline}.inputs-summary .pill{display:inline-block;border:1px solid #ddd;background:#fff;border-radius:999px;padding:.15rem .5rem;margin:.15rem .25rem;font-size:.75rem}"
+        """
+:root{--page-bg:#f6f8fb;--surface:#fff;--surface-muted:#f8fafc;--border:#e5e7eb;--border-strong:#d8e0ed;--text:#18212b;--muted:#4b5563;--soft:#6b7280;--shadow:0 10px 30px rgba(15,23,42,.05);--radius:8px}
+html{background:var(--page-bg)}
+body{margin:1.25rem;background:var(--page-bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.55}
+h1{margin:0;font-size:1.9rem;line-height:1.15}h2{margin:0 0 .75rem;font-size:1.08rem;line-height:1.25}h3{margin:.2rem 0 .5rem;font-size:.92rem}p,ul{margin-top:0}.wrap{max-width:1120px;margin:0 auto}.page-header,.page-content{display:grid;gap:1rem}.page-header{margin-bottom:1rem}.page-subtitle,.note{color:var(--muted);margin:.35rem 0 .75rem}.note.small{color:var(--soft);font-size:.85rem}
+.intro,.decision-summary,.coverage-summary,.region-summary,.inputs-summary,.event-summary,.reference-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:1rem}
+.intro{background:#eef2f7;border-color:#dbe4f0}.intro ul{margin:.45rem 0 .75rem;padding-left:1.1rem}.intro li{margin:.25rem 0}
+.summary-grid,.coverage-grid,.event-grid,.chart-grid{display:grid;gap:.8rem}.summary-grid{grid-template-columns:repeat(auto-fit,minmax(148px,1fr));margin:.2rem 0 .6rem}.coverage-grid,.event-grid{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.summary-card,.coverage-card,.event-card{border:1px solid var(--border);border-radius:var(--radius);background:linear-gradient(180deg,#fff,var(--surface-muted));padding:.8rem .9rem}.summary-label,.coverage-region{display:block;color:var(--muted);font-size:.74rem;font-weight:700;letter-spacing:.02em;text-transform:uppercase}.summary-value,.coverage-date,.event-title{display:block;color:var(--text);font-size:1.02rem;line-height:1.2;overflow-wrap:anywhere}.summary-detail,.coverage-note,.event-note,.event-date{display:block;margin-top:.25rem;color:var(--soft);font-size:.78rem;line-height:1.4}
+.coverage-head,.event-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.45rem;margin-bottom:.45rem}.status-badge,.event-chip{display:inline-flex;align-items:center;border-radius:999px;padding:.16rem .52rem;border:1px solid transparent;font-size:.7rem;font-weight:700}.tone-current{border-color:#86efac!important;background:#f2fbf5!important;color:#166534!important}.tone-delayed{border-color:#fcd34d!important;background:#fffaf0!important;color:#92400e!important}.tone-stale,.tone-crisis{border-color:#fca5a5!important;background:#fff3f3!important;color:#991b1b!important}.tone-bubble{border-color:#fcd34d!important;background:#fef3c7!important;color:#92400e!important}.tone-pandemic{border-color:#93c5fd!important;background:#dbeafe!important;color:#1d4ed8!important}.tone-policy{border-color:#c4b5fd!important;background:#f3f0ff!important;color:#6d28d9!important}
+.table-scroll{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}table.mini{width:100%;border-collapse:collapse;margin:.5rem 0;background:transparent}table.mini th,table.mini td{padding:.42rem .58rem;border-bottom:1px solid var(--border);text-align:right;vertical-align:top;white-space:nowrap}table.mini th:first-child,table.mini td:first-child{text-align:left}
+.tabs,.subtabs{display:flex;flex-wrap:wrap;gap:.5rem}.tabs{margin:.1rem 0 .2rem}.tabs button,.subtabs button{border:1px solid #94a3b8;background:#f8fafc;color:var(--text);border-radius:999px;cursor:pointer;transition:background 120ms ease,color 120ms ease,border-color 120ms ease}.tabs button{padding:.5rem .9rem;font-size:.82rem}.subtabs button{padding:.34rem .72rem;font-size:.78rem}.tabs button.active,.subtabs button.active{border-color:#1f2937;background:#1f2937;color:#fff}.compare-block .pane,.region{display:none}.compare-block .pane.active,.region.active{display:block}
+.chart-grid{grid-template-columns:repeat(auto-fit,minmax(320px,1fr));margin-top:1rem}figure.chart-card{margin:0;padding:.75rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}.chart-card .plotly-graph-div{min-height:320px}figcaption{margin-top:.55rem;color:var(--muted);font-size:.8rem}.chart-notes{margin:.8rem 0;padding:.55rem .75rem;background:#f1f4fb;border:1px solid var(--border-strong);border-radius:var(--radius)}.chart-note{display:flex;flex-direction:column;gap:.12rem;margin:.28rem 0;font-size:.82rem}.chart-note strong{color:#1b2a43;font-weight:600}.chart-note span,.chart-note-inline{display:block;color:var(--muted);font-size:.78rem}
+details{margin:.5rem 0}details>summary{cursor:pointer;font-weight:700;list-style:none}details>summary::-webkit-details-marker{display:none}.inputs-row{margin:.4rem 0}.inputs-summary .region-tag{display:inline-block;margin-right:.45rem;padding:.18rem .45rem;border-radius:999px;background:#1f2937;color:#fff;font-size:.74rem;font-weight:600}.inputs-summary .pill-list{display:inline}.inputs-summary .pill{display:inline-block;margin:.15rem .25rem;padding:.18rem .56rem;border:1px solid var(--border);border-radius:999px;background:#fff;font-size:.75rem}
+""".strip()
         + f":root{{--brand-bg:{BRAND_BG};--brand-bg2:{BRAND_BG2};--brand-text:{BRAND_TEXT};}}"
-        ".brandbar{display:flex;align-items:center;gap:10px;margin-bottom:1rem;padding:.5rem .75rem;border-radius:8px;background:linear-gradient(90deg,var(--brand-bg),var(--brand-bg2));color:var(--brand-text)}"
-        ".brandbar img{height:40px;width:auto;border-radius:6px;box-shadow:0 0 0 1px rgba(255,255,255,.2)}"
-        ".brandbar .brand-name{font-weight:600;font-size:1rem;color:var(--brand-text)}"
-        ".footer-brand{margin-top:2rem;padding:.75rem;border-top:none;border-radius:8px;background:linear-gradient(90deg,var(--brand-bg),var(--brand-bg2));font-size:.75rem;color:var(--brand-text);display:flex;align-items:center;gap:10px}"
-        ".footer-brand img{height:32px;width:auto;border-radius:6px;box-shadow:0 0 0 1px rgba(255,255,255,.2)}"
+        + ".brandbar,.footer-brand{display:flex;align-items:center;gap:10px;color:var(--brand-text);background:linear-gradient(90deg,var(--brand-bg),var(--brand-bg2));border-radius:var(--radius)}.brandbar{padding:.6rem .85rem}.brandbar img,.footer-brand img{width:auto;border-radius:6px;box-shadow:0 0 0 1px rgba(255,255,255,.2)}.brandbar img{height:40px}.brandbar .brand-name{font-size:1rem;font-weight:600;color:var(--brand-text)}.footer-brand{margin-top:1.5rem;padding:.75rem .85rem;font-size:.75rem}.footer-brand img{height:32px}"
+        + "@media(max-width:720px){body{margin:.7rem}h1{font-size:1.55rem}.intro,.decision-summary,.coverage-summary,.region-summary,.inputs-summary,.event-summary,.brandbar,.footer-brand{padding:.8rem}.chart-grid{grid-template-columns:1fr}.tabs button{flex:1 1 44%;min-width:0}}"
     )
 
     head = ("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" "
             "content=\"width=device-width,initial-scale=1\"><title>Thermo-Credit Monitor</title><meta name=\"description\" "
             "content=\"Monthly thermo-credit indicators.\"><style>" + style_block + "</style>"
-            + "</head><body><div class=\"wrap\"><div class=\"brandbar\">"
+            + "</head><body><div class=\"wrap\"><header class=\"page-header\"><div class=\"brandbar\">"
             + (f'<img src="{logo_uri}" alt="Company Logo"/>' if logo_uri else "")
-            + '<span class="brand-name">ToppyMicroServices</span></div><h1>Thermo-Credit Monitor</h1><p class="note">Interactive charts with summary & fallbacks.</p>')
+            + '<span class="brand-name">ToppyMicroServices</span></div><div class="page-hero"><h1>Thermo-Credit Monitor</h1><p class="page-subtitle">Interactive charts with summary, interpretations, and fallbacks.</p></div></header>')
 
     intro_html = (
-        '<section class="intro">'
-        '<h2>What this page shows</h2>'
+        '<details class="intro">'
+        '<summary>How to read this dashboard</summary>'
         '<p>This dashboard tracks monthly thermo-credit indicators for Japan, the Euro Area, and the US. '
         'It is meant to answer very simple questions:</p>'
         '<ul>'
@@ -997,10 +1191,25 @@ def main() -> None:
         '</ul>'
         '<p>Values here are <strong>experimental</strong> and follow the Thermo-Credit v0.x spec. '
         'They are for research and discussion, not for trading or regulatory use.</p>'
-        '</section>'
+        '</details>'
     )
 
-    page_body = intro_html + selected_summary_html + inputs_summary_html + tabs_html + regions_html + noscript + sources_html + defs_html + formulas_html
+    page_body = (
+        '<main class="page-content">'
+        + dashboard_summary_html
+        + coverage_summary_html
+        + tabs_html
+        + regions_html
+        + intro_html
+        + inputs_summary_html
+        + event_summary_html
+        + noscript
+        + sources_html
+        + '<section class="reference-panel">'
+        + defs_html
+        + formulas_html
+        + '</section></main>'
+    )
     script_block = ("\n<script>(function(){const tabs=[...document.querySelectorAll('.tabs button')];if(tabs.length){"
                     "tabs.forEach(btn=>btn.addEventListener('click',()=>{tabs.forEach(x=>x.classList.remove('active'));btn.classList.add('active');"
                     "const tgt=btn.getAttribute('data-target');document.querySelectorAll('.region').forEach(r=>r.classList.remove('active'));"
@@ -1032,9 +1241,9 @@ def main() -> None:
     month_head = ("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" "
                   f"content=\"width=device-width,initial-scale=1\"><title>Thermo-Credit Monitor – {month_key}</title><meta name=\"description\" "
                   "content=\"Monthly thermo-credit indicators.\"><style>" + style_block + "</style>"
-                  + "</head><body><div class=\"wrap\"><div class=\"brandbar\">"
+                  + "</head><body><div class=\"wrap\"><header class=\"page-header\"><div class=\"brandbar\">"
                   + (f'<img src="{logo_uri}" alt="Company Logo"/>' if logo_uri else "")
-                  + '<span class="brand-name">ToppyMicroServices</span></div><h1>Thermo-Credit Monitor</h1><p class="note">Interactive charts with summary & fallbacks.</p>')
+                  + '<span class="brand-name">ToppyMicroServices</span></div><div class="page-hero"><h1>Thermo-Credit Monitor</h1><p class="page-subtitle">Interactive charts with summary, interpretations, and fallbacks.</p></div></header>')
     month_html = month_head + page_body + '<div class="footer-brand">' + (f'<img src="{logo_uri}" alt="Company Logo"/>' if logo_uri else "") + '<span>© ' + datetime.utcnow().strftime('%Y') + ' ToppyMicroServices</span></div></div>' + script_block
     with open(os.path.join(month_dir, "index.html"), "w", encoding="utf-8") as fp:
         fp.write(month_html)
