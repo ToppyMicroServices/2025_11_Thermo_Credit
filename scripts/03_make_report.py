@@ -96,10 +96,10 @@ def _build_compare_context(region_ctxs: List[Dict[str, Any]]) -> Optional[Dict[s
         snapshot = latest_df.to_html(index=False, border=0, classes="mini", float_format=lambda x: f"{x:.4g}")
         highlight_rows: List[str] = []
         for metric, label in [
-            ("S_M", "Highest dispersion"),
-            ("T_L", "Hottest liquidity"),
-            ("loop_area", "Largest loop"),
-            ("X_C", "Most headroom"),
+            ("S_M", "Dispersion peak"),
+            ("T_L", "Liquidity peak"),
+            ("loop_area", "Loop peak"),
+            ("X_C", "Headroom peak"),
         ]:
             if metric in latest_df.columns:
                 vals = pd.to_numeric(latest_df[metric], errors="coerce")
@@ -264,12 +264,12 @@ def _build_dashboard_summary(region_ctxs: List[Dict[str, Any]]) -> str:
             if pd.notna(dt) and (freshest - dt).days > 365:
                 stale.append(str(row.get("label", "")))
 
-    cards = [_summary_card("Freshest data", latest_date, "Use this date as the report's current edge.")]
+    cards = [_summary_card("Latest observation", latest_date, "Freshest regional panel.")]
     for metric, label, detail in [
-        ("S_M", "Highest dispersion", "Largest money/credit dispersion."),
-        ("T_L", "Hottest liquidity", "Highest liquidity temperature."),
-        ("loop_area", "Largest loop", "Most policy-loop dissipation."),
-        ("X_C", "Most headroom", "Largest remaining adjustment room."),
+        ("S_M", "Dispersion peak", "Largest money/credit dispersion."),
+        ("T_L", "Liquidity peak", "Highest liquidity temperature."),
+        ("loop_area", "Loop peak", "Most policy-loop dissipation."),
+        ("X_C", "Headroom peak", "Largest remaining adjustment room."),
     ]:
         item = leader(metric)
         if item:
@@ -282,9 +282,9 @@ def _build_dashboard_summary(region_ctxs: List[Dict[str, Any]]) -> str:
             + " is more than one year behind the freshest regional panel.</p>"
         )
     return (
-        '<section class="decision-summary"><h2>Read first</h2>'
-        '<p class="note">Start with these cards, then use the Compare tab for charts and each region tab for diagnostics.</p>'
-        '<div class="summary-grid">' + "".join(cards) + "</div>" + stale_note + "</section>"
+        '<section class="decision-summary">'
+        '<div class="section-heading"><span class="section-kicker">Overview</span><h2>Current signal</h2></div>'
+        '<div class="summary-grid kpi-grid">' + "".join(cards) + "</div>" + stale_note + "</section>"
     )
 
 
@@ -301,11 +301,11 @@ def _build_coverage_summary(region_ctxs: List[Dict[str, Any]]) -> str:
     for ctx, dt in dated:
         lag_days = int((freshest - dt).days)
         if lag_days <= 45:
-            tone, label, note = "current", "Current", "Aligned with the freshest regional data in this report."
+            tone, label, note = "current", "Current", "Freshest panel."
         elif lag_days <= 365:
-            tone, label, note = "delayed", "Delayed", f"{lag_days} days behind the freshest region in this report."
+            tone, label, note = "delayed", "Delayed", f"{lag_days} days lag."
         else:
-            tone, label, note = "stale", "Stale", f"{lag_days} days behind the freshest region in this report."
+            tone, label, note = "stale", "Stale", f"{lag_days} days lag."
         cards.append(
             '<article class="coverage-card tone-' + tone + '">'
             '<div class="coverage-head">'
@@ -317,8 +317,8 @@ def _build_coverage_summary(region_ctxs: List[Dict[str, Any]]) -> str:
             "</article>"
         )
     return (
-        '<section class="coverage-summary"><h2>Data freshness</h2>'
-        '<p class="note small">This shows whether regional panels are aligned before comparing the charts.</p>'
+        '<section class="coverage-summary">'
+        '<div class="section-heading"><span class="section-kicker">Coverage</span><h2>Data window</h2></div>'
         '<div class="coverage-grid">' + "".join(cards) + "</div></section>"
     )
 
@@ -1233,23 +1233,24 @@ def main() -> None:
         ".inputs-summary .inputs-row{margin:.35rem 0}.inputs-summary .region-tag{display:inline-block;background:#333;color:#fff;border-radius:3px;padding:.15rem .4rem;font-size:.75rem;margin-right:.4rem}"
         ".inputs-summary .pill-list{display:inline}.inputs-summary .pill{display:inline-block;border:1px solid #ddd;background:#fff;border-radius:999px;padding:.15rem .5rem;margin:.15rem .25rem;font-size:.75rem}"
         """
-:root{--page-bg:#f6f8fb;--surface:#fff;--surface-muted:#f8fafc;--border:#e5e7eb;--border-strong:#d8e0ed;--text:#18212b;--muted:#4b5563;--soft:#6b7280;--shadow:0 10px 30px rgba(15,23,42,.05);--radius:8px}
+:root{--page-bg:#f4f6f8;--surface:#fff;--surface-muted:#f8fafc;--ink:#101828;--accent:#0f766e;--border:#dfe4ea;--border-strong:#cbd5e1;--text:#111827;--muted:#475467;--soft:#667085;--shadow:0 12px 28px rgba(16,24,40,.07);--radius:8px}
+*,*::before,*::after{box-sizing:border-box}
 html{background:var(--page-bg)}
-body{margin:1.25rem;background:var(--page-bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.55}
-h1{margin:0;font-size:1.9rem;line-height:1.15}h2{margin:0 0 .75rem;font-size:1.08rem;line-height:1.25}h3{margin:.2rem 0 .5rem;font-size:.92rem}p,ul{margin-top:0}.wrap{max-width:1120px;margin:0 auto}.page-header,.page-content{display:grid;gap:1rem}.page-header{margin-bottom:1rem}.page-subtitle,.note{color:var(--muted);margin:.35rem 0 .75rem}.note.small{color:var(--soft);font-size:.85rem}
-.intro,.decision-summary,.coverage-summary,.region-summary,.inputs-summary,.event-summary,.reference-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:1rem}
-.intro{background:#eef2f7;border-color:#dbe4f0}.intro ul{margin:.45rem 0 .75rem;padding-left:1.1rem}.intro li{margin:.25rem 0}
-.summary-grid,.coverage-grid,.event-grid,.chart-grid{display:grid;gap:.8rem}.summary-grid{grid-template-columns:repeat(auto-fit,minmax(148px,1fr));margin:.2rem 0 .6rem}.coverage-grid,.event-grid{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
-.summary-card,.coverage-card,.event-card{border:1px solid var(--border);border-radius:var(--radius);background:linear-gradient(180deg,#fff,var(--surface-muted));padding:.8rem .9rem}.summary-label,.coverage-region{display:block;color:var(--muted);font-size:.74rem;font-weight:700;letter-spacing:.02em;text-transform:uppercase}.summary-value,.coverage-date,.event-title{display:block;color:var(--text);font-size:1.02rem;line-height:1.2;overflow-wrap:anywhere}.summary-detail,.coverage-note,.event-note,.event-date{display:block;margin-top:.25rem;color:var(--soft);font-size:.78rem;line-height:1.4}
-.coverage-head,.event-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.45rem;margin-bottom:.45rem}.status-badge,.event-chip{display:inline-flex;align-items:center;border-radius:999px;padding:.16rem .52rem;border:1px solid transparent;font-size:.7rem;font-weight:700}.tone-current{border-color:#86efac!important;background:#f2fbf5!important;color:#166534!important}.tone-delayed{border-color:#fcd34d!important;background:#fffaf0!important;color:#92400e!important}.tone-stale,.tone-crisis{border-color:#fca5a5!important;background:#fff3f3!important;color:#991b1b!important}.tone-bubble{border-color:#fcd34d!important;background:#fef3c7!important;color:#92400e!important}.tone-pandemic{border-color:#93c5fd!important;background:#dbeafe!important;color:#1d4ed8!important}.tone-policy{border-color:#c4b5fd!important;background:#f3f0ff!important;color:#6d28d9!important}
+body{margin:0;overflow-x:hidden;background:var(--page-bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.5}
+h1{margin:0;font-size:2.15rem;line-height:1.08}h2{margin:0;font-size:1.05rem;line-height:1.25}h3{margin:.2rem 0 .5rem;font-size:.92rem}p,ul{margin-top:0}.wrap{max-width:1180px;margin:0 auto;padding:1.35rem}.page-header,.page-content{display:grid;gap:1rem}.page-header{margin-bottom:1rem}.page-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:1rem;padding:.25rem 0 .85rem;border-bottom:1px solid var(--border)}.page-kicker,.section-kicker{display:block;color:var(--accent);font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.page-subtitle,.note{color:var(--muted);margin:.4rem 0 0;max-width:760px}.note.small{color:var(--soft);font-size:.85rem}
+.intro,.coverage-summary,.region-summary,.inputs-summary,.event-summary,.reference-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:1rem}.decision-summary{overflow:hidden;background:var(--ink);border:1px solid #1f2937;border-radius:var(--radius);box-shadow:var(--shadow);color:#fff;padding:1.05rem}
+.intro{background:#eef6f4;border-color:#cfe7e1}.intro ul{margin:.45rem 0 .75rem;padding-left:1.1rem}.intro li{margin:.25rem 0}.section-heading{display:grid;gap:.15rem;margin-bottom:.8rem}.decision-summary .section-kicker{color:#5eead4}.decision-summary h2{color:#fff}
+.summary-grid,.coverage-grid,.event-grid,.chart-grid{display:grid;gap:.8rem}.summary-grid{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin:0}.kpi-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.coverage-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.event-grid{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.summary-card,.coverage-card,.event-card{min-width:0;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);padding:.85rem .9rem}.decision-summary .summary-card{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.16)}.summary-label,.coverage-region{display:block;color:var(--muted);font-size:.72rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase}.decision-summary .summary-label{color:#a7f3d0}.summary-value,.coverage-date,.event-title{display:block;color:var(--text);font-size:1.02rem;font-weight:800;line-height:1.2;overflow-wrap:anywhere}.decision-summary .summary-value{color:#fff}.summary-detail,.coverage-note,.event-note,.event-date{display:block;margin-top:.25rem;color:var(--soft);font-size:.78rem;line-height:1.4}.decision-summary .summary-detail{color:#d1fae5}
+.coverage-head,.event-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.45rem;margin-bottom:.45rem}.status-badge,.event-chip{display:inline-flex;align-items:center;border-radius:999px;padding:.16rem .52rem;border:1px solid transparent;font-size:.7rem;font-weight:800}.tone-current{border-color:#86efac!important;background:#f2fbf5!important;color:#166534!important}.tone-delayed{border-color:#fcd34d!important;background:#fffaf0!important;color:#92400e!important}.tone-stale,.tone-crisis{border-color:#fca5a5!important;background:#fff3f3!important;color:#991b1b!important}.tone-bubble{border-color:#fcd34d!important;background:#fef3c7!important;color:#92400e!important}.tone-pandemic{border-color:#93c5fd!important;background:#dbeafe!important;color:#1d4ed8!important}.tone-policy{border-color:#c4b5fd!important;background:#f3f0ff!important;color:#6d28d9!important}
 .table-scroll{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}table.mini{width:100%;border-collapse:collapse;margin:.5rem 0;background:transparent}table.mini th,table.mini td{padding:.42rem .58rem;border-bottom:1px solid var(--border);text-align:right;vertical-align:top;white-space:nowrap}table.mini th:first-child,table.mini td:first-child{text-align:left}
-.tabs,.subtabs{display:flex;flex-wrap:wrap;gap:.5rem}.tabs{margin:.1rem 0 .2rem}.tabs button,.subtabs button{border:1px solid #94a3b8;background:#f8fafc;color:var(--text);border-radius:999px;cursor:pointer;transition:background 120ms ease,color 120ms ease,border-color 120ms ease}.tabs button{padding:.5rem .9rem;font-size:.82rem}.subtabs button{padding:.34rem .72rem;font-size:.78rem}.tabs button.active,.subtabs button.active{border-color:#1f2937;background:#1f2937;color:#fff}.compare-block .pane,.region{display:none}.compare-block .pane.active,.region.active{display:block}
+.tabs,.subtabs{display:flex;flex-wrap:wrap;gap:.45rem}.tabs{position:sticky;top:0;z-index:5;margin:.1rem 0 .2rem;padding:.45rem;background:rgba(244,246,248,.92);backdrop-filter:blur(10px);border:1px solid var(--border);border-radius:999px}.tabs button,.subtabs button{border:1px solid var(--border-strong);background:#fff;color:var(--text);border-radius:999px;cursor:pointer;transition:background 120ms ease,color 120ms ease,border-color 120ms ease}.tabs button{padding:.5rem .9rem;font-size:.82rem;font-weight:700}.subtabs button{padding:.34rem .72rem;font-size:.78rem;font-weight:700}.tabs button.active,.subtabs button.active{border-color:var(--ink);background:var(--ink);color:#fff}.compare-block .pane,.region{display:none}.compare-block .pane.active,.region.active{display:block}
 .chart-grid{grid-template-columns:1fr;margin-top:1rem}.compare-block .chart-grid{gap:1rem}figure.chart-card{margin:0;padding:1rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}.chart-card .plotly-graph-div{min-height:420px}figcaption{margin-top:.65rem;color:var(--muted);font-size:.82rem}.chart-notes{margin:.8rem 0;padding:.55rem .75rem;background:#f1f4fb;border:1px solid var(--border-strong);border-radius:var(--radius)}.chart-note{display:flex;flex-direction:column;gap:.12rem;margin:.28rem 0;font-size:.82rem}.chart-note strong{color:#1b2a43;font-weight:600}.chart-note span,.chart-note-inline{display:block;color:var(--muted);font-size:.78rem}
-details{margin:.5rem 0}details>summary{cursor:pointer;font-weight:700;list-style:none}details>summary::-webkit-details-marker{display:none}.inputs-row{margin:.4rem 0}.inputs-summary .region-tag{display:inline-block;margin-right:.45rem;padding:.18rem .45rem;border-radius:999px;background:#1f2937;color:#fff;font-size:.74rem;font-weight:600}.inputs-summary .pill-list{display:inline}.inputs-summary .pill{display:inline-block;margin:.15rem .25rem;padding:.18rem .56rem;border:1px solid var(--border);border-radius:999px;background:#fff;font-size:.75rem}
+details{margin:.5rem 0}details>summary{cursor:pointer;font-weight:800;list-style:none}details>summary::-webkit-details-marker{display:none}.inputs-row{margin:.4rem 0}.inputs-summary .region-tag{display:inline-block;margin-right:.45rem;padding:.18rem .45rem;border-radius:999px;background:var(--ink);color:#fff;font-size:.74rem;font-weight:700}.inputs-summary .pill-list{display:inline}.inputs-summary .pill{display:inline-block;margin:.15rem .25rem;padding:.18rem .56rem;border:1px solid var(--border);border-radius:999px;background:#fff;font-size:.75rem}
 """.strip()
         + f":root{{--brand-bg:{BRAND_BG};--brand-bg2:{BRAND_BG2};--brand-text:{BRAND_TEXT};}}"
-        + ".brandbar,.footer-brand{display:flex;align-items:center;gap:10px;color:var(--brand-text);background:linear-gradient(90deg,var(--brand-bg),var(--brand-bg2));border-radius:var(--radius)}.brandbar{padding:.6rem .85rem}.brandbar img,.footer-brand img{width:auto;border-radius:6px;box-shadow:0 0 0 1px rgba(255,255,255,.2)}.brandbar img{height:40px}.brandbar .brand-name{font-size:1rem;font-weight:600;color:var(--brand-text)}.footer-brand{margin-top:1.5rem;padding:.75rem .85rem;font-size:.75rem}.footer-brand img{height:32px}"
-        + "@media(max-width:720px){body{margin:.7rem}h1{font-size:1.55rem}.intro,.decision-summary,.coverage-summary,.region-summary,.inputs-summary,.event-summary,.brandbar,.footer-brand{padding:.8rem}.chart-grid{grid-template-columns:1fr}.tabs button{flex:1 1 44%;min-width:0}}"
+        + ".brandbar,.footer-brand{display:flex;align-items:center;gap:10px;color:var(--brand-text);background:linear-gradient(90deg,var(--brand-bg),var(--brand-bg2));border-radius:var(--radius)}.brandbar{min-height:52px;padding:.45rem .7rem}.brandbar img,.footer-brand img{width:auto;border-radius:6px;box-shadow:0 0 0 1px rgba(255,255,255,.2)}.brandbar img{height:36px}.brandbar .brand-name{font-size:.98rem;font-weight:800;color:var(--brand-text)}.brand-tag{margin-left:auto;border:1px solid rgba(255,255,255,.24);border-radius:999px;padding:.18rem .55rem;color:#d1fae5;font-size:.72rem;font-weight:800}.footer-brand{margin-top:1.5rem;padding:.75rem .85rem;font-size:.75rem}.footer-brand img{height:32px}"
+        + "@media(max-width:900px){.kpi-grid,.coverage-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:720px){.wrap{padding:.75rem}h1{font-size:1.6rem}.page-hero{display:block}.intro,.decision-summary,.coverage-summary,.region-summary,.inputs-summary,.event-summary,.brandbar,.footer-brand{padding:.8rem}.kpi-grid,.coverage-grid,.chart-grid{grid-template-columns:1fr}.tabs{border-radius:var(--radius)}.tabs button{flex:1 1 44%;min-width:0}}"
     )
 
     head = ("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" "
@@ -1257,7 +1258,7 @@ details{margin:.5rem 0}details>summary{cursor:pointer;font-weight:700;list-style
             "content=\"Monthly thermo-credit indicators.\"><style>" + style_block + "</style>"
             + "</head><body><div class=\"wrap\"><header class=\"page-header\"><div class=\"brandbar\">"
             + (f'<img src="{logo_uri}" alt="Company Logo"/>' if logo_uri else "")
-            + '<span class="brand-name">ToppyMicroServices</span></div><div class="page-hero"><h1>Thermo-Credit Monitor</h1><p class="page-subtitle">Interactive charts with summary, interpretations, and fallbacks.</p></div></header>')
+            + '<span class="brand-name">ToppyMicroServices</span><span class="brand-tag">Research dashboard</span></div><div class="page-hero"><div><span class="page-kicker">Thermo-credit monitor</span><h1>Regional Credit Thermodynamics</h1><p class="page-subtitle">Monthly indicators for dispersion, liquidity temperature, policy-loop dissipation, and credit exergy.</p></div></div></header>')
 
     intro_html = (
         '<details class="intro">'
@@ -1331,7 +1332,7 @@ details{margin:.5rem 0}details>summary{cursor:pointer;font-weight:700;list-style
                   "content=\"Monthly thermo-credit indicators.\"><style>" + style_block + "</style>"
                   + "</head><body><div class=\"wrap\"><header class=\"page-header\"><div class=\"brandbar\">"
                   + (f'<img src="{logo_uri}" alt="Company Logo"/>' if logo_uri else "")
-                  + '<span class="brand-name">ToppyMicroServices</span></div><div class="page-hero"><h1>Thermo-Credit Monitor</h1><p class="page-subtitle">Interactive charts with summary, interpretations, and fallbacks.</p></div></header>')
+                  + '<span class="brand-name">ToppyMicroServices</span><span class="brand-tag">Research dashboard</span></div><div class="page-hero"><div><span class="page-kicker">Thermo-credit monitor</span><h1>Regional Credit Thermodynamics</h1><p class="page-subtitle">Monthly indicators for dispersion, liquidity temperature, policy-loop dissipation, and credit exergy.</p></div></div></header>')
     month_html = month_head + page_body + '<div class="footer-brand">' + (f'<img src="{logo_uri}" alt="Company Logo"/>' if logo_uri else "") + '<span>© ' + datetime.utcnow().strftime('%Y') + ' ToppyMicroServices</span></div></div>' + script_block
     with open(os.path.join(month_dir, "index.html"), "w", encoding="utf-8") as fp:
         fp.write(month_html)
