@@ -71,7 +71,7 @@ def test_coverage_summary_flags_stale_region():
 
     html = mod._build_coverage_summary(contexts)
 
-    assert "Data freshness" in html
+    assert "Data window" in html
     assert "tone-current" in html
     assert "tone-stale" in html
 
