@@ -44,6 +44,7 @@ data/*.csv
 !data/allocation_q.csv
 !data/allocation_q_eu.csv
 !data/allocation_q_us.csv
+!data/credit_destination_jp.csv
 !data/gdp_eu.csv
 !data/gdp_us.csv
 !data/series_selected.json
@@ -79,3 +80,9 @@ tex/theory.tex
 theory.aux
 theory.out
 theory.pdf
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key
+.beads/proxieddb/
