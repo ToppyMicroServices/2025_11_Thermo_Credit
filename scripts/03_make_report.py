@@ -3,7 +3,7 @@ import sys
 import json
 import shutil
 import html as html_lib
-from datetime import datetime
+from datetime import datetime, timezone
 import base64
 from io import BytesIO
 from urllib.parse import urlparse
@@ -200,6 +200,64 @@ def _build_inputs_summary(region_ctxs: List[Dict[str, Any]]) -> str:
     if not rows:
         return ""
     return '<section class="inputs-summary"><h2>Inputs summary</h2>' + "".join(rows) + "</section>"
+
+
+def _build_freshness_summary(region_ctxs: List[Dict[str, Any]]) -> str:
+    rows: List[Tuple[str, Optional[datetime]]] = []
+    dated_rows: List[datetime] = []
+
+    for ctx in region_ctxs:
+        label = str(ctx.get("label") or "")
+        no_indicator_data = any("No indicator data" in str(item) for item in ctx.get("summary_items", []))
+        parsed = pd.to_datetime(ctx.get("last_date"), errors="coerce")
+        last_date = None if pd.isna(parsed) or no_indicator_data else parsed.to_pydatetime()
+        if last_date is not None:
+            dated_rows.append(last_date)
+        rows.append((label, last_date))
+
+    if not rows:
+        return ""
+
+    latest_across_regions = max(dated_rows) if dated_rows else None
+    checked_at = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    cards: List[str] = []
+
+    for label, last_date in rows:
+        safe_label = html_lib.escape(label)
+        if last_date is None:
+            badge = "Data gap"
+            badge_cls = "badge-gap"
+            date_text = "No data"
+            detail = "No indicator rows are available for this region in this run."
+        else:
+            date_text = last_date.strftime("%Y-%m-%d")
+            lag_days = (latest_across_regions - last_date).days if latest_across_regions else 0
+            if lag_days > 92:
+                badge = "Data gap"
+                badge_cls = "badge-gap"
+                detail = f"{lag_days} days behind the latest regional observation."
+            else:
+                badge = "Latest available"
+                badge_cls = "badge-ok"
+                detail = "Aligned with the latest regional observation." if lag_days == 0 else f"{lag_days} days behind the latest regional observation."
+
+        cards.append(
+            '<div class="freshness-card">'
+            f"<strong>{safe_label}</strong>"
+            f"<span class=\"freshness-date\">{html_lib.escape(date_text)}</span>"
+            f"<span class=\"freshness-badge {badge_cls}\">{html_lib.escape(badge)}</span>"
+            f"<span class=\"freshness-detail\">{html_lib.escape(detail)}</span>"
+            "</div>"
+        )
+
+    return (
+        '<section class="freshness-panel" aria-label="Data freshness">'
+        "<h2>Data freshness</h2>"
+        '<p class="note small">Latest available differs by region. Cross-region comparisons use each region\'s latest observation, not necessarily the same calendar month.</p>'
+        '<div class="freshness-grid">' + "".join(cards) + "</div>"
+        f'<p class="freshness-meta">Check date: {checked_at} UTC</p>'
+        "</section>"
+    )
 
 
 def _selected_summary_sentence(prefix: str, meta: Optional[Dict[str, Any]]) -> Optional[str]:
@@ -873,6 +931,7 @@ def main() -> None:
 
     selected_summary_html = ""
     inputs_summary_html = _build_inputs_summary(regions)
+    freshness_html = _build_freshness_summary(regions)
 
     # Optional: add a Compare tab if at least two regions have frames (even if one is placeholder, charts are gated by data presence)
     compare_ctx = _build_compare_context([ctx for ctx in regions if isinstance(ctx.get("frame"), pd.DataFrame)])
@@ -959,6 +1018,12 @@ def main() -> None:
         ".intro{background:#eef2f7;border:1px solid #dde4ee;padding:.85rem 1rem;border-radius:8px;margin:1rem 0}"
         ".intro ul{margin:.5rem 0 .75rem;padding-left:1.1rem}"
         ".intro li{margin:.3rem 0}"
+        ".freshness-panel{background:#fff;border:1px solid #dde4ee;border-radius:8px;padding:.85rem 1rem;margin:1rem 0}"
+        ".freshness-panel h2{margin-top:0}.freshness-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.6rem}"
+        ".freshness-card{border:1px solid #e1e6ef;border-radius:6px;background:#fafcff;padding:.6rem;display:flex;flex-direction:column;gap:.2rem}"
+        ".freshness-date{font-size:.9rem;color:#1b2a43}.freshness-detail{font-size:.78rem;color:#555}.freshness-meta{font-size:.78rem;color:#666;margin:.6rem 0 0}"
+        ".freshness-badge{display:inline-block;width:max-content;border-radius:999px;padding:.15rem .45rem;font-size:.72rem;font-weight:600}"
+        ".freshness-badge.badge-ok{background:#e9f7ef;color:#166534}.freshness-badge.badge-gap{background:#fff2cc;color:#92400e}"
         "details{margin:.5rem 0}details>summary{cursor:pointer;list-style:none;font-weight:600}details>summary::-webkit-details-marker{display:none}"
         ".inputs-summary{background:#fafafa;border:1px solid #eee;padding:.75rem;border-radius:6px;margin:.75rem 0 1rem}"
         ".inputs-summary .inputs-row{margin:.35rem 0}.inputs-summary .region-tag{display:inline-block;background:#333;color:#fff;border-radius:3px;padding:.15rem .4rem;font-size:.75rem;margin-right:.4rem}"
@@ -1000,7 +1065,7 @@ def main() -> None:
         '</section>'
     )
 
-    page_body = intro_html + selected_summary_html + inputs_summary_html + tabs_html + regions_html + noscript + sources_html + defs_html + formulas_html
+    page_body = intro_html + freshness_html + selected_summary_html + inputs_summary_html + tabs_html + regions_html + noscript + sources_html + defs_html + formulas_html
     script_block = ("\n<script>(function(){const tabs=[...document.querySelectorAll('.tabs button')];if(tabs.length){"
                     "tabs.forEach(btn=>btn.addEventListener('click',()=>{tabs.forEach(x=>x.classList.remove('active'));btn.classList.add('active');"
                     "const tgt=btn.getAttribute('data-target');document.querySelectorAll('.region').forEach(r=>r.classList.remove('active'));"
