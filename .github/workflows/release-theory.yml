@@ -130,7 +130,7 @@ jobs:
         run: |
           brew install ghostscript poppler qpdf
           python -m pip install --upgrade pip
-          pip install Pillow==12.1.1 pypdfium2==5.13.0
+          pip install Pillow==12.3.0 pypdfium2==5.13.0
 
       - name: Download Linux-built PDF
         uses: actions/download-artifact@v4
