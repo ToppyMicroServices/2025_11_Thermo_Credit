@@ -443,6 +443,12 @@ equal to the horizon and 2,000 fixed-seed replications. Its interval is for the
 mean difference in standardised squared-error loss, not for the difference in
 RMSE.
 
+The taxonomy, candidate feature, baseline, horizons, and minimum training size
+are fixed before each outcome comparison. At every forecast origin, fitting and
+standardisation use the training window only. A specification changed after its
+holdout loss is inspected is a new model version and requires later data; the
+same holdout cannot be reused as validation.
+
 \IfFileExists{generated/theory_destination_oos_incremental.tex}{
 \input{generated/theory_destination_oos_incremental.tex}
 }{%
@@ -531,9 +537,10 @@ same-population identities, explicit coverage and residual accounting,
 positive and net changes, the limited household comparison, and jointly
 reported alternative allocations. These checks support a reproducible
 borrower-composition bridge, not a destination or loan-purpose interpretation.
-Table 5 demonstrates one use of the bridge against a matched-stock baseline.
-Point loss improves in selected exploratory rows, but the current sample does
-not establish incremental predictability.
+Table~\ref{tab:destination_oos_incremental} demonstrates one use of the bridge
+against a matched-stock baseline. All main-table point losses are worse. One
+Appendix row improves point loss, but its interval crosses zero. The current
+sample therefore does not establish incremental predictability.
 
 \subsection*{Declarations}
 
@@ -577,6 +584,7 @@ Run \texttt{python scripts/18\_boj\_bridge\_validation.py} to populate
 \texttt{tex/generated/theory\_boj\_primary\_mapping.tex}.
 }
 
+\newpage
 \section*{Appendix B: Legacy Author-Defined Grouping}
 
 The earlier G/B/E specification is retained only for reproducibility and
@@ -590,6 +598,7 @@ Run \texttt{python scripts/18\_boj\_bridge\_validation.py} to populate
 \texttt{tex/generated/theory\_boj\_bridge\_mapping.tex}.
 }
 
+\newpage
 \section*{Appendix C: Asset-Boom Hypothesis and BOJ Balance-Sheet Acceleration}
 
 \paragraph{Exploratory asset-boom hypothesis.}

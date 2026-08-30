@@ -1,75 +1,80 @@
-# Thermo Credit v2 Definitions
+# Thermo Credit definitions
 
-This file fixes the operational meaning of the core v2 variables before a full
-estimation pipeline is added.
+This document separates variables that are observed in the current release from
+quantities that remain proxies, model diagnostics, or future latent states. The
+distinction is part of the claim, not a documentation detail.
 
-## Core Variables
+## Current measurement layer
 
-| Symbol | Name | Type | Units | Operational definition | Current repo status |
-| --- | --- | --- | --- | --- | --- |
-| `C_t` | Total new credit flow | observed / derived | local currency per period | New lending flow when available; otherwise first difference of nominal private credit stock | partial proxy available |
-| `q_t` | GDP-linked credit share | observed bridge / proxy | share in `[0, 1]` | `(C_t^G + lambda_B C_t^B) / C_t`; JP uses a BOJ sectoral bridge, EU/US are allocation-proxy negative-control panels | implemented, still not pure loan-purpose |
-| `C_t^R` | GDP-linked credit flow | derived | local currency per period | `C_t^G + lambda_B C_t^B` | implemented |
-| `C_t^A` | Existing-asset credit flow | derived | local currency per period | `C_t^E + (1 - lambda_B) C_t^B` | implemented |
-| `C_t^G` | GDP-transaction credit | observed bridge / proxy | local currency per period | JP positive sectoral credit-flow changes to productive sectors; EU/US allocation-proxy negative controls | implemented, partial |
-| `C_t^B` | Construction credit | observed bridge / proxy | local currency per period | JP positive construction-sector credit-flow changes; EU/US construction/development proxy controls | implemented, partial |
-| `C_t^E` | Existing-asset credit | observed bridge / proxy | local currency per period | JP positive finance/real-estate/household credit-flow changes; EU/US existing-asset proxy controls | implemented, partial |
-| `lambda_B` | Construction weight | calibrated / design | share in `[0, 1]` | Share of `C_t^B` treated as GDP-linked when forming `C_t^R` and `C_t^A` | implemented as fixed grid / config |
-| `Y_t^N` | Nominal output proxy | observed / proxy | local currency | Nominal GDP or value-added proxy aligned to credit frequency | partial proxy available |
-| `Y_t^R` | Real activity proxy | observed / proxy | index or real currency | Real GDP, industrial production, or equivalent real-activity target | not yet implemented |
-| `P_t` | Price level / inflation | observed | index or percent | CPI, GDP deflator, or equivalent broad price measure | not yet implemented |
-| `A_t` | Asset-price proxy | observed / proxy | index or currency | Housing, equity, or CRE price proxy; use balance-sheet stock when available | not yet implemented |
-| `S_t` | Stress / fragility state | proxy / latent | index or z-score | Summary of funding, spread, volatility, and macro-financial stress | partial proxy available |
+| Symbol | Meaning | Evidence class | Operational definition | Claim limit |
+| --- | --- | --- | --- | --- |
+| `L_t^P` | Included JP loan stock | Directly observed and reconciled | BOJ total loans of domestically licensed banks less local-government loans | Describes the lender population, not domestic borrower geography |
+| `Delta L_t^k` | Net stock change for bucket `k` | Derived from observed stocks | `L_t^k - L_(t-1)^k` after aggregation within a fixed bucket | Is not gross lending; repayments, write-offs, and reclassification remain mixed in |
+| `P_t^k` | Positive bucket-level stock change | Derived | `max(Delta L_t^k, 0)` | Is a measurement convention, not an observed origination flow |
+| `pi_(t,4)^k` | Four-quarter borrower-composition coordinate | Derived measurement bridge | Sum of `P_t^k` over four quarters divided by the common four-bucket sum | Identifies borrower composition only |
+| `q_t` | Primary JP scalar coordinate | Derived measurement bridge | `pi_(t,4)^NFB` under the Bezemer-Samarina-Zhang Japan crosswalk | Does not identify GDP-linked use, loan purpose, or final expenditure |
+| `g_(t,h)^P` | Matched credit-scale coordinate | Derived | `Delta_h log(L_t^P)` | Measures stock growth over the same included population |
 
-## Derived Thermo v2 Metrics
+The four primary JP buckets are non-financial business (`NFB`), financial
+business (`FIN`), property/mortgage (`PROP`), and household non-housing
+(`HHN`). Construction is in `NFB` in the primary crosswalk. The Werner-inspired
+and Muller-Verner mappings move it under published alternative classifications
+while keeping the included population fixed.
 
-| Symbol | Name | Type | Units | Operational definition | Current repo status |
-| --- | --- | --- | --- | --- | --- |
-| `eta_t` | Credit efficiency | derived | ratio | `Delta Y_t^N / C_t` or standardized equivalent | not yet implemented |
-| `d_t` | Asset bias | derived | ratio or score | `Delta A_t / C_t`; if only an index exists, use normalized `Delta log(A_t)` | not yet implemented |
-| `sigma_t` | Dissipation proxy | derived | ratio or score | Baseline proxy `max(0, 1 - eta_t)`; may later absorb rollover and turnover measures | not yet implemented |
+EU and US allocation shares use coarser regional proxies. They are provided as
+schema-portability panels and negative controls. They are not cross-country
+validation of the Japanese borrower-composition measure.
 
-## Existing Repo Thermo Diagnostics
+## Proposed structural layer
 
-| Symbol | Name | Type | Units | Operational definition | Current repo status |
-| --- | --- | --- | --- | --- | --- |
-| `S_M` | Monetary dispersion entropy | derived | scaled entropy | Entropy-like measure built from `data/allocation_q*.csv` | implemented |
-| `T_L` | Liquidity state index | derived | index | Monotone liquidity proxy from depth, turnover, and spreads | implemented |
-| `p_C` | Credit pressure | derived | index | Credit-capacity pressure gauge | implemented |
-| `U` | Internal-energy-like gauge | derived | currency-like gauge | Bookkeeping potential built from output / credit proxies | implemented |
-| `F_C` | Free-energy-like gauge | derived | currency-like gauge | `U - T_0 S_M` style monitor | implemented |
-| `X_C` | Exergy-like ceiling | derived | currency-like gauge | Usable credit-capacity proxy | implemented |
-| `loop_area` | Streaming loop area | derived | area / score | Open-path loop monitor in state space; closed-cycle inference requires explicit cycle windows | implemented |
+These variables state the model we would like to estimate. The current data do
+not identify them directly.
 
-## Identification Notes
+| Symbol | Meaning | Current status | Required evidence |
+| --- | --- | --- | --- |
+| `C_t` | Gross new credit flow | Partly proxied by stock changes | Originations and other flow adjustments on a common population |
+| `C_t^R` | Credit financing GDP-linked transactions | Not identified | Purpose-coded originations linked to new production or expenditure |
+| `C_t^A` | Credit financing purchases of existing assets | Not identified | Purpose-coded originations linked to existing property or financial assets |
+| `q_t^use` | `C_t^R / (C_t^R + C_t^A)` | Latent target | Joint borrower-and-use data or a separately validated latent-state model |
+| `Y_t^N` | Nominal output | Observed proxy available | Nominal GDP or value added aligned in units and release time |
+| `Y_t^R` | Real activity | Partial | Real GDP or production target with vintage-aware timing |
+| `P_t` | General prices | Partial | CPI or GDP deflator with a fixed release convention |
+| `A_t` | Asset prices | Partial proxy | Housing, equity, or commercial-property series matched to the credit concept |
+| `S_t` | Fragility state | Not identified | A validated observed composite or a separately tested state-space estimate |
 
-- `q_t` is the central credit-destination variable. It should not be conflated
-  with the entropy allocation buckets already used for `S_M`.
-- JP currently uses `data/credit_destination_jp.csv`, generated from BOJ LA01
-  sectoral outstanding-loan data. The baseline uses positive quarterly sectoral
-  stock changes, while net changes, sector-level deltas, and fixed-investment
-  new lending are retained as audit columns. This is stronger than an
-  allocation table proxy, but it is still not a pure loan-purpose panel for all
-  lending.
-- EU/US currently use allocation proxies as schema-portability and
-  negative-control panels, not as cross-country evidence for the
-  destination-share claim.
-- In the Werner-style reading used here, `C_t^R` is credit tied to GDP-linked
-  transactions, while `C_t^A` is credit mainly used to purchase existing
-  assets. Construction credit may need a partial weight instead of a hard
-  bucket.
-- A practical implementation can therefore start from the three-way split
-  `C_t = C_t^G + C_t^B + C_t^E` and only then collapse it into `C_t^R` and
-  `C_t^A` with `lambda_B`.
-- `S_t` can start as a weighted stress proxy built from existing spread and
-  volatility series, then migrate to a latent state-space estimate later.
-- `eta_t`, `d_t`, and `sigma_t` are intentionally simple at first. Their role is
-  to create a measurable bridge from theory to forecasting.
+When purpose data become available, a possible structural partition is
 
-## Falsifiability Notes
+```text
+C_t = C_t^R + C_t^A
+q_t^use = C_t^R / C_t
+```
 
-- If `q_t` does not improve forecast performance, the partition is too weak.
-- If `C_t^R` and `C_t^A` behave similarly in data, the model should collapse
-  back toward a simpler credit-volume design.
-- If `S_t` adds no downside signal beyond current repo indicators, the thermo
-  extension should be simplified.
+Construction should not be forced into either side without evidence. A split
+weight may be estimated only from training data or fixed from an external
+source before outcome evaluation.
+
+## Experimental dashboard diagnostics
+
+| Symbol | Meaning | Status | Interpretation boundary |
+| --- | --- | --- | --- |
+| `S_M` | Allocation-dispersion statistic | Implemented diagnostic | Depends on the configured allocation buckets; it is not thermodynamic entropy |
+| `T_L` | Liquidity-state index | Implemented diagnostic | A monotone market proxy, not physical temperature |
+| `p_C` | Credit-pressure index | Implemented diagnostic | A model transformation, not an observed market price |
+| `U` | Internal-energy-like gauge | Implemented diagnostic | Bookkeeping analogy only |
+| `F_C` | Free-energy-like gauge | Implemented diagnostic | Model transformation with reference parameters |
+| `X_C` | Exergy-like diagnostic | Implemented, not validated | Not a safety margin, policy threshold, or established forecast |
+| `loop_area` | Streaming open-path area | Implemented diagnostic | Measures path geometry; a closed-cycle claim needs a registered cycle window |
+
+## Falsification rules
+
+- If borrower composition does not improve a matched-scale out-of-sample
+  baseline, it must not be presented as a forecasting result.
+- If a calibrated `X_C` does not beat raw `X_C` and simple trailing-change
+  baselines on untouched data, calibration has not validated the diagnostic.
+- If `C_t^R` and `C_t^A` cannot be distinguished with purpose-coded data, the
+  structural two-flow model remains unidentified.
+- If `T_L`, `S_M`, or `loop_area` depend mainly on arbitrary preprocessing or
+  bucket choices, they should remain audit indicators or be removed.
+
+See `docs/identification_strategy.md` and `docs/calibration_protocol.md` for the
+rules used to preserve these boundaries.

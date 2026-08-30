@@ -165,7 +165,8 @@ def test_destination_oos_reports_focused_jp_models(tmp_path) -> None:
     assert "$\\Delta$ RMSE" not in tex
     assert "20-case minimum" in tex
     assert "24-case minimum" in tex
-    assert tex.count("long-term JGB yield change") >= 2
+    assert "long-term JGB yield change" in tex
+    assert "& Outcome &" not in tex
     assert "n/a" not in tex
     assert "BOJ balance-sheet acceleration" not in tex
     assert "nominal-GDP" not in tex

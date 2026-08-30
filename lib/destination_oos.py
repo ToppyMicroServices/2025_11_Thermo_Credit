@@ -1050,9 +1050,9 @@ def _render_destination_oos_table(
         rf"  \caption{{{caption}}}",
         rf"  \label{{{label}}}",
         r"  \resizebox{\textwidth}{!}{%",
-        r"  \begin{tabular}{@{}llllllll@{}}",
+        r"  \begin{tabular}{@{}llllll@{}}",
         r"    \toprule",
-        r"    $h$ & Outcome & Literature-anchored coordinate & Model & $N$ & Coordinate-aug. RMSE & Matched-stock RMSE & Mean $\Delta$ squared loss [95\% CI] \\",
+        r"    $h$ & Literature-anchored coordinate & $N$ & Coordinate-aug. RMSE & Matched-stock RMSE & Mean $\Delta$ squared loss [95\% CI] \\",
         r"    \midrule",
     ]
     if summary.empty:
@@ -1067,11 +1067,7 @@ def _render_destination_oos_table(
                 "    "
                 + f"{int(row['horizon_quarters'])}Q"
                 + " & "
-                + _latex_escape(row["target_label"])
-                + " & "
                 + _allocation_label_tex(row)
-                + " & "
-                + _model_label_tex(row)
                 + " & "
                 + _format_float(row["n"], 0)
                 + " & "
@@ -1182,9 +1178,13 @@ def render_destination_oos_tex(results: pd.DataFrame) -> str:
     summary = _main_table_rows(results)
     return _render_destination_oos_table(
         summary,
-        caption="Bridge application: JP borrower-composition pseudo-OOS loss comparisons.",
+        caption=(
+            "Bridge application: JP borrower-composition pseudo-OOS loss "
+            "comparison for the long-term JGB yield change."
+        ),
         label="tab:destination_oos_incremental",
         scope_note=(
+            "Each row augments matched-stock growth with the displayed coordinate. "
             "The table is a use case for the BOJ borrower-composition bridge, not a validated forecasting model."
         ),
         sensitivity_note=_training_sensitivity_note(
@@ -1201,6 +1201,7 @@ def render_destination_oos_asset_auxiliary_tex(results: pd.DataFrame) -> str:
         caption="Auxiliary BOJ balance-sheet acceleration pseudo-OOS check.",
         label="tab:destination_oos_asset_auxiliary",
         scope_note=(
+            "Each row augments matched-stock growth with the displayed coordinate. "
             "This appendix-only specification records the asset-acceleration check "
             "separately from the main borrower-composition application."
         ),

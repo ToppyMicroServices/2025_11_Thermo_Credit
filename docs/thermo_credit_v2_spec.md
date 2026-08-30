@@ -1,10 +1,12 @@
 # Thermo Credit v2 Specification
 
-Status: working draft
+Status: research roadmap, not a statement of current empirical results
 
-This document narrows Thermo Credit from a broad conceptual framework into a
-measurement-first macro-credit model. It complements
-`tex/theory.tex` rather than replacing it.
+This document describes a possible structural extension of the current
+measurement paper. Variables marked as future or latent here are not identified
+by the present repository. The current evidence and claim limits are defined in
+`tex/theory.tex`, `docs/definitions.md`, and
+`docs/identification_strategy.md`.
 
 ## 1. Problem Statement
 
@@ -27,12 +29,12 @@ The model should stay focused on three use cases:
 2. description of the GDP-linked versus existing-asset credit mix,
 3. forecast improvement relative to credit-volume-only models.
 
-## 2. Minimal State Vector
+## 2. Proposed Minimal State Vector
 
 The baseline state vector is intentionally small.
 
 - `C_t`: new credit flow over period `t`
-- `q_t in [0, 1]`: share of new credit flowing to GDP-linked transactions
+- `q_t^use in [0, 1]`: proposed share of new credit flowing to GDP-linked transactions
 - `1 - q_t`: share of new credit flowing to existing-asset transactions
 - `Y_t^N`: nominal output proxy used for accounting ratios
 - `Y_t^R`: real activity proxy used for forecast targets
@@ -43,8 +45,8 @@ The baseline state vector is intentionally small.
 Credit partition:
 
 ```text
-C_t^R = q_t C_t
-C_t^A = (1 - q_t) C_t
+C_t^R = q_t^use C_t
+C_t^A = (1 - q_t^use) C_t
 ```
 
 Operational refinement:
@@ -54,7 +56,7 @@ C_t = C_t^G + C_t^B + C_t^E
 
 C_t^R = C_t^G + lambda_B C_t^B
 C_t^A = C_t^E + (1 - lambda_B) C_t^B
-q_t   = C_t^R / C_t
+q_t^use = C_t^R / C_t
 ```
 
 Interpretation:
@@ -159,7 +161,7 @@ should be estimated in three layers.
 
 ### Level 3: Latent State
 
-- `q_t` as a latent partition share when direct loan-purpose data are incomplete,
+- `q_t^use` as a latent partition share when direct loan-purpose data are incomplete,
 - `S_t` as a latent fragility state estimated with a state-space model.
 
 Werner-style interpretation:
@@ -195,9 +197,9 @@ These should be retained, but repositioned as:
 
 Important distinction:
 
-`data/allocation_q*.csv` currently stores entropy allocation buckets used for
-`S_M`. Those shares are not yet the same object as the v2 real-versus-asset
-partition `q_t`.
+The manuscript's current `q_t` is the JP non-financial-business borrower
+coordinate. `data/allocation_q*.csv` stores separate entropy inputs. Neither is
+the proposed real-versus-asset use share `q_t^use`.
 
 ## 8. Empirical Design
 
