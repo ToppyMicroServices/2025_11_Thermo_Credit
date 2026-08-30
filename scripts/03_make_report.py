@@ -733,8 +733,8 @@ def _build_region_context(
         )
         _style_figure(fig)
         _apply_hover(fig, ".3f")
-    interp = _chart_interpretation("Loop Path Monitor", plot_df)
-    fig_specs.append((fig, "Loop Path Monitor", "Loop area", interp))
+        interp = _chart_interpretation("Loop Path Monitor", plot_df)
+        fig_specs.append((fig, "Loop Path Monitor", "Loop area", interp))
     # Exergy, free energy, internal energy, change in free energy, and surplus/shortage figures
     if not plot_df.empty:
         # Exergy X_C (if available)
@@ -838,8 +838,8 @@ def _build_region_context(
                     fig.add_vrect(x0=x0, x1=x1, fillcolor="gray", opacity=0.12, line_width=0, layer="below")
         except Exception:
             pass
-    interp = _chart_interpretation("Maxwell-like Test", plot_df)
-    fig_specs.append((fig, "Maxwell-like Test", "Derivatives", interp))
+        interp = _chart_interpretation("Maxwell-like Test", plot_df)
+        fig_specs.append((fig, "Maxwell-like Test", "Derivatives", interp))
     firstlaw_cols = [c for c in ["dU", "dU_pred", "firstlaw_resid"] if c in local.columns]
     if has_thermo and firstlaw_cols and not plot_df.empty:
         fig = px.line(

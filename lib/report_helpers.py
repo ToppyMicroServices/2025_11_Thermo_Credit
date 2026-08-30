@@ -351,15 +351,23 @@ def _style_figure(fig) -> None:
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="#072d4a",
         hoverlabel=dict(bgcolor="#02213b", bordercolor="#62d2ff", font_color="#f5fbff"),
+        title=dict(
+            x=0.0,
+            xanchor="left",
+            y=0.98,
+            yanchor="top",
+            font=dict(size=15, color="#f5fbff"),
+        ),
         legend=dict(
             orientation="h",
             y=1.02,
             yanchor="bottom",
             x=1.0,
             xanchor="right",
-            font=dict(size=11, color="#b4cad9"),
+            title=dict(text=""),
+            font=dict(size=10, color="#b4cad9"),
         ),
-        margin=dict(t=64, b=42, l=48, r=24),
+        margin=dict(t=112, b=42, l=48, r=24),
     )
     fig.update_xaxes(showgrid=False, linecolor="#35617e", tickcolor="#35617e", tickfont_color="#b4cad9")
     fig.update_yaxes(
