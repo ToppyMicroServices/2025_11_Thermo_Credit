@@ -239,6 +239,7 @@ figure.chart-card {
 
 .decision-summary,
 .coverage-summary,
+.freshness-panel,
 .region-summary,
 .intro,
 .inputs-summary,
@@ -252,6 +253,7 @@ figure.chart-card {
 
 .decision-summary,
 .coverage-summary,
+.freshness-panel,
 .region-summary,
 .reference-panel {
   padding: 1.55rem;
@@ -304,6 +306,61 @@ figure.chart-card {
 
 .coverage-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.freshness-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.freshness-card {
+  display: grid;
+  gap: 0.32rem;
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(2, 33, 59, 0.54);
+}
+
+.freshness-date {
+  overflow-wrap: anywhere;
+  color: var(--fg);
+  font-size: 1.08rem;
+  font-weight: 800;
+}
+
+.freshness-detail,
+.freshness-meta {
+  color: var(--soft);
+  font-size: 0.78rem;
+}
+
+.freshness-meta {
+  margin: 0.8rem 0 0;
+}
+
+.freshness-badge {
+  width: max-content;
+  padding: 0.2rem 0.58rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+
+.freshness-badge.badge-ok {
+  border-color: rgba(112, 225, 200, 0.42);
+  background: rgba(112, 225, 200, 0.09);
+  color: #bff8eb;
+}
+
+.freshness-badge.badge-gap {
+  border-color: rgba(255, 189, 105, 0.42);
+  background: rgba(255, 189, 105, 0.09);
+  color: #ffd8a7;
 }
 
 .event-grid {
@@ -784,7 +841,8 @@ details[open] > summary::after {
 
 .page-header,
 .decision-summary,
-.coverage-summary {
+.coverage-summary,
+.freshness-panel {
   animation: rise-in 0.55s ease both;
 }
 
@@ -793,6 +851,10 @@ details[open] > summary::after {
 }
 
 .coverage-summary {
+  animation-delay: 0.14s;
+}
+
+.freshness-panel {
   animation-delay: 0.14s;
 }
 
@@ -837,6 +899,7 @@ details[open] > summary::after {
 
   .decision-summary,
   .coverage-summary,
+  .freshness-panel,
   .region-summary,
   .reference-panel,
   .intro,
@@ -847,6 +910,7 @@ details[open] > summary::after {
 
   .kpi-grid,
   .coverage-grid,
+  .freshness-grid,
   .chart-grid {
     grid-template-columns: 1fr;
   }
@@ -880,6 +944,7 @@ details[open] > summary::after {
   .page-header,
   .decision-summary,
   .coverage-summary,
+  .freshness-panel,
   .region.active,
   .pane.active {
     animation: none !important;

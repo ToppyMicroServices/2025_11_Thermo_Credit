@@ -820,4 +820,7 @@ def _selected_table(meta: Optional[Dict[str, Any]], header: str) -> str:
     if not rows:
         return ""
     table = pd.DataFrame(rows).to_html(index=False, border=0, classes="mini", escape=True)
-    return f"<h2>{html_lib.escape(header)} Selected Input Series</h2>{table}"
+    return (
+        f"<h2>{html_lib.escape(header)} Selected Input Series</h2>"
+        f'<div class="table-scroll">{table}</div>'
+    )

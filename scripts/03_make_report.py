@@ -1224,9 +1224,8 @@ def main() -> None:
     sources_html = _sources_table(sources_meta)
 
     inputs_summary_html = _build_inputs_summary(regions)
-    freshness_html = _build_freshness_summary(regions)
     dashboard_summary_html = _build_dashboard_summary(regions)
-    coverage_summary_html = _build_coverage_summary(regions)
+    freshness_html = _build_freshness_summary(regions)
     event_summary_html = _build_event_summary(regions)
 
     # Optional: add a Compare tab if at least two regions have frames (even if one is placeholder, charts are gated by data presence)
@@ -1342,7 +1341,6 @@ def main() -> None:
         '<main class="page-content">'
         + dashboard_summary_html
         + freshness_html
-        + coverage_summary_html
         + intro_html
         + tabs_html
         + regions_html
