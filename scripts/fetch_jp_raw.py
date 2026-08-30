@@ -1,12 +1,22 @@
+#!/usr/bin/env python3
+"""Fetch the public FRED mirrors used by the Japan panel."""
+
+from __future__ import annotations
+
 import os
 import sys
 import time
+from pathlib import Path
 from typing import Tuple
-import pandas as pd
-import requests
 
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-DATA = os.path.join(ROOT, "data")
+
+ROOT = Path(__file__).resolve().parents[1]
+DATA = ROOT / "data"
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from lib.official_series import fetch_fred_series
+
 
 SERIES = [
     ("JPNASSETS", "BoJ Total Assets"),
@@ -14,46 +24,42 @@ SERIES = [
     ("IRLTLT01JPM156N", "Long-term JGB Yield"),
 ]
 
-FRED_API_KEY = os.getenv("FRED_API_KEY")
-FRED_API_URL = "https://api.stlouisfed.org/fred/series/observations"
+FRED_API_KEY = os.getenv("FRED_API_KEY", "")
+DATA.mkdir(parents=True, exist_ok=True)
 
-os.makedirs(DATA, exist_ok=True)
 
-def fetch_and_save(sid: str, start: str = "2012-01-01", sleep_sec: float = 0.6) -> Tuple[bool, str]:
-    if not FRED_API_KEY:
-        return False, "FRED_API_KEY not set"
-    params = {
-        "series_id": sid,
-        "api_key": FRED_API_KEY,
-        "file_type": "json",
-        "observation_start": start,
-        "observation_end": os.getenv("FRED_OBS_END", ""),
-    }
+def fetch_and_save(
+    series_id: str,
+    start: str = "2012-01-01",
+    sleep_sec: float = 0.6,
+) -> Tuple[bool, str]:
     try:
-        r = requests.get(FRED_API_URL, params=params, timeout=30)
-        r.raise_for_status()
-        js = r.json()
-        obs = js.get("observations", [])
-        out = pd.DataFrame(obs)
-        if out.empty:
-            return False, f"No observations for {sid}"
-        out = out.rename(columns={"date": "date", "value": "value"})
-        out["date"] = pd.to_datetime(out["date"], errors="coerce")
-        out["value"] = pd.to_numeric(out["value"], errors="coerce")
-        out = out.dropna(subset=["date", "value"]).sort_values("date")[['date','value']]
-        out.to_csv(os.path.join(DATA, f"{sid}.csv"), index=False)
-        time.sleep(sleep_sec)
-        return True, f"Saved data/{sid}.csv ({len(out)} rows)"
-    except Exception as e:
-        return False, f"Fetch failed for {sid}: {e}"
+        frame = fetch_fred_series(
+            series_id,
+            start=start,
+            end=os.getenv("FRED_OBS_END", ""),
+            api_key=FRED_API_KEY,
+        )
+        frame.to_csv(DATA / f"{series_id}.csv", index=False)
+        time.sleep(max(0.0, sleep_sec))
+        return True, f"Saved data/{series_id}.csv ({len(frame)} rows)"
+    except Exception as exc:
+        return False, f"Fetch failed for {series_id}: {exc}"
 
-if __name__ == "__main__":
+
+def main() -> int:
     start = os.getenv("JP_START", "2012-01-01")
     sleep_sec = float(os.getenv("FRED_SLEEP", "0.6"))
-    ok_any = False
-    for sid, title in SERIES:
-        ok, msg = fetch_and_save(sid, start=start, sleep_sec=sleep_sec)
-        print(("[OK]" if ok else "[ERR]"), sid, title, "-", msg)
-        ok_any = ok_any or ok
-    if not ok_any:
-        sys.exit(1)
+    ok_count = 0
+    for series_id, title in SERIES:
+        ok, message = fetch_and_save(series_id, start=start, sleep_sec=sleep_sec)
+        print(("[OK]" if ok else "[ERR]"), series_id, title, "-", message)
+        ok_count += int(ok)
+    if ok_count != len(SERIES):
+        print(f"[ERR] Refusing partial JP refresh ({ok_count}/{len(SERIES)} series updated).")
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

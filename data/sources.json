@@ -121,6 +121,17 @@
     "enabled": true
   },
   {
+    "id": "ECB_BSI_TOTAL_ASSETS",
+    "title": "Total assets of the Eurosystem, stocks",
+    "provider": "European Central Bank",
+    "country": "EU",
+    "frequency": "Monthly",
+    "units": "EUR millions",
+    "url": "https://data.ecb.europa.eu/data/datasets/BSI/BSI.M.U2.N.C.T00.A.1.Z5.0000.Z01.E",
+    "note": "ECB Data Portal series BSI.M.U2.N.C.T00.A.1.Z5.0000.Z01.E; current base and money-scale proxy replacing the FRED ECBASSETS mirror that ends in 2020",
+    "enabled": true
+  },
+  {
     "id": "CRDQJPAPABIS",
     "title": "BIS Private Non-financial Credit (Japan)",
     "provider": "BIS",

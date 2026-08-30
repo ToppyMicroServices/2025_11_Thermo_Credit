@@ -27,11 +27,10 @@ jobs:
         with:
           python-version: '3.11'
           cache: pip
-      - name: Install deps
-        run: pip install -r requirements.txt plotly pyyaml pandas numpy requests
-      - name: Prepare minimal data (no network)
+      - name: Install dependencies
         run: |
-          python scripts/ci_prepare_minimal_data.py
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -c constraints.txt
       - name: Prepare static site flags
         run: |
           mkdir -p site
@@ -40,15 +39,12 @@ jobs:
           touch site/.nojekyll
       - name: Configure Pages
         uses: actions/configure-pages@v5
-      - name: Build indicators (API→CSV→report)
+      - name: Build validated regional site
         env:
-          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
           TMS_BASE_URL: https://toppymicros.com/2025_11_Thermo_Credit
         run: |
-          python scripts/fetch_fred_series.py --start 1990-01-01 || true
-          python scripts/02_compute_indicators.py
-          python scripts/02_compute_indicators_eu.py
-          python scripts/02_compute_indicators_us.py
+          python scripts/02_compute_all_regions.py
+          python scripts/27_validate_site_data.py --min-rows 8 --max-age-days 550
           python scripts/03_make_report.py
       - name: List site contents
         run: |
@@ -59,9 +55,10 @@ jobs:
           set -e
           test -f site/report.html
           test -s site/indicators.csv
-          # EU/US indicators are required (deterministic via CI prep)
+          # All three regional panels must be present after the validated build.
           test -s site/indicators_eu.csv
           test -s site/indicators_us.csv
+          test -s site/data_manifest.json
       - name: Artifact size thresholds
         run: |
           set -e

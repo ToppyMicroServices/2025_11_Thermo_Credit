@@ -97,10 +97,10 @@ def _merge_direct_credit_destination(cred: pd.DataFrame, cfg: dict, region: str)
     if cred is None or cred.empty:
         return direct
     left = cred.copy()
-    left["date"] = pd.to_datetime(left["date"], errors="coerce")
-    direct["date"] = pd.to_datetime(direct["date"], errors="coerce")
-    left["__quarter"] = left["date"].dt.to_period("Q-DEC")
-    direct["__quarter"] = direct["date"].dt.to_period("Q-DEC")
+    left.loc[:, "date"] = pd.to_datetime(left["date"], errors="coerce")
+    direct.loc[:, "date"] = pd.to_datetime(direct["date"], errors="coerce")
+    left.loc[:, "__quarter"] = left["date"].dt.to_period("Q-DEC")
+    direct.loc[:, "__quarter"] = direct["date"].dt.to_period("Q-DEC")
     direct = direct.drop(columns=["date"]).drop_duplicates("__quarter", keep="last")
     merged = left.merge(direct, on="__quarter", how="left").drop(columns=["__quarter"])
     if "C_t" in merged.columns and "classified_positive_flow" in merged.columns:
@@ -228,7 +228,7 @@ def _ensure_headrooms(reg: pd.DataFrame) -> pd.DataFrame:
     for col, coeff in HEADROOM_DECAY.items():
         if col in df.columns:
             continue
-        df[col] = (base * (1 - coeff * pressure)).clip(lower=0)
+        df.loc[:, col] = (base * (1 - coeff * pressure)).clip(lower=0)
     return df
 
 
@@ -329,7 +329,7 @@ def _prepare_yield_fallback(yield_df: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame()
     try:
         y = yield_df.copy()
-        y["date"] = pd.to_datetime(y["date"])
+        y.loc[:, "date"] = pd.to_datetime(y["date"])
     except Exception:
         return pd.DataFrame()
     value_cols = [c for c in y.columns if c != "date"]
@@ -337,10 +337,10 @@ def _prepare_yield_fallback(yield_df: pd.DataFrame) -> pd.DataFrame:
         return pd.DataFrame()
     col = value_cols[0]
     try:
-        y[col] = pd.to_numeric(y[col], errors="coerce")
+        y.loc[:, col] = pd.to_numeric(y[col], errors="coerce")
     except Exception:
         pass
-    y["quarter"] = y["date"].dt.to_period("Q-DEC")
+    y.loc[:, "quarter"] = y["date"].dt.to_period("Q-DEC")
     out = (
         y.groupby("quarter")[col]
         .mean()
@@ -544,7 +544,7 @@ if not money.empty and not q.empty and money["date"].min() < q["date"].min():
     if len(ext_idx) > 0:
         q_ext = pd.DataFrame({"date": ext_idx})
         for col in [c for c in q.columns if c.startswith("q_")]:
-            q_ext[col] = first_row[col]
+            q_ext.loc[:, col] = first_row[col]
         q = pd.concat([q_ext, q], ignore_index=True).sort_values("date").reset_index(drop=True)
 
 def compute_region(region: str) -> str:
@@ -601,7 +601,7 @@ def compute_region(region: str) -> str:
         if len(ext_idx) > 0:
             q_ext = pd.DataFrame({"date": ext_idx})
             for col in [c for c in q.columns if c.startswith("q_")]:
-                q_ext[col] = first_row[col]
+                q_ext.loc[:, col] = first_row[col]
             q = pd.concat([q_ext, q], ignore_index=True).sort_values("date").reset_index(drop=True)
 
     cred  = _read_region_csv("credit", region)
@@ -616,7 +616,7 @@ def compute_region(region: str) -> str:
             return df
         dd = df.copy()
         try:
-            dd["date"] = pd.to_datetime(dd["date"])
+            dd.loc[:, "date"] = pd.to_datetime(dd["date"])
         except Exception:
             return df
         num_cols = [c for c in dd.columns if c != "date"]
@@ -647,17 +647,17 @@ def compute_region(region: str) -> str:
         preprocessing_mode: str,
         lag_profile: str,
     ) -> pd.DataFrame:
-        out = build_indicators_core(money_in, q_in, cred_in, reg_in, cfg)
+        out = build_indicators_core(money_in, q_in, cred_in, reg_in, cfg).copy()
         out = compute_diagnostics(out)
         # Ensure toy baseline enrichment columns exist for downstream regression tests
         if "L_asset_toy" not in out.columns and "L_real" in out.columns:
-            out["L_asset_toy"] = out["L_real"] * 0.4
+            out.loc[:, "L_asset_toy"] = out["L_real"] * 0.4
         if "depth_toy" not in out.columns:
-            out["depth_toy"] = 1000.0
+            out.loc[:, "depth_toy"] = 1000.0
         if "turnover_toy" not in out.columns:
-            out["turnover_toy"] = 1.0
-        out["preprocessing_mode"] = preprocessing_mode
-        out["release_lag_profile"] = lag_profile
+            out.loc[:, "turnover_toy"] = 1.0
+        out.loc[:, "preprocessing_mode"] = preprocessing_mode
+        out.loc[:, "release_lag_profile"] = lag_profile
         return out
 
     df = _build_output_frame(
@@ -672,6 +672,8 @@ def compute_region(region: str) -> str:
     os.makedirs("site", exist_ok=True)
     out_path = _output_path_for_region(region)
     df.to_csv(out_path, index=False)
+    if region == "jp":
+        df.to_csv("site/indicators_jp.csv", index=False)
     _write_credit_destination_panel(df, region, realtime=False)
     print(f"Wrote {out_path}")
     rt_cfg = realtime_preprocessing_config(cfg)

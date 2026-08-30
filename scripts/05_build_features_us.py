@@ -1,12 +1,10 @@
 import os
 import json
-import time
 import argparse
 from typing import Optional
 import glob
 
 import pandas as pd
-import requests
 import sys
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -25,6 +23,7 @@ from lib.credit_enrichment import compute_enrichment
 from lib.config_params import allocation_weights, leverage_share
 from lib.config_loader import load_config
 from lib.external_coupling import build_external_coupling_indices
+from lib.official_series import fetch_fred_series as fetch_official_fred_series
 
 FRED_KEY = os.getenv("FRED_API_KEY", "")
 CONFIG_PATH = os.path.join(ROOT, "config.yml")
@@ -37,28 +36,13 @@ ROLE_ENV_US = {
 
 
 def fred_series(series_id: str, start: str = DEFAULT_START, retries: int = 3, backoff: float = 1.5) -> pd.DataFrame:
-    if not FRED_KEY:
-        raise RuntimeError("FRED_API_KEY not set; cannot fetch online.")
-    url = (
-        "https://api.stlouisfed.org/fred/series/observations"
-        f"?series_id={series_id}&api_key={FRED_KEY}&file_type=json&observation_start={start}"
+    return fetch_official_fred_series(
+        series_id,
+        start=start,
+        api_key=FRED_KEY,
+        retries=retries,
+        backoff=backoff,
     )
-    last = None
-    for i in range(retries):
-        try:
-            r = requests.get(url, timeout=30)
-            r.raise_for_status()
-            obs = r.json()["observations"]
-            df = pd.DataFrame(obs)[["date", "value"]]
-            df["value"] = pd.to_numeric(df["value"], errors="coerce")
-            df = df.dropna()
-            return df
-        except Exception as e:
-            last = e
-            if i < retries - 1:
-                time.sleep(backoff ** i)
-            else:
-                raise
 
 
 def worldbank_series(country: str = "USA", indicator: str = "NY.GDP.MKTP.CN") -> pd.DataFrame:
@@ -294,10 +278,6 @@ def main() -> None:
 
     if args.list_series:
         list_series(series_prefs, args.role)
-        return
-
-    if not FRED_KEY:
-        print("No FRED_API_KEY; skip US online fetch and keep local CSVs.")
         return
 
     build_us(series_prefs, project_config)

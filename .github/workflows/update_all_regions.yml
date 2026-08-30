@@ -3,119 +3,89 @@ name: Update All Regions Data
 on:
   workflow_dispatch: {}
   schedule:
-    # Weekdays at 04:00 UTC (after JP-only job, slightly staggered)
     - cron: '30 3 * * 1-5'
 
 permissions:
   contents: write
   pull-requests: write
 
+concurrency:
+  group: update-all-regions
+  cancel-in-progress: false
+
 jobs:
-  fetch-and-build-all:
+  fetch-build-validate:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout main
         uses: actions/checkout@v4
         with:
+          ref: main
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: pip
 
-      - name: Install deps
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt -c constraints.txt
 
-      - name: Fetch EU/US raw from FRED (if API key provided)
+      - name: Fetch official source series
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          JP_START: 1990-01-01
           OBS_START: 1990-01-01
-          FRED_SLEEP: '0.5'
+          FRED_SLEEP: '0.2'
         run: |
-          if [ -n "${FRED_API_KEY}" ]; then
-            python scripts/fetch_fred_series.py --start "${OBS_START}"
-          else
-            echo "[info] No FRED_API_KEY; skip EU/US fetch"
-          fi
-
-      - name: Fetch JP raw from FRED
-        env:
-          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
-          JP_START: 2012-01-01
-          FRED_SLEEP: '0.6'
-        run: |
+          python scripts/fetch_ecb_series.py --start 1999-01
+          python scripts/fetch_fred_series.py --start "${OBS_START}"
           python scripts/fetch_jp_raw.py
 
-      - name: Build EU features (if API key provided)
+      - name: Rebuild regional feature tables
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          THERMO_USE_CACHED_SERIES: '1'
         run: |
-          if [ -n "$FRED_API_KEY" ]; then python scripts/04_build_features_eu.py; else echo "[info] No FRED_API_KEY; skip EU feature build"; fi
+          python scripts/01_build_features.py
+          python scripts/04_build_features_eu.py
+          python scripts/05_build_features_us.py
 
-      - name: Build US features (if API key provided)
+      - name: Build indicators and report
         env:
-          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
-        run: |
-          if [ -n "$FRED_API_KEY" ]; then python scripts/05_build_features_us.py; else echo "[info] No FRED_API_KEY; skip US feature build"; fi
-
-      - name: Compute indicators for all regions
-        env:
-          JP_START: 2012-01-01
+          REPORT_PLOT_START: 1998-01-01
         run: |
           python scripts/02_compute_all_regions.py
-
-      - name: Build report (JP-focused but may include multi-region summaries)
-        env:
-          REPORT_PLOT_START: 2012-01-01
-        run: |
           python scripts/03_make_report.py
 
-      - name: Sanity check site outputs
+      - name: Validate publication data
         run: |
-          set -e
-          test -f site/report.html
-          test -s site/indicators.csv
-          # EU/US are optional depending on data availability/API keys.
-          if [ -f site/indicators_eu.csv ]; then
-            test -s site/indicators_eu.csv
-          else
-            echo "[info] EU indicators not built; skipping check"
-          fi
-          if [ -f site/indicators_us.csv ]; then
-            test -s site/indicators_us.csv
-          else
-            echo "[info] US indicators not built; skipping check"
-          fi
+          python scripts/27_validate_site_data.py --min-rows 8 --max-age-days 550
 
-      - name: Detect changes
-        id: changes
-        run: |
-          set -e
-          git add -A
-          if git diff --cached --quiet; then
-            echo "No changes detected"
-            echo "has_changes=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "Changes detected"
-            echo "has_changes=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Commit changes
-        if: steps.changes.outputs.has_changes == 'true'
-        run: |
-          git config user.name github-actions
-          git config user.email github-actions@github.com
-          git commit -m "chore(ci): update all regions data & report"
-
-      - name: Create Pull Request
-        if: steps.changes.outputs.has_changes == 'true'
+      - name: Create or update the single data pull request
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          title: "chore(ci): update all regions data & report"
-          commit-message: "chore(ci): update all regions data & report"
-          branch: ci/update-all-regions-${{ github.run_id }}
+          branch: ci/update-all-regions
           delete-branch: true
+          title: "chore(data): refresh regional indicators"
+          commit-message: "chore(data): refresh regional indicators"
+          body: |
+            ## Summary
+
+            - Refresh official JP, EU, and US source series.
+            - Rebuild regional feature and indicator panels.
+            - Validate schema, row counts, ordering, and data freshness.
+
+            ## Testing
+
+            - python scripts/02_compute_all_regions.py
+            - python scripts/03_make_report.py
+            - python scripts/27_validate_site_data.py --min-rows 8 --max-age-days 550
+          add-paths: |
+            data/**
+            site/indicators_eu.csv
+            site/indicators_us.csv

@@ -42,26 +42,22 @@ def money_entropy(
         q_cols = [c for c in q_cols if c in df_q.columns]
     df = df_money.merge(df_q, on="date", how="inner").copy()
     if not q_cols:
-        df["Hq"] = np.nan
+        df.loc[:, "Hq"] = np.nan
     else:
-        df["Hq"] = df.apply(lambda r: shannon_H(r, q_cols), axis=1)
-    if not q_cols:
-        df["Hq"] = np.nan
-    else:
-        df["Hq"] = df.apply(lambda r: shannon_H(r, q_cols), axis=1)
-    df["S_M_in"]  = k * df["M_in"].astype(float)  * df["Hq"]
-    df["S_M_out"] = k * df["M_out"].astype(float) * df["Hq"]
-    df["S_M"] = df["S_M_in"]
+        df.loc[:, "Hq"] = df.apply(lambda r: shannon_H(r, q_cols), axis=1)
+    df.loc[:, "S_M_in"] = k * df["M_in"].astype(float) * df["Hq"]
+    df.loc[:, "S_M_out"] = k * df["M_out"].astype(float) * df["Hq"]
+    df.loc[:, "S_M"] = df["S_M_in"]
     # Expose normalized entropy (scale-free) dividing by log(K)
     K = len(q_cols) if q_cols else 0
     if K > 0:
-        df["S_M_hat"] = df["Hq"].astype(float) / math.log(K)
+        df.loc[:, "S_M_hat"] = df["Hq"].astype(float) / math.log(K)
     else:
-        df["S_M_hat"] = np.nan
+        df.loc[:, "S_M_hat"] = np.nan
     cols = ["date","Hq","S_M_hat","S_M","S_M_in","S_M_out"]
     if per_category and q_cols:
         # raw probability vector
         for c in q_cols:
-            df[f"S_M_in_{c}"] = k * df["M_in"].astype(float) * df[c].astype(float).clip(0, 1)
+            df.loc[:, f"S_M_in_{c}"] = k * df["M_in"].astype(float) * df[c].astype(float).clip(0, 1)
             cols.append(f"S_M_in_{c}")
     return df[cols]
