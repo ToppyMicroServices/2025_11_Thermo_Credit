@@ -1133,6 +1133,13 @@ def _logo_data_uri() -> str:
                 continue
     return ""
 
+
+def _write_dashboard_entrypoints(html: str) -> None:
+    for filename in ("index.html", "report.html"):
+        with open(os.path.join(SITE_DIR, filename), "w", encoding="utf-8") as fp:
+            fp.write(html)
+
+
 def main() -> None:
     os.makedirs(SITE_DIR, exist_ok=True)
 
@@ -1363,9 +1370,8 @@ def main() -> None:
                     "}));});})();</script></body></html>")
 
     final_html = head + page_body + '<div class="footer-brand">' + (f'<img src="{logo_uri}" alt="Company Logo"/>' if logo_uri else "") + '<span>© ' + _utc_now().strftime('%Y') + ' ToppyMicroServices</span></div></div>' + script_block
-    with open(os.path.join(SITE_DIR, "report.html"), "w", encoding="utf-8") as fp:
-        fp.write(final_html)
-    print("Wrote site/report.html")
+    _write_dashboard_entrypoints(final_html)
+    print("Wrote site/index.html and site/report.html")
 
     base_url = _validated_base_url(os.getenv("TMS_BASE_URL", DEFAULT_BASE_URL))
     month_key = primary_ctx["last_date"].strftime("%Y-%m")

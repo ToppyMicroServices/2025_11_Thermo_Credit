@@ -87,6 +87,15 @@ def test_figures_render_with_readable_height():
     assert '"displaylogo": false' in html
 
 
+def test_dashboard_entrypoints_have_identical_content(tmp_path, monkeypatch):
+    mod = _load_report_module()
+    monkeypatch.setattr(mod, "SITE_DIR", str(tmp_path))
+
+    mod._write_dashboard_entrypoints("<html>dashboard</html>")
+
+    assert (tmp_path / "index.html").read_bytes() == (tmp_path / "report.html").read_bytes()
+
+
 def test_registered_event_bands_add_window_and_optional_label():
     mod = _load_report_module()
     fig = go.Figure(data=go.Scatter(x=pd.date_range("2020-01-01", periods=4), y=[1, 2, 3, 4]))

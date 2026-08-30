@@ -54,7 +54,9 @@ jobs:
       - name: Sanity check artifacts
         run: |
           set -e
+          test -s site/index.html
           test -f site/report.html
+          cmp -s site/index.html site/report.html
           test -s site/indicators.csv
           # All three regional panels must be present after the validated build.
           test -s site/indicators_eu.csv

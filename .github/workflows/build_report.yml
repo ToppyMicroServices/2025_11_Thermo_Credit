@@ -59,7 +59,9 @@ jobs:
       - name: Sanity check site outputs
         run: |
           set -e
+          test -s site/index.html
           test -f site/report.html
+          cmp -s site/index.html site/report.html
           test -s site/indicators.csv
           # EU/US indicators are now required (deterministic via CI prep)
           test -s site/indicators_eu.csv
