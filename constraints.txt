@@ -7,12 +7,13 @@ matplotlib==3.10.8
 seaborn==0.13.2
 requests==2.33.0
 kaleido==0.2.1
-Pillow==12.1.1
+Pillow==12.3.0
 pluggy==1.6.0
 mcp==2.1.1
 pypdfium2==5.13.0
+lxml==6.1.0
 
 # Tooling pinned for CI
-pytest==8.4.2
-pip-audit==2.7.3
-cyclonedx-bom==4.5.0
+pytest==9.0.3
+pip-audit==2.10.1
+cyclonedx-bom==7.3.1
