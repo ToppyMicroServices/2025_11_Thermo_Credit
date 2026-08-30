@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://toppymicros.com/schemas/thermo-credit/compute_thermo_credit_metrics.request.schema.json",
+  "title": "Thermo Credit metric request",
+  "type": "object",
+  "required": ["region", "frequency", "allocation_semantics", "allocation_evidence_class", "observations"],
+  "properties": {
+    "region": {"type": "string"},
+    "frequency": {"enum": ["monthly", "quarterly"]},
+    "allocation_semantics": {"type": "string", "minLength": 1},
+    "allocation_evidence_class": {"type": "string", "minLength": 1},
+    "observations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["date", "credit_scale", "allocation_share"],
+        "properties": {
+          "date": {"type": "string", "format": "date"},
+          "credit_scale": {"type": "number"},
+          "allocation_share": {"type": "number", "minimum": 0, "maximum": 1},
+          "output_proxy": {"type": "number"}
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://toppymicros.com/schemas/thermo-credit/get_theory_overview.response.schema.json",
+  "title": "Thermo Credit theory overview response",
+  "type": "object",
+  "required": ["model_version", "interpretation_status", "purpose", "current_measurement", "falsification_rules", "limitations", "source_ids"],
+  "properties": {
+    "model_version": {"type": "string"},
+    "interpretation_status": {"const": "research"},
+    "purpose": {"type": "array", "items": {"type": "string"}},
+    "current_measurement": {"type": "object", "required": ["q_t", "evidence_class", "claim_limit"]},
+    "proposed_structural_variables": {"type": "array", "items": {"type": "string"}},
+    "falsification_rules": {"type": "array", "items": {"type": "string"}},
+    "limitations": {"type": "array", "items": {"type": "string"}},
+    "source_ids": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": true
+}

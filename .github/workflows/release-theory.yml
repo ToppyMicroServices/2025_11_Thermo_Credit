@@ -1,0 +1,211 @@
+name: Release theory.pdf
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing GitHub release tag to update
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-theory-${{ github.event.release.tag_name || inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  build-verify:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+      artifact_tag: ${{ steps.meta.outputs.artifact_tag }}
+      release_url: ${{ steps.meta.outputs.release_url }}
+    env:
+      SOURCE_DATE_EPOCH: '1704067200'
+      FORCE_SOURCE_DATE: '1'
+      TZ: UTC
+    steps:
+      - name: Resolve release metadata
+        id: meta
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_URL: ${{ github.event.release.html_url }}
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "release" ]; then
+            tag="$RELEASE_TAG"
+            release_url="$RELEASE_URL"
+          else
+            tag="$INPUT_TAG"
+            release_url="$(gh release view "$tag" --json url -q .url)"
+          fi
+          test -n "$tag"
+          artifact_tag="${tag//\//-}"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "artifact_tag=$artifact_tag" >> "$GITHUB_OUTPUT"
+          echo "release_url=$release_url" >> "$GITHUB_OUTPUT"
+
+      - name: Check out tagged source
+        uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ steps.meta.outputs.tag }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install PDF and LaTeX tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ghostscript latexmk poppler-utils qpdf \
+            texlive-fonts-recommended texlive-latex-base texlive-latex-extra
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -c constraints.txt
+
+      - name: Rebuild manuscript inputs and figures
+        run: |
+          set -euo pipefail
+          python scripts/02_compute_all_regions.py
+          python scripts/18_boj_bridge_validation.py
+          python scripts/23_external_purpose_validation.py
+          python scripts/19_destination_oos_incremental.py
+          python scripts/29_make_dashboard_takeaways.py
+          latexmk -cd -g -pdf -interaction=nonstopmode -halt-on-error tex/theory.tex
+          cp tex/theory.pdf /tmp/theory-first.pdf
+          latexmk -cd -g -pdf -interaction=nonstopmode -halt-on-error tex/theory.tex
+          if ! cmp -s /tmp/theory-first.pdf tex/theory.pdf; then
+            sha256sum /tmp/theory-first.pdf tex/theory.pdf
+            echo "The tagged source did not produce a byte-reproducible PDF."
+            exit 1
+          fi
+          mkdir -p output/pdf
+          cp tex/theory.pdf output/pdf/theory.pdf
+
+      - name: Verify final PDF
+        run: |
+          python scripts/verify_theory_pdf.py \
+            --pdf output/pdf/theory.pdf \
+            --output-dir output/pdf/qa/theory
+
+      - name: Upload QA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: theory-pdf-linux-${{ steps.meta.outputs.artifact_tag }}
+          path: |
+            output/pdf/theory.pdf
+            output/pdf/qa/theory/
+            tex/generated/dashboard_takeaways.png
+            tex/generated/dashboard_takeaways.pdf
+            tex/generated/dashboard_takeaways.svg
+
+  macos-render:
+    needs: build-verify
+    runs-on: macos-14
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ needs.build-verify.outputs.tag }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install independent PDF renderers
+        run: |
+          brew install ghostscript poppler qpdf
+          python -m pip install --upgrade pip
+          pip install Pillow==12.1.1 pypdfium2==5.13.0
+
+      - name: Download Linux-built PDF
+        uses: actions/download-artifact@v4
+        with:
+          name: theory-pdf-linux-${{ needs.build-verify.outputs.artifact_tag }}
+          path: .
+
+      - name: Verify the same PDF with PDFKit
+        run: |
+          python scripts/verify_theory_pdf.py \
+            --pdf output/pdf/theory.pdf \
+            --output-dir output/pdf/qa/theory \
+            --require-pdfkit
+
+      - name: Upload complete cross-renderer evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: theory-pdf-verified-${{ needs.build-verify.outputs.artifact_tag }}
+          path: |
+            output/pdf/theory.pdf
+            output/pdf/qa/theory/
+            tex/generated/dashboard_takeaways.png
+            tex/generated/dashboard_takeaways.pdf
+            tex/generated/dashboard_takeaways.svg
+
+  publish:
+    needs: [build-verify, macos-render]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ needs.build-verify.outputs.tag }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Zenodo client dependency
+        run: pip install requests==2.33.0
+
+      - name: Download verified release assets
+        uses: actions/download-artifact@v4
+        with:
+          name: theory-pdf-verified-${{ needs.build-verify.outputs.artifact_tag }}
+          path: .
+
+      - name: Upload verified release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release upload "${{ needs.build-verify.outputs.tag }}" \
+            output/pdf/theory.pdf#theory.pdf \
+            output/pdf/qa/theory/qa-report.json#theory-qa-report.json \
+            output/pdf/qa/theory/theory.pdf.sha256#theory.pdf.sha256 \
+            tex/generated/dashboard_takeaways.png#dashboard_takeaways.png \
+            tex/generated/dashboard_takeaways.pdf#dashboard_takeaways.pdf \
+            tex/generated/dashboard_takeaways.svg#dashboard_takeaways.svg \
+            --clobber
+
+      - name: Publish a new Zenodo version
+        env:
+          ZENODO_ACCESS_TOKEN: ${{ secrets.ZENODO_ACCESS_TOKEN }}
+          ZENODO_CONCEPT_RECORD_ID: ${{ vars.ZENODO_CONCEPT_RECORD_ID }}
+          ZENODO_SEED_RECORD_ID_OR_DOI: ${{ vars.ZENODO_SEED_RECORD_ID_OR_DOI }}
+          ZENODO_API_URL: ${{ vars.ZENODO_API_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${ZENODO_ACCESS_TOKEN:-}" ] || { [ -z "${ZENODO_CONCEPT_RECORD_ID:-}" ] && [ -z "${ZENODO_SEED_RECORD_ID_OR_DOI:-}" ]; }; then
+            echo "Zenodo upload skipped: configure the token and a concept or seed record variable."
+            exit 0
+          fi
+          python scripts/release_to_zenodo.py \
+            --pdf output/pdf/theory.pdf \
+            --tag "${{ needs.build-verify.outputs.tag }}" \
+            --release-url "${{ needs.build-verify.outputs.release_url }}"

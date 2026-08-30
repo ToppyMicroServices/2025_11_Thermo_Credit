@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://toppymicros.com/schemas/thermo-credit/compare_regimes.request.schema.json",
+  "title": "Thermo Credit period comparison request",
+  "type": "object",
+  "required": ["region", "allocation_semantics", "allocation_evidence_class", "period_a", "period_b"],
+  "properties": {
+    "region": {"type": "string"},
+    "allocation_semantics": {"type": "string"},
+    "allocation_evidence_class": {"type": "string"},
+    "period_a": {"$ref": "#/$defs/period"},
+    "period_b": {"$ref": "#/$defs/period"}
+  },
+  "$defs": {
+    "period": {
+      "type": "object",
+      "required": ["label", "observations"],
+      "properties": {
+        "label": {"type": "string"},
+        "observations": {"type": "array", "minItems": 1, "items": {"type": "object"}}
+      }
+    }
+  },
+  "additionalProperties": false
+}

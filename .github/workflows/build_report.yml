@@ -54,6 +54,7 @@ jobs:
       - name: Build report
         run: |
           python scripts/03_make_report.py
+          python scripts/28_build_public_api.py
 
       - name: Sanity check site outputs
         run: |
@@ -63,6 +64,9 @@ jobs:
           # EU/US indicators are now required (deterministic via CI prep)
           test -s site/indicators_eu.csv
           test -s site/indicators_us.csv
+          test -s site/api/v1/manifest.json
+          test -s site/api/v1/definitions.json
+          test -s site/api/v1/case-studies.json
 
       - name: Artifact size thresholds
         run: |

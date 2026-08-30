@@ -1,0 +1,27 @@
+# Thermo Credit LLM index
+
+Thermo Credit is a measurement-first research project. Read these files in
+order:
+
+1. docs/definitions.md
+2. docs/identification_strategy.md
+3. docs/calibration_protocol.md
+4. docs/thermo_credit_mcp_spec.md
+5. data/data_dictionary.csv
+
+Machine-facing assets:
+
+- schemas/thermo_credit/*.json
+- examples/thermo_credit_mcp_examples.jsonl
+- site/api/v1/manifest.json (generated)
+- site/api/v1/definitions.json (generated)
+- site/api/v1/case-studies.json (generated)
+
+Interpretation rules:
+
+- JP q_t is borrower composition, not loan purpose or GDP-linked credit use.
+- q_t^use, C_t^R, C_t^A, and S_t remain structural targets, not current results.
+- EU and US allocation panels are proxies, not validation of the JP measure.
+- X_C and the other thermodynamic terms are experimental diagnostics.
+- Registered-event cases are descriptive comparisons, not causal estimates.
+- Current pseudo-OOS results do not establish incremental predictability.
