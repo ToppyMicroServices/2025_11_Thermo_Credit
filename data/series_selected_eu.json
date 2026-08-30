@@ -1,15 +1,15 @@
 {
   "money_scale_eu": {
-    "id": "ECBASSETS",
+    "id": "ECB_BSI_TOTAL_ASSETS",
     "source": "config",
     "start": "1999-01-01",
-    "title": "ECB Total Assets (consolidated)"
+    "title": "Eurosystem Total Assets (ECB Data Portal)"
   },
   "base_proxy_eu": {
-    "id": "ECBASSETS",
+    "id": "ECB_BSI_TOTAL_ASSETS",
     "source": "config",
     "start": "1999-01-01",
-    "title": "ECB Total Assets"
+    "title": "Eurosystem Total Assets (ECB Data Portal)"
   },
   "yield_proxy_eu": {
     "id": "IRLTLT01EZM156N",
