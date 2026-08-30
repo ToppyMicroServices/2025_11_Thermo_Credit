@@ -916,6 +916,7 @@ details[open] > summary::after {
   }
 
   .tabs {
+    position: static;
     top: 0.35rem;
     width: 100%;
     border-radius: 16px;

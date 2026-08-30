@@ -87,6 +87,44 @@ def test_figures_render_with_readable_height():
     assert '"displaylogo": false' in html
 
 
+def test_chart_style_separates_title_and_wrapped_legend():
+    mod = _load_report_module()
+    fig = go.Figure(data=go.Scatter(x=[1, 2], y=[3, 4]), layout={"title": "Example"})
+
+    mod._style_figure(fig)
+
+    assert fig.layout.margin.t == 112
+    assert fig.layout.title.x == 0.0
+    assert fig.layout.title.xanchor == "left"
+    assert fig.layout.title.yanchor == "top"
+    assert fig.layout.legend.title.text == ""
+
+
+def test_mobile_tabs_do_not_cover_charts():
+    css = (Path(__file__).parent.parent / "assets" / "report.css").read_text(encoding="utf-8")
+    mobile_css = css.split("@media (max-width: 760px)", 1)[1].split(
+        "@media (prefers-reduced-motion: reduce)", 1
+    )[0]
+
+    assert ".tabs {" in mobile_css
+    assert "position: static;" in mobile_css
+
+
+def test_missing_optional_diagnostics_do_not_reuse_previous_chart():
+    mod = _load_report_module()
+    dates = pd.date_range("2023-01-01", periods=8, freq="QE-DEC")
+    frame = pd.DataFrame({
+        "date": dates,
+        "S_M": range(8),
+        "T_L": [0.5 + value / 100 for value in range(8)],
+    })
+
+    context = mod._build_region_context("test", "Test", frame, diag_window=24)
+    labels = [spec[1] for spec in context["fig_specs"]]
+
+    assert labels == ["S_M & T_L"]
+
+
 def test_dashboard_entrypoints_have_identical_content(tmp_path, monkeypatch):
     mod = _load_report_module()
     monkeypatch.setattr(mod, "SITE_DIR", str(tmp_path))
