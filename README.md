@@ -50,6 +50,28 @@ The generated dashboard is `site/report.html`. Set `TMS_SKIP_PNG=1` when an
 optional Plotly image backend is unavailable; the interactive HTML charts are
 still generated.
 
+## Machine-facing interfaces
+
+Build the versioned static JSON API, or call the same evidence-labelled core
+through the CLI:
+
+```bash
+python scripts/28_build_public_api.py
+python scripts/thermo_credit_cli.py get_theory_overview
+python scripts/thermo_credit_cli.py compute_thermo_credit_metrics --repo-region jp --limit 8
+```
+
+The static entry point is `site/api/v1/manifest.json`. An MCP server exposes
+the definitions, tools, registered-event cases, and prompt templates:
+
+```bash
+python scripts/thermo_credit_mcp_server.py --transport stdio
+```
+
+See [the MCP interface](docs/thermo_credit_mcp_spec.md). GitHub Pages publishes
+the read-only JSON API but cannot run MCP. HTTP deployment needs separate
+authentication and operational controls.
+
 ## Data refresh
 
 The all-region refresh fails if a regional build or validation step fails. The
@@ -83,6 +105,8 @@ Source roles and units are listed in `data/data_dictionary.csv` and
 - `site/destination_oos_incremental.csv`: matched-scale JP pseudo-OOS use example.
 - `site/calibration_holdout_test.csv`: train/holdout test for calibrated `X_C`.
 - `site/submission_readiness.csv`: explicit research gates and blockers.
+- `site/api/v1/`: versioned static definitions, latest states, and descriptive cases.
+- `schemas/thermo_credit/`: JSON contracts for the MCP and CLI tool surface.
 - `prospective/`: frozen protocol and append-only BOJ vintage archive tools.
 - `replication/`: reproducibility manifest and logs.
 
@@ -98,11 +122,14 @@ python scripts/18_boj_bridge_validation.py
 python scripts/23_external_purpose_validation.py
 python scripts/19_destination_oos_incremental.py
 python scripts/06_make_theory_figures.py
+python scripts/29_make_dashboard_takeaways.py
 latexmk -cd -pdf -interaction=nonstopmode -halt-on-error tex/theory.tex
 ```
 
-The figure builder writes both PDF and SVG. Release automation must validate the
-final PDF, not only the LaTeX build step.
+The theory figure builder writes PDF and SVG. The dashboard takeaway builder
+writes PNG, PDF, SVG, and `tex/generated/dashboard_takeaways.tex`, which can be
+included in another LaTeX document. Release automation validates the same final
+PDF with qpdf, Ghostscript, Poppler, PDFium, and macOS PDFKit before publication.
 
 ## Automation
 
@@ -112,6 +139,9 @@ final PDF, not only the LaTeX build step.
   update PR only after all regions pass validation.
 - `Build & Publish` rebuilds validated regional data and deploys the generated
   static site from `main`.
+- `Release theory.pdf` rebuilds and verifies the tagged paper, attaches the PDF,
+  checksum, QA report, and takeaway figures to the GitHub release, then creates
+  a Zenodo version when the required secret and repository variables exist.
 
 Local validation is not evidence that GitHub Pages, a release, or Zenodo was
 updated. Those external states must be checked after each publication run.

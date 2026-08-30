@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://toppymicros.com/schemas/thermo-credit/evaluate_scenario.request.schema.json",
+  "title": "Thermo Credit arithmetic scenario request",
+  "type": "object",
+  "required": ["region", "baseline_state", "scenario_shocks"],
+  "properties": {
+    "region": {"type": "string"},
+    "baseline_state": {
+      "type": "object",
+      "required": ["credit_scale", "allocation_share"],
+      "properties": {"credit_scale": {"type": "number"}, "allocation_share": {"type": "number", "minimum": 0, "maximum": 1}}
+    },
+    "scenario_shocks": {
+      "type": "object",
+      "properties": {"delta_credit_scale": {"type": "number"}, "delta_allocation_share": {"type": "number"}}
+    },
+    "horizon_periods": {"type": "integer", "minimum": 1}
+  },
+  "additionalProperties": false
+}

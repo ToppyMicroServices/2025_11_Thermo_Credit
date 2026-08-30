@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://toppymicros.com/schemas/thermo-credit/compare_regimes.response.schema.json",
+  "title": "Thermo Credit period comparison response",
+  "type": "object",
+  "required": ["model_version", "interpretation_status", "period_a", "period_b", "change_b_minus_a", "summary", "limitations", "source_ids"],
+  "properties": {
+    "model_version": {"type": "string"},
+    "interpretation_status": {"const": "research"},
+    "period_a": {"type": "object"},
+    "period_b": {"type": "object"},
+    "change_b_minus_a": {"type": "object", "additionalProperties": {"type": "number"}},
+    "summary": {"type": "string"},
+    "limitations": {"type": "array", "items": {"type": "string"}},
+    "source_ids": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": true
+}

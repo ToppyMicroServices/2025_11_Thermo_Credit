@@ -234,8 +234,7 @@ def _robust_score_series(series: pd.Series) -> pd.Series:
 def _prepare_metric_series(metric: str, series: pd.Series, *, smooth: bool = True) -> pd.Series:
     numeric = pd.to_numeric(series, errors="coerce")
     if smooth and metric == "X_C":
-        smoothed = numeric.rolling(window=4, min_periods=1).median()
-        return smoothed.rolling(window=2, min_periods=1).mean()
+        return numeric.rolling(window=4, min_periods=1).median()
     return numeric
 
 

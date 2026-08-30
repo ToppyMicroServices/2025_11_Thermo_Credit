@@ -78,6 +78,12 @@ data/series_selected_*.json.backup
 !.vscode/tasks.json
 tex/*
 !tex/title_page.tex
+!tex/generated/
+tex/generated/*
+!tex/generated/dashboard_takeaways.png
+!tex/generated/dashboard_takeaways.pdf
+!tex/generated/dashboard_takeaways.svg
+!tex/generated/dashboard_takeaways.tex
 .DS_Store
 tex/theory.tex
 theory.aux

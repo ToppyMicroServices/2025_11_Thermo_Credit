@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://toppymicros.com/schemas/thermo-credit/compute_thermo_credit_metrics.response.schema.json",
+  "title": "Thermo Credit metric response",
+  "type": "object",
+  "required": ["model_version", "interpretation_status", "region", "allocation_semantics", "allocation_evidence_class", "metrics", "latest", "limitations", "source_ids"],
+  "properties": {
+    "model_version": {"type": "string"},
+    "interpretation_status": {"const": "research"},
+    "region": {"type": "string"},
+    "allocation_semantics": {"type": "string"},
+    "allocation_evidence_class": {"type": "string"},
+    "metrics": {"type": "array", "items": {"$ref": "#/$defs/metric"}},
+    "latest": {"$ref": "#/$defs/metric"},
+    "limitations": {"type": "array", "items": {"type": "string"}},
+    "source_ids": {"type": "array", "items": {"type": "string"}}
+  },
+  "$defs": {
+    "metric": {
+      "type": "object",
+      "required": ["date", "credit_scale", "allocation_share", "complement_share", "allocated_scale", "complement_scale"],
+      "properties": {
+        "date": {"type": "string", "format": "date"},
+        "credit_scale": {"type": "number"},
+        "allocation_share": {"type": "number"},
+        "complement_share": {"type": "number"},
+        "allocated_scale": {"type": "number"},
+        "complement_scale": {"type": "number"},
+        "allocation_change": {"type": ["number", "null"]},
+        "output_change_per_credit": {"type": ["number", "null"]}
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

@@ -33,6 +33,24 @@ pytest -q
 
 生成されるダッシュボードは`site/report.html`です。Plotlyの画像出力環境が使えない場合は`TMS_SKIP_PNG=1`を指定します。この場合もinteractive HTMLは生成されます。
 
+## AI・外部ツール向けインターフェース
+
+バージョン付きの静的JSON APIを生成し、同じ計算処理をコマンドラインから呼び出せます。
+
+```bash
+python scripts/28_build_public_api.py
+python scripts/thermo_credit_cli.py get_theory_overview
+python scripts/thermo_credit_cli.py compute_thermo_credit_metrics --repo-region jp --limit 8
+```
+
+静的APIの入口は`site/api/v1/manifest.json`です。MCPサーバーは、変数定義、計算機能、登録済みイベントの記述的な比較、プロンプトのひな型を提供します。
+
+```bash
+python scripts/thermo_credit_mcp_server.py --transport stdio
+```
+
+詳しくは[MCPインターフェース](docs/thermo_credit_mcp_spec.md)を参照してください。GitHub Pagesで公開するのは読み取り専用のJSONです。MCPをHTTPで運用する場合は、認証や呼び出し回数の制限を別途設ける必要があります。
+
 ## データ更新
 
 地域別の更新や検査が一つでも失敗すると、全地域更新は失敗として終了します。主なコマンドは次のとおりです。
@@ -60,6 +78,8 @@ python scripts/27_validate_site_data.py --min-rows 8 --max-age-days 550
 - `site/destination_oos_incremental.csv`: 日本のmatched-scale疑似OOS利用例。
 - `site/calibration_holdout_test.csv`: calibrated `X_C`のtrain/holdout検証。
 - `site/submission_readiness.csv`: 研究上のgateと未解決項目。
+- `site/api/v1/`: バージョン付きの変数定義、最新状態、記述的な事例比較。
+- `schemas/thermo_credit/`: MCPとコマンドライン機能のJSONスキーマ。
 - `prospective/`: 固定済みprotocolとBOJ vintage保存ツール。
 - `replication/`: 再現性のmanifestとlog。
 
@@ -74,16 +94,18 @@ python scripts/18_boj_bridge_validation.py
 python scripts/23_external_purpose_validation.py
 python scripts/19_destination_oos_incremental.py
 python scripts/06_make_theory_figures.py
+python scripts/29_make_dashboard_takeaways.py
 latexmk -cd -pdf -interaction=nonstopmode -halt-on-error tex/theory.tex
 ```
 
-図はPDFとSVGの両方で出力します。releaseでは、LaTeXが終了コード0になったことだけでなく、最終PDFそのものを検査します。
+本文用の図はPDFとSVGで出力します。ダッシュボードの要点図はPNG、PDF、SVGに加え、他のLaTeX文書で使える`tex/generated/dashboard_takeaways.tex`も生成します。リリース時は、qpdf、Ghostscript、Poppler、PDFium、macOS PDFKitを使って最終PDFそのものを検査します。
 
 ## 自動化
 
-- `CI`はtest、全地域のstrict build、再現性検査、dependency audit、SBOM、secret scanを実行します。
-- `Update all regional data`は固定されたautomation branchを更新し、全地域が検査を通った場合だけ一つのPRを作ります。
+- `CI`はテスト、全地域の厳格なビルド、再現性検査、依存関係の監査、SBOM、機密情報の検査を実行します。
+- `Update all regional data`は固定した自動更新用ブランチを更新し、全地域が検査を通った場合だけ一つのPRを作ります。
 - `Build & Publish`は`main`からデータとサイトを再生成し、GitHub Pagesへ配置します。
+- `Release theory.pdf`はタグ付けしたソースから論文を再生成して検査し、PDF、チェックサム、検査報告、要点図をGitHub Releaseへ追加します。必要なシークレットとリポジトリ変数が設定されている場合は、Zenodoにも新しい版を作成します。
 
 ローカルでの成功は、Pages、GitHub Release、Zenodoの更新完了を意味しません。公開後は、それぞれの外部状態を確認する必要があります。
 

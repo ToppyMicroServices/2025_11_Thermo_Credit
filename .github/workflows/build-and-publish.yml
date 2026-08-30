@@ -46,6 +46,7 @@ jobs:
           python scripts/02_compute_all_regions.py
           python scripts/27_validate_site_data.py --min-rows 8 --max-age-days 550
           python scripts/03_make_report.py
+          python scripts/28_build_public_api.py
       - name: List site contents
         run: |
           echo '--- site tree ---'
@@ -59,6 +60,10 @@ jobs:
           test -s site/indicators_eu.csv
           test -s site/indicators_us.csv
           test -s site/data_manifest.json
+          test -s site/api/v1/manifest.json
+          test -s site/api/v1/definitions.json
+          test -s site/api/v1/case-studies.json
+          test -s site/llms.txt
       - name: Artifact size thresholds
         run: |
           set -e

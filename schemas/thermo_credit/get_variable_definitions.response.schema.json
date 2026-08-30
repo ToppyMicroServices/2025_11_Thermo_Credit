@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://toppymicros.com/schemas/thermo-credit/get_variable_definitions.response.schema.json",
+  "title": "Thermo Credit variable definitions response",
+  "type": "object",
+  "required": ["model_version", "interpretation_status", "variables", "limitations", "source_ids"],
+  "properties": {
+    "model_version": {"type": "string"},
+    "interpretation_status": {"const": "research"},
+    "variables": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["variable", "symbol", "evidence_class", "status", "construction", "claim_limit"]
+      }
+    },
+    "limitations": {"type": "array", "items": {"type": "string"}},
+    "source_ids": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": true
+}
