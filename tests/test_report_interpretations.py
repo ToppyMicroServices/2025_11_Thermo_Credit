@@ -85,3 +85,20 @@ def test_figures_render_with_readable_height():
     assert 'class="chart-grid"' in html
     assert "height:420px" in html
     assert '"displaylogo": false' in html
+
+
+def test_registered_event_bands_add_window_and_optional_label():
+    mod = _load_report_module()
+    fig = go.Figure(data=go.Scatter(x=pd.date_range("2020-01-01", periods=4), y=[1, 2, 3, 4]))
+    events = [{
+        "key": "pandemic",
+        "label": "COVID-19 pandemic shock",
+        "category": "pandemic",
+        "visible_start": pd.Timestamp("2020-02-01"),
+        "visible_end": pd.Timestamp("2020-03-31"),
+    }]
+
+    mod._add_registered_event_bands(fig, events, show_labels=True)
+
+    assert len(fig.layout.shapes) == 1
+    assert fig.layout.annotations[0].text == "COVID-19"

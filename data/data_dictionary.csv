@@ -1,0 +1,25 @@
+variable,symbol,evidence_class,status,region,frequency,units,repo_source,construction,claim_limit
+primary_included_stock,L_t^P,directly_observed_and_reconciled,current,JP,Quarterly,JPY 100 million,data/credit_destination_jp.csv,BOJ total loans of domestically licensed banks less local-government loans,Lender population does not imply domestic borrower geography
+bucket_net_change,Delta L_t^k,derived_measurement,current,JP,Quarterly,JPY 100 million,data/credit_destination_jp.csv,Aggregate each fixed bucket then take its signed quarterly difference,Not gross originations and may include repayment write-off or reclassification
+bucket_positive_change,P_t^k,derived_measurement,current,JP,Quarterly,JPY 100 million,data/credit_destination_jp.csv,max(Delta L_t^k; 0) after within-bucket aggregation,Measurement convention rather than observed lending flow
+borrower_composition_vector,pi_(t;4)^k,derived_measurement,current,JP,Quarterly,share,data/credit_destination_jp.csv,Four-quarter positive bucket change divided by the common four-bucket sum,Borrower composition only
+primary_q,q_t,derived_measurement,current,JP,Quarterly,share,data/credit_destination_jp.csv,Four-quarter NFB coordinate under the primary published Japan crosswalk,Not a GDP-linked share loan-purpose share or final-use share
+matched_credit_scale,g_(t;h)^P,derived_measurement,current,JP,Quarterly,log change,data/credit_destination_jp.csv,Horizon log change in primary_included_stock,Stock growth over the same included population
+eu_allocation_proxy,q_t proxy,proxy,current,EU,Quarterly,share,data/allocation_q_eu.csv,Coarse configured regional allocation shares,Schema-portability panel and not validation of the JP measure
+us_allocation_proxy,q_t proxy,proxy,current,US,Quarterly,share,data/allocation_q_us.csv,Coarse configured regional allocation shares,Schema-portability panel and not validation of the JP measure
+gross_new_credit,C_t,latent_target,not_identified,JP/EU/US,Quarterly,local currency per period,future purpose-coded originations,Gross originations with flow adjustments,Current stock changes are only partial proxies
+gdp_linked_credit,C_t^R,latent_target,not_identified,JP/EU/US,Quarterly,local currency per period,future joint borrower-and-use data,Credit financing newly produced goods services or investment,Not recoverable from borrower sectors alone
+existing_asset_credit,C_t^A,latent_target,not_identified,JP/EU/US,Quarterly,local currency per period,future joint borrower-and-use data,Credit financing purchases of existing property or financial assets,Not recoverable from borrower sectors alone
+loan_use_share,q_t^use,latent_target,not_identified,JP/EU/US,Quarterly,share,future joint borrower-and-use data,C_t^R divided by C_t^R plus C_t^A,Must not be conflated with the current JP q_t
+money_scale,M_t,observed_proxy,current,JP/EU/US,Monthly to quarterly,local currency level,data/money*.csv,Regional central-bank assets or configured money proxy,Proxy definitions differ by region
+credit_stock,L_t,observed_proxy,current,JP/EU/US,Quarterly,local currency level,data/credit*.csv,BIS private non-financial credit with documented regional fallbacks,Population and units differ by region
+nominal_output,Y_t^N,observed_proxy,current,JP/EU/US,Annual to quarterly,local currency,data/gdp*.csv and World Bank caches,Aligned and rescaled nominal GDP proxy,Interpolation does not create new observations
+allocation_dispersion,S_M,model_diagnostic,current,JP/EU/US,Quarterly,index,site/indicators*.csv,Scale times configured allocation dispersion,Not physical entropy and depends on bucket design
+liquidity_state,T_L,model_diagnostic,current,JP/EU/US,Quarterly,index,site/indicators*.csv,Monotone combination of depth turnover and spread inputs,Not physical temperature
+credit_pressure,p_C,model_diagnostic,current,JP/EU/US,Quarterly,index,site/indicators*.csv,Configured credit-capacity pressure transformation,Not an observed market price
+internal_energy_like,U,model_diagnostic,current,JP/EU/US,Quarterly,currency-like index,site/indicators*.csv,Bookkeeping transformation of output and credit proxies,Analogy only
+free_energy_like,F_C,model_diagnostic,current,JP/EU/US,Quarterly,currency-like index,site/indicators*.csv,Reference-parameter transformation of U and S_M,Not an established economic potential
+exergy_like,X_C,model_diagnostic,experimental,JP/EU/US,Quarterly,currency-like index,site/indicators*.csv,Configured exergy-like transformation,Not a safety margin policy threshold or validated forecast
+streaming_loop_area,loop_area,model_diagnostic,experimental,JP/EU/US,Quarterly,path-area score,site/indicators*.csv,Open-path state-space area over a rolling window,Does not establish a closed cycle or causal hysteresis
+ecb_total_assets,ECB BSI total assets,directly_observed,current,EU,Monthly,EUR millions,data/ECB_BSI_TOTAL_ASSETS.csv,ECB BSI.M.U2.N.C.T00.A.1.Z5.0000.Z01.E,Used as an EU base and money-scale proxy
+registered_events,event_window,design_metadata,current,JP/EU/US,Daily bounds,data/report_events.csv,Predefined regional macro-financial windows,Context markers and not causal labels

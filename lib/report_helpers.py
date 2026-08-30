@@ -87,7 +87,7 @@ class CompareBuilder:
             ("S_M", "Compare – S_M", "Money entropy"),
             ("T_L", "Compare – T_L", "Liquidity state"),
             ("loop_area", "Compare – Loop Path Monitor", "Loop area"),
-            ("X_C", "Compare – Credit Exergy Ceiling", "X_C"),
+            ("X_C", "Compare – X_C Diagnostic", "X_C"),
         ]
         raw_figs: List[ChartSpec] = []
         for met, title, alt in metric_specs:
@@ -490,7 +490,7 @@ def _chart_interpretation(short_label: str, frame: Optional[pd.DataFrame]) -> Op
     if label.startswith("Compare"):
         return _compare_interpretation(label, frame)
     if label == "Raw Inputs (first=100)":
-        return "Each input series is rebased to 100 at its start; steep slopes flag faster money/credit growth."
+        return "Each input series is rebased to 100 at its start; steeper slopes show faster growth on that rebased scale."
     if frame is None or not isinstance(frame, pd.DataFrame) or frame.empty:
         return None
 
@@ -510,7 +510,7 @@ def _chart_interpretation(short_label: str, frame: Optional[pd.DataFrame]) -> Op
         tl_txt = _bucket_text("T_L", tl)
         if tl_txt:
             parts.append(f"T_L≈{tl_txt}")
-        suffix = " Balanced readings mean policy has room; high/high combos often precede overheating."
+        suffix = " These are model-specific historical positions; no policy or overheating threshold is validated."
         return ", ".join(parts) + suffix if parts else None
 
     if label == "S_M by category":
@@ -543,20 +543,19 @@ def _chart_interpretation(short_label: str, frame: Optional[pd.DataFrame]) -> Op
         if val is None:
             return None
         trend = _series_trend(frame.get("loop_area"))
-        state = "active" if abs(val) > 1e-12 else "quiet"
+        state = "non-zero" if abs(val) > 1e-12 else "near zero"
         tail = f" and {trend}" if trend else ""
         return f"Streaming loop area ≈{val:.3f} ({state}{tail})."
 
-    if label == "Credit Exergy Ceiling":
+    if label == "X_C Diagnostic":
         val = _latest_numeric(frame, "X_C")
         if val is None:
-            return "Tracks remaining credit headroom; above zero means slack remains."
+            return "Experimental exergy-like transformation; no validated threshold is available."
         bucket = _series_bucket(frame.get("X_C"), val)
         trend = _series_trend(frame.get("X_C"))
-        tone = "slack" if val > 0 else "tight"
         trend_txt = f", {trend}" if trend else ""
         bucket_txt = f" ({bucket})" if bucket else ""
-        return f"X_C≈{val:.2f}{bucket_txt}{trend_txt} so headroom looks {tone}."
+        return f"X_C≈{val:.2f}{bucket_txt}{trend_txt}; this is an experimental diagnostic, not validated headroom."
 
     if label == "Free Energy (F_C)":
         val = _latest_numeric(frame, "F_C")
@@ -566,16 +565,16 @@ def _chart_interpretation(short_label: str, frame: Optional[pd.DataFrame]) -> Op
         bucket = _series_bucket(frame.get("F_C"), val)
         bucket_txt = f" ({bucket})" if bucket else ""
         trend_txt = f" and {trend}" if trend else ""
-        return f"F_C≈{val:.2f}{bucket_txt}{trend_txt}; falling values hint at demand destruction."
+        return f"F_C≈{val:.2f}{bucket_txt}{trend_txt} on the configured model scale."
 
     if label == "ΔF_C (change)":
         val = _latest_numeric(frame, "dF_C")
         if val is None:
             return None
-        direction = "releasing" if val > 0 else "absorbing" if val < 0 else "stable"
+        direction = "positive" if val > 0 else "negative" if val < 0 else "zero"
         trend = _series_trend(frame.get("dF_C"))
         tail = f" and {trend}" if trend else ""
-        return f"ΔF_C≈{val:.3f}, so the system is {direction}{tail}."
+        return f"ΔF_C≈{val:.3f}; the latest model change is {direction}{tail}."
 
     if label == "Internal Energy (U)":
         val = _latest_numeric(frame, "U")
@@ -588,7 +587,7 @@ def _chart_interpretation(short_label: str, frame: Optional[pd.DataFrame]) -> Op
             parts.append(f"{bucket}")
         if trend:
             parts.append(trend)
-        return " / ".join(parts) + " potential stored in the system."
+        return " / ".join(parts) + " on the configured model scale."
 
     if label == "Surplus/Shortage (ΔF_C)":
         plus = _latest_numeric(frame, "Surplus (X_C+)")
@@ -596,11 +595,11 @@ def _chart_interpretation(short_label: str, frame: Optional[pd.DataFrame]) -> Op
         if plus is None and minus is None:
             return None
         if plus is not None and minus is not None:
-            dominance = "surplus" if plus > minus else "shortage" if minus > plus else "balanced"
-            return f"Surplus≈{plus:.2f}, shortage≈{minus:.2f}; {dominance} dominates."
+            dominance = "positive" if plus > minus else "negative" if minus > plus else "neither"
+            return f"Positive component≈{plus:.2f}, negative component≈{minus:.2f}; {dominance} is larger."
         if plus is not None:
-            return f"Surplus≈{plus:.2f}; shortages muted."
-        return f"Shortage≈{minus:.2f}; little positive slack left." if minus is not None else None
+            return f"Positive component≈{plus:.2f}; the negative component is unavailable."
+        return f"Negative component≈{minus:.2f}; the positive component is unavailable." if minus is not None else None
 
     if label == "Maxwell-like Test":
         gap = _latest_numeric(frame, "maxwell_curl")
@@ -614,8 +613,8 @@ def _chart_interpretation(short_label: str, frame: Optional[pd.DataFrame]) -> Op
         except Exception:
             series = pd.Series(dtype=float)
         mad = float((series - series.median()).abs().median()) if not series.empty else 0.0
-        spec = "inside spec" if mad == 0 or abs(gap) <= 3 * mad else "out-of-spec"
-        return f"Maxwell curl Ω≈{gap:.3f} ({spec})."
+        spec = "within" if mad == 0 or abs(gap) <= 3 * mad else "outside"
+        return f"Maxwell curl Ω≈{gap:.3f} ({spec} the descriptive 3-MAD band)."
 
     if label == "First-law Decomposition":
         resid = _latest_numeric(frame, "firstlaw_resid")
@@ -623,7 +622,7 @@ def _chart_interpretation(short_label: str, frame: Optional[pd.DataFrame]) -> Op
             return "Tracks ΔU versus predicted TΔS−pΔV contributions."
         trend = _series_trend(frame.get("firstlaw_resid"))
         trend_txt = f" trending {trend}" if trend and trend != "flat" else ""
-        return f"Residual≈{resid:.3f}{trend_txt}; near zero means the proxies close the energy balance."
+        return f"Residual≈{resid:.3f}{trend_txt}; smaller values indicate a smaller residual in this model construction."
 
     return None
 
