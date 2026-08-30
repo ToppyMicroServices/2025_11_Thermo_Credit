@@ -91,17 +91,24 @@ series:
       start: 1990-01-01
   money_scale_eu:
     preferred:
+      - id: ECB_BSI_TOTAL_ASSETS
+        title: Eurosystem Total Assets (ECB Data Portal)
+        note: Continuous official successor for the discontinued FRED ECBASSETS mirror
+        start: 1999-01-01
       - id: ECBASSETS
-        title: ECB Total Assets (consolidated)
-        note: Euro area balance sheet proxy
+        title: ECB Total Assets (discontinued FRED mirror)
+        note: Historical fallback ending in January 2020
         start: 1999-01-01
       - id: MABMM301EZM189S
         title: Euro Area M3 (Broad Money)
         note: Broad money scale alternative
         start: 1999-01-01
   base_proxy_eu:
+    - id: ECB_BSI_TOTAL_ASSETS
+      title: Eurosystem Total Assets (ECB Data Portal)
+      start: 1999-01-01
     - id: ECBASSETS
-      title: ECB Total Assets
+      title: ECB Total Assets (discontinued FRED mirror)
       start: 1999-01-01
   yield_proxy_eu:
     - id: IRLTLT01EZM156N

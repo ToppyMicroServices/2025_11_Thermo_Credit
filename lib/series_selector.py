@@ -17,11 +17,13 @@ DEFAULT_SERIES: Dict[str, List[Dict[str, Any]]] = {
         {"id": "DGS10", "title": "US 10Y Treasury Yield", "start": DEFAULT_START},
     ],
     "money_scale_eu": [
-        {"id": "ECBASSETS", "title": "ECB Total Assets", "start": "1999-01-01"},
+        {"id": "ECB_BSI_TOTAL_ASSETS", "title": "Eurosystem Total Assets", "start": "1999-01-01"},
+        {"id": "ECBASSETS", "title": "ECB Total Assets (discontinued mirror)", "start": "1999-01-01"},
         {"id": "MABMM301EZM189S", "title": "Euro Area M3 (Broad Money)", "start": "1999-01-01"},
     ],
     "base_proxy_eu": [
-        {"id": "ECBASSETS", "title": "ECB Total Assets", "start": "1999-01-01"},
+        {"id": "ECB_BSI_TOTAL_ASSETS", "title": "Eurosystem Total Assets", "start": "1999-01-01"},
+        {"id": "ECBASSETS", "title": "ECB Total Assets (discontinued mirror)", "start": "1999-01-01"},
     ],
     "yield_proxy_eu": [
         {"id": "IRLTLT01EZM156N", "title": "Euro Area Long-term Yield", "start": "1999-01-01"},

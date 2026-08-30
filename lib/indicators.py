@@ -75,11 +75,11 @@ def _apply_u_detrend(df: pd.DataFrame, cfg: Dict[str, Any]) -> pd.DataFrame:
     method = str(u_cfg.get("method", "rolling")).strip().lower()
     try:
         trend, detrended = _detrend_no_lookahead(df["U"], method=method, window=window, min_periods=min_periods)
-        df["U_trend"] = trend
-        df["U_star"] = detrended
+        df.loc[:, "U_trend"] = trend
+        df.loc[:, "U_star"] = detrended
     except Exception:
-        df["U_trend"] = np.nan
-        df["U_star"] = np.nan
+        df.loc[:, "U_trend"] = np.nan
+        df.loc[:, "U_star"] = np.nan
     return df
 
 
@@ -99,8 +99,8 @@ def _apply_loop_geometry(df: pd.DataFrame, cfg: Dict[str, Any]) -> pd.DataFrame:
     except Exception:
         return df
     for col, values in metrics.items():
-        df[col] = values
-    df["loop_cycle_window"] = float(window)
+        df.loc[:, col] = values
+    df.loc[:, "loop_cycle_window"] = float(window)
     return df
 
 
@@ -113,9 +113,9 @@ def _apply_loop_quality(df: pd.DataFrame) -> pd.DataFrame:
     if "X_C_was_clipped" in df.columns:
         clipped_prev = df["X_C_was_clipped"].astype("boolean").shift(1).fillna(False).astype(bool)
     valid = denom.gt(0) & ~clipped_prev & np.isfinite(loss)
-    df["loop_loss_ratio"] = np.where(valid, loss, np.nan)
+    df.loc[:, "loop_loss_ratio"] = np.where(valid, loss, np.nan)
     q_valid = valid & pd.Series(loss, index=df.index).gt(0)
-    df["Q_C"] = np.where(q_valid, 2.0 * np.pi / loss, np.nan)
+    df.loc[:, "Q_C"] = np.where(q_valid, 2.0 * np.pi / loss, np.nan)
     return df
 
 
@@ -144,7 +144,7 @@ def _derive_headroom(df: pd.DataFrame, cfg: Dict[str, Any]) -> Tuple[pd.DataFram
     for idx, col in enumerate(cols):
         scale = float(scales[idx]) if idx < len(scales) else float(scales[-1])
         col_name = col or f"headroom_{idx}"
-        df[col_name] = base * scale
+        df.loc[:, col_name] = base * scale
         derived_cols.append(col_name)
     return df, tuple(derived_cols)
 
@@ -171,12 +171,12 @@ def _apply_vc_formula(df: pd.DataFrame, cfg: Dict[str, Any]) -> pd.DataFrame:
         legacy = _sanitize_numeric(df["V_R"])
     else:
         legacy = pd.Series(np.nan, index=df.index)
-    df["V_C_legacy"] = legacy
-    df["V_C_headroom"] = vc_head
+    df.loc[:, "V_C_legacy"] = legacy
+    df.loc[:, "V_C_headroom"] = vc_head
     mask = vc_head.notna()
     if mask.any():
         df.loc[mask, "V_C"] = vc_head[mask]
-    df["V_C_formula_used"] = "min_headroom"
+    df.loc[:, "V_C_formula_used"] = "min_headroom"
     return df
 
 
@@ -219,14 +219,14 @@ def _apply_free_energy_baseline(df: pd.DataFrame, cfg: Dict[str, Any]) -> pd.Dat
         eps = 0.0
 
     offset = max(0.0, -ref_val + eps)
-    df["F_C_baseline"] = ref_val
-    df["F_C_baseline_mode"] = mode
-    df["F_C_baseline_offset"] = offset
+    df.loc[:, "F_C_baseline"] = ref_val
+    df.loc[:, "F_C_baseline_mode"] = mode
+    df.loc[:, "F_C_baseline_offset"] = offset
     if offset:
-        df["F_C"] = fnum + offset
+        df.loc[:, "F_C"] = fnum + offset
         if "X_C" in df.columns:
             try:
-                df["X_C"] = pd.to_numeric(df["X_C"], errors="coerce") + offset
+                df.loc[:, "X_C"] = pd.to_numeric(df["X_C"], errors="coerce") + offset
             except Exception:
                 pass
     return df
@@ -242,18 +242,18 @@ def _apply_external_coupling(df: pd.DataFrame, cfg: Dict[str, Any]) -> pd.DataFr
         baseline = pd.to_numeric(df["p_C"], errors="coerce")
         ep = pd.to_numeric(df["E_p"], errors="coerce")
         contrib = alpha * ep
-        df["p_C_baseline"] = baseline
-        df["E_p_contrib"] = contrib
-        df["p_C_coupling_alpha"] = alpha
-        df["p_C"] = baseline + contrib.fillna(0.0)
+        df.loc[:, "p_C_baseline"] = baseline
+        df.loc[:, "E_p_contrib"] = contrib
+        df.loc[:, "p_C_coupling_alpha"] = alpha
+        df.loc[:, "p_C"] = baseline + contrib.fillna(0.0)
     if delta and "E_T" in df.columns and "T_L" in df.columns:
         baseline_t = pd.to_numeric(df["T_L"], errors="coerce")
         et = pd.to_numeric(df["E_T"], errors="coerce")
         contrib_t = delta * et
-        df["T_L_baseline"] = baseline_t
-        df["E_T_contrib"] = contrib_t
-        df["T_L_coupling_delta"] = delta
-        df["T_L"] = baseline_t + contrib_t.fillna(0.0)
+        df.loc[:, "T_L_baseline"] = baseline_t
+        df.loc[:, "E_T_contrib"] = contrib_t
+        df.loc[:, "T_L_coupling_delta"] = delta
+        df.loc[:, "T_L"] = baseline_t + contrib_t.fillna(0.0)
     return df
 
 
@@ -287,7 +287,7 @@ def _apply_chemical_potentials(df: pd.DataFrame,
     factor = t0 * k_val * M_in
     log_term = np.log(shares)
     for col in q_cols_present:
-        df[f"mu_{col}"] = factor * (log_term[col] + 1.0)
+        df.loc[:, f"mu_{col}"] = factor * (log_term[col] + 1.0)
 
     # Relative chemical potentials Δμ_i = μ_i − μ̄ (per row, across buckets).
     # These remain diagnostics only and are not yet used to drive any flows.
@@ -295,10 +295,10 @@ def _apply_chemical_potentials(df: pd.DataFrame,
     if mu_cols:
         mu_vals = df[mu_cols].apply(pd.to_numeric, errors="coerce")
         mu_bar = mu_vals.mean(axis=1)
-        df["mu_mean"] = mu_bar
+        df.loc[:, "mu_mean"] = mu_bar
         for col in mu_cols:
             dcol = col.replace("mu_", "dmu_", 1)
-            df[dcol] = mu_vals[col] - mu_bar
+            df.loc[:, dcol] = mu_vals[col] - mu_bar
     return df
 
 
@@ -345,8 +345,8 @@ def build_indicators_core(money: pd.DataFrame,
     areas = []
     for _, r in df.iterrows():
         areas.append(la.update(r.get("p_R"), r.get("V_R")))
-    df["loop_area"] = areas
-    df["loop_streaming_area"] = areas
+    df.loc[:, "loop_area"] = areas
+    df.loc[:, "loop_streaming_area"] = areas
 
     rename_map = {}
     if "p_R" in df.columns and "p_C" not in df.columns:
@@ -382,14 +382,14 @@ def build_indicators_core(money: pd.DataFrame,
         elif mode_u in ("trend", "baseline") and "U_trend" in df.columns:
             u_eff_col = "U_trend"
 
-    df["U_used_for_energy"] = u_eff_col
+    df.loc[:, "U_used_for_energy"] = u_eff_col
 
     if all(c in df.columns for c in [u_eff_col, "S_M"]):
         u_series = pd.to_numeric(df[u_eff_col], errors="coerce")
         s_series = pd.to_numeric(df["S_M"], errors="coerce")
-        df["F_C"] = u_series - t0 * s_series
+        df.loc[:, "F_C"] = u_series - t0 * s_series
     else:
-        df["F_C"] = np.nan
+        df.loc[:, "F_C"] = np.nan
 
     p0 = cfg.get("p0"); V0 = cfg.get("V0"); U0 = cfg.get("U0"); S0 = cfg.get("S0")
     if all(v is not None for v in (p0, V0, U0, S0)) and "V_C" in df.columns and "S_M" in df.columns and u_eff_col in df.columns:
@@ -398,18 +398,18 @@ def build_indicators_core(money: pd.DataFrame,
             u_series = pd.to_numeric(df[u_eff_col], errors="coerce")
             v_series = pd.to_numeric(df["V_C"], errors="coerce")
             s_series = pd.to_numeric(df["S_M"], errors="coerce")
-            df["X_C"] = (u_series - U0f) + p0f * (v_series - V0f) - t0 * (s_series - S0f)
+            df.loc[:, "X_C"] = (u_series - U0f) + p0f * (v_series - V0f) - t0 * (s_series - S0f)
         except Exception:
-            df["X_C"] = df["F_C"]
+            df.loc[:, "X_C"] = df["F_C"]
     else:
-        df["X_C"] = df["F_C"]
+        df.loc[:, "X_C"] = df["F_C"]
 
-    df["X_C_model_raw"] = df["X_C"]
+    df.loc[:, "X_C_model_raw"] = df["X_C"]
 
     # Shift F_C/X_C upward using a configurable baseline (e.g., min or quantile)
     df = _apply_free_energy_baseline(df, cfg)
     if "X_C" in df.columns:
-        df["X_C_pre_floor"] = df["X_C"]
+        df.loc[:, "X_C_pre_floor"] = df["X_C"]
 
     # Enforce non-negative exergy by baseline adjustment or clipping.
     # Default behavior: clip negatives at 0 (shift, if used, is for visualization only).
@@ -423,19 +423,19 @@ def build_indicators_core(money: pd.DataFrame,
             xnum = pd.to_numeric(df["X_C"], errors="coerce")
             if mode == "clip":
                 clip_mask = xnum < 0
-                df["X_C"] = xnum.clip(lower=0)
+                df.loc[:, "X_C"] = xnum.clip(lower=0)
             else:
                 xmin = float(xnum.min()) if np.isfinite(xnum.min()) else np.nan
                 if np.isfinite(xmin) and xmin < 0:
-                    df["X_C"] = xnum - xmin
+                    df.loc[:, "X_C"] = xnum - xmin
     except Exception:
         # If anything goes wrong, leave X_C as-is
         pass
     if "X_C" in df.columns:
         if "X_C_pre_floor" not in df.columns:
-            df["X_C_pre_floor"] = df["X_C"]
-        df["X_C_was_clipped"] = clip_mask.reindex(df.index, fill_value=False).fillna(False).astype(bool)
-        df["X_C_nonpositive"] = pd.to_numeric(df["X_C"], errors="coerce").le(0)
+            df.loc[:, "X_C_pre_floor"] = df["X_C"]
+        df.loc[:, "X_C_was_clipped"] = clip_mask.reindex(df.index, fill_value=False).fillna(False).astype(bool)
+        df.loc[:, "X_C_nonpositive"] = pd.to_numeric(df["X_C"], errors="coerce").le(0)
 
     # Fixed-reference split of free energy into surplus/shortage components
     # ΔF_C(t) = F_C(t) - F_C_ref; X_C_plus = max(0, ΔF_C); X_C_minus = max(0, -ΔF_C)
@@ -463,19 +463,19 @@ def build_indicators_core(money: pd.DataFrame,
                 f_ref = float(fc.loc[idx0])
         if f_ref is not None and np.isfinite(f_ref):
             dF = fc.astype(float) - f_ref
-            df["Delta_F_C"] = dF
-            df["X_C_plus"] = dF.clip(lower=0)
-            df["X_C_minus"] = (-dF).clip(lower=0)
+            df.loc[:, "Delta_F_C"] = dF
+            df.loc[:, "X_C_plus"] = dF.clip(lower=0)
+            df.loc[:, "X_C_minus"] = (-dF).clip(lower=0)
         else:
             # If we cannot resolve a fixed reference, emit NaNs for the split
-            df["Delta_F_C"] = np.nan
-            df["X_C_plus"] = np.nan
-            df["X_C_minus"] = np.nan
+            df.loc[:, "Delta_F_C"] = np.nan
+            df.loc[:, "X_C_plus"] = np.nan
+            df.loc[:, "X_C_minus"] = np.nan
     except Exception:
         # Do not fail the pipeline if any issue occurs; keep base columns
-        df["Delta_F_C"] = np.nan
-        df["X_C_plus"] = np.nan
-        df["X_C_minus"] = np.nan
+        df.loc[:, "Delta_F_C"] = np.nan
+        df.loc[:, "X_C_plus"] = np.nan
+        df.loc[:, "X_C_minus"] = np.nan
 
     df = _apply_loop_quality(df)
     return df
@@ -489,6 +489,7 @@ def compute_diagnostics(df: pd.DataFrame, window: int = 24) -> pd.DataFrame:
     env variable.
     """
     import os
+    df = df.copy()
     try:
         env_w = int(os.getenv("DIAG_WINDOW", window))
         if env_w >= 8:  # sanity lower bound
@@ -526,25 +527,25 @@ def compute_diagnostics(df: pd.DataFrame, window: int = 24) -> pd.DataFrame:
                 out[i] = np.nan
         return out
 
-    df["dT_dV_at_S"] = _rolling_partial_beta("T_L", "V_C", "S_M")
-    df["dp_dS_at_V"] = _rolling_partial_beta("p_C", "S_M", "V_C")
-    df["maxwell_curl"] = df["dT_dV_at_S"] + df["dp_dS_at_V"]
+    df.loc[:, "dT_dV_at_S"] = _rolling_partial_beta("T_L", "V_C", "S_M")
+    df.loc[:, "dp_dS_at_V"] = _rolling_partial_beta("p_C", "S_M", "V_C")
+    df.loc[:, "maxwell_curl"] = df["dT_dV_at_S"] + df["dp_dS_at_V"]
     # Backward-compatible report column; it now stores the Maxwell curl Ω.
-    df["maxwell_gap"] = df["maxwell_curl"]
+    df.loc[:, "maxwell_gap"] = df["maxwell_curl"]
 
-    df["dU"] = df["U"].astype(float).diff()
-    df["dS"] = df["S_M"].astype(float).diff()
-    df["dV"] = df["V_C"].astype(float).diff()
+    df.loc[:, "dU"] = df["U"].astype(float).diff()
+    df.loc[:, "dS"] = df["S_M"].astype(float).diff()
+    df.loc[:, "dV"] = df["V_C"].astype(float).diff()
     # Also expose dF_C (helps standardized cross-region comparison of changes)
     if "F_C" in df.columns:
         try:
-            df["dF_C"] = df["F_C"].astype(float).diff()
+            df.loc[:, "dF_C"] = df["F_C"].astype(float).diff()
         except Exception:
-            df["dF_C"] = np.nan
-    df["T_bar"] = df["T_L"].astype(float).rolling(2).mean()
-    df["p_bar"] = df["p_C"].astype(float).rolling(2).mean()
-    df["Q_like"] = df["T_bar"] * df["dS"]
-    df["W_like"] = df["p_bar"] * df["dV"]
-    df["dU_pred"] = df["Q_like"] - df["W_like"]
-    df["firstlaw_resid"] = df["dU"] - df["dU_pred"]
+            df.loc[:, "dF_C"] = np.nan
+    df.loc[:, "T_bar"] = df["T_L"].astype(float).rolling(2).mean()
+    df.loc[:, "p_bar"] = df["p_C"].astype(float).rolling(2).mean()
+    df.loc[:, "Q_like"] = df["T_bar"] * df["dS"]
+    df.loc[:, "W_like"] = df["p_bar"] * df["dV"]
+    df.loc[:, "dU_pred"] = df["Q_like"] - df["W_like"]
+    df.loc[:, "firstlaw_resid"] = df["dU"] - df["dU_pred"]
     return df

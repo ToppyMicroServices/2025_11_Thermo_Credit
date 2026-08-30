@@ -400,11 +400,11 @@ def run_entropy_partition_robustness(
             direct_cols = {"C_G", "C_B", "C_E"}
             if direct_cols.issubset(destination.columns):
                 shares = destination[["date", "C_G", "C_B", "C_E"]].copy()
-                shares["q_productive"] = pd.to_numeric(shares["C_G"], errors="coerce").clip(lower=0.0)
-                shares["q_housing"] = pd.to_numeric(shares["C_B"], errors="coerce").clip(lower=0.0)
-                shares["q_consumption"] = 0.0
-                shares["q_financial"] = pd.to_numeric(shares["C_E"], errors="coerce").clip(lower=0.0)
-                shares["q_government"] = 0.0
+                shares.loc[:, "q_productive"] = pd.to_numeric(shares["C_G"], errors="coerce").clip(lower=0.0)
+                shares.loc[:, "q_housing"] = pd.to_numeric(shares["C_B"], errors="coerce").clip(lower=0.0)
+                shares.loc[:, "q_consumption"] = 0.0
+                shares.loc[:, "q_financial"] = pd.to_numeric(shares["C_E"], errors="coerce").clip(lower=0.0)
+                shares.loc[:, "q_government"] = 0.0
                 frame = shares[
                     ["date", "q_productive", "q_housing", "q_consumption", "q_financial", "q_government"]
                 ].copy()

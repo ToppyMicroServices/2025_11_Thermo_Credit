@@ -53,22 +53,14 @@ jobs:
       - name: Prepare minimal data (no network)
         run: |
           python scripts/ci_prepare_minimal_data.py
-      - name: Build JP features (skip if no API key)
-        env:
-          FRED_API_KEY: ${{ secrets.FRED_API_KEY || '' }}
+      - name: Compute all regional indicators
         run: |
-          if [ -n "$FRED_API_KEY" ]; then python scripts/01_build_features.py; fi
-      - name: Build EU features (skip if no API key)
-        env:
-          FRED_API_KEY: ${{ secrets.FRED_API_KEY || '' }}
+          python scripts/02_compute_all_regions.py
+      - name: Validate regional output structure
         run: |
-          if [ -n "$FRED_API_KEY" ]; then python scripts/04_build_features_eu.py; fi
-      - name: Compute indicators strict
-        run: |
-          python scripts/02_compute_indicators.py
-          python scripts/02_compute_indicators_eu.py --strict || echo "[warn] EU strict run failed (placeholders or missing real data)"
+          python scripts/27_validate_site_data.py --min-rows 3
       - name: Run tests
-        run: pytest -q || echo "[warn] tests failed under strict EU scenario"
+        run: pytest -q
 
   reproducibility:
     runs-on: ubuntu-latest

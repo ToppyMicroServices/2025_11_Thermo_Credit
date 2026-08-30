@@ -1,9 +1,8 @@
-import os, json, time
+import os, json
 import argparse
 from typing import Optional
 import glob
 import pandas as pd
-import requests
 import sys
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -22,6 +21,7 @@ from lib.worldbank import fetch_worldbank_series
 from lib.config_params import allocation_weights, leverage_share
 from lib.config_loader import load_config
 from lib.external_coupling import build_external_coupling_indices
+from lib.official_series import fetch_ecb_series, fetch_fred_series as fetch_official_fred_series
 
 FRED_KEY = os.getenv("FRED_API_KEY", "")
 CONFIG_PATH = os.path.join(ROOT, "config.yml")
@@ -33,30 +33,48 @@ ROLE_ENV_EU = {
     "yield_proxy_eu": "YIELD_SERIES_EU",
 }
 
+ECB_TOTAL_ASSETS_ID = "ECB_BSI_TOTAL_ASSETS"
+ECB_TOTAL_ASSETS_FLOW = "BSI"
+ECB_TOTAL_ASSETS_KEY = "M.U2.N.C.T00.A.1.Z5.0000.Z01.E"
+
+
+def _cached_series(series_id: str) -> pd.DataFrame:
+    path = os.path.join(ROOT, "data", f"{series_id}.csv")
+    if not os.path.exists(path):
+        return pd.DataFrame()
+    frame = pd.read_csv(path)
+    if frame.empty or not {"date", "value"}.issubset(frame.columns):
+        return pd.DataFrame()
+    frame["date"] = pd.to_datetime(frame["date"], errors="coerce")
+    frame["value"] = pd.to_numeric(frame["value"], errors="coerce")
+    return frame.dropna(subset=["date", "value"]).sort_values("date").reset_index(drop=True)
+
 
 def fred_series(series_id: str, start: str = DEFAULT_START, retries: int = 3, backoff: float = 1.5) -> pd.DataFrame:
-    if not FRED_KEY:
-        raise RuntimeError("FRED_API_KEY not set; cannot fetch online.")
-    url = (
-        "https://api.stlouisfed.org/fred/series/observations"
-        f"?series_id={series_id}&api_key={FRED_KEY}&file_type=json&observation_start={start}"
-    )
-    last = None
-    for i in range(retries):
-        try:
-            r = requests.get(url, timeout=30)
-            r.raise_for_status()
-            obs = r.json()["observations"]
-            df = pd.DataFrame(obs)[["date", "value"]]
-            df["value"] = pd.to_numeric(df["value"], errors="coerce")
-            df = df.dropna()
-            return df
-        except Exception as e:
-            last = e
-            if i < retries - 1:
-                time.sleep(backoff ** i)
-            else:
-                raise
+    cached = _cached_series(series_id)
+    if os.getenv("THERMO_USE_CACHED_SERIES", "").strip().lower() in {"1", "true", "yes"} and not cached.empty:
+        return cached
+    try:
+        if series_id == ECB_TOTAL_ASSETS_ID:
+            return fetch_ecb_series(
+                ECB_TOTAL_ASSETS_FLOW,
+                ECB_TOTAL_ASSETS_KEY,
+                start=start[:7],
+                retries=retries,
+                backoff=backoff,
+            )
+        return fetch_official_fred_series(
+            series_id,
+            start=start,
+            api_key=FRED_KEY,
+            retries=retries,
+            backoff=backoff,
+        )
+    except Exception as exc:
+        if not cached.empty:
+            print(f"[EU series] Fetch failed for {series_id}; using cached CSV: {exc}")
+            return cached
+        raise
 
 def worldbank_series(country: str = "EMU", indicator: str = "NY.GDP.MKTP.CN") -> pd.DataFrame:
     cache_dir = os.path.join(ROOT, "data")
@@ -268,7 +286,7 @@ def build_eu(series_prefs: dict, project_config: dict) -> None:
             qdf.to_csv(alloc_path, index=False)
         print("EU feature CSVs built: money_eu.csv, credit_eu.csv, reg_pressure_eu.csv (+ allocation_q_eu.csv if missing)")
     except Exception as e:
-        print("[EU build] Skipped building EU feature CSVs:", e)
+        raise RuntimeError(f"EU feature build failed: {e}") from e
 
 
 def parse_args() -> argparse.Namespace:
@@ -285,10 +303,6 @@ def main() -> None:
 
     if args.list_series:
         list_series(series_prefs, args.role)
-        return
-
-    if not FRED_KEY:
-        print("No FRED_API_KEY; skip EU online fetch and keep local CSVs.")
         return
 
     build_eu(series_prefs, project_config)

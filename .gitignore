@@ -46,6 +46,7 @@ data/*.csv
 !data/allocation_q_us.csv
 !data/credit_destination_jp.csv
 !data/gdp_eu.csv
+!data/ECB_BSI_TOTAL_ASSETS.csv
 !data/gdp_us.csv
 !data/series_selected.json
 !data/series_selected_eu.json

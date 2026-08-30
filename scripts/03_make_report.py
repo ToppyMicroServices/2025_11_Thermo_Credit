@@ -619,7 +619,7 @@ def _build_region_context(
     if local.empty:
         return _empty_context()
     if "date" in local.columns:
-        local["date"] = pd.to_datetime(local["date"])
+        local = local.assign(date=pd.to_datetime(local["date"]))
         local = local.sort_values("date").reset_index(drop=True)
     if local.empty:
         return _empty_context()
@@ -647,8 +647,8 @@ def _build_region_context(
         long_df = plot_df[["date"] + cat_cols].melt(id_vars="date", var_name="category", value_name="value")
         long_df = long_df.dropna(subset=["date", "value"])
         if not long_df.empty:
-            long_df["category_key"] = long_df["category"].str.replace("S_M_in_", "", n=1)
-            long_df["Category"] = long_df["category_key"].map(CATEGORY_LABELS).fillna(
+            long_df.loc[:, "category_key"] = long_df["category"].str.replace("S_M_in_", "", n=1)
+            long_df.loc[:, "Category"] = long_df["category_key"].map(CATEGORY_LABELS).fillna(
                 long_df["category_key"].str.replace("_", " ").str.title()
             )
             fig_cat = px.area(
@@ -735,9 +735,9 @@ def _build_region_context(
         if plus_ok or minus_ok:
             df_pm = plot_df[["date"]].copy()
             if plus_ok:
-                df_pm["Surplus (X_C+)"] = pd.to_numeric(plot_df["X_C_plus"], errors="coerce")
+                df_pm.loc[:, "Surplus (X_C+)"] = pd.to_numeric(plot_df["X_C_plus"], errors="coerce")
             if minus_ok:
-                df_pm["Shortage (X_C−)"] = pd.to_numeric(plot_df["X_C_minus"], errors="coerce")
+                df_pm.loc[:, "Shortage (X_C−)"] = pd.to_numeric(plot_df["X_C_minus"], errors="coerce")
             y_cols = [c for c in ["Surplus (X_C+)", "Shortage (X_C−)"] if c in df_pm.columns]
             if y_cols:
                 fig_pm = px.area(
@@ -940,14 +940,14 @@ def _build_region_context(
     mini_html = ""
     if mini_cols:
         mini_tail = local[["date"] + mini_cols].tail(6).copy()
-        mini_tail["date"] = mini_tail["date"].dt.strftime("%Y-%m-%d")
+        mini_tail = mini_tail.assign(date=mini_tail["date"].dt.strftime("%Y-%m-%d"))
         mini_html = _table_scroll(mini_tail.to_html(index=False, border=0, classes="mini", escape=True))
 
     diagnostics_html = ""
     if has_derivatives and effective_window >= 3 and deriv_cols_present:
         diag_subset = local[["date"] + deriv_cols_present].dropna().tail(6)
         if not diag_subset.empty:
-            diag_subset["date"] = diag_subset["date"].dt.strftime("%Y-%m-%d")
+            diag_subset = diag_subset.assign(date=diag_subset["date"].dt.strftime("%Y-%m-%d"))
             diagnostics_html += f"<h2>Diagnostics – Maxwell-like (window={effective_window})</h2>" + _table_scroll(diag_subset.to_html(index=False, border=0, classes="mini", escape=True))
             if out_of_spec_ranges:
                 spans = ", ".join([f"{s.strftime('%Y-%m-%d')} → {e.strftime('%Y-%m-%d')}" for s, e in out_of_spec_ranges])
@@ -960,7 +960,7 @@ def _build_region_context(
         fl = local[["date"] + firstlaw_table_cols].dropna().tail(6)
         if not fl.empty:
             fl = fl.rename(columns={"W_like": "minus_pV"})
-            fl["date"] = fl["date"].dt.strftime("%Y-%m-%d")
+            fl = fl.assign(date=fl["date"].dt.strftime("%Y-%m-%d"))
             diagnostics_html += "<h2>Diagnostics – First-law</h2>" + _table_scroll(fl.to_html(index=False, border=0, classes="mini", escape=True))
 
     selected_table_html = _selected_table(selected_meta, label)

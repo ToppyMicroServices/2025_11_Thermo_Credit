@@ -1,0 +1,14 @@
+{
+  "dataflow": "BSI",
+  "first_observation": "1999-01-01",
+  "frequency": "monthly",
+  "id": "ECB_BSI_TOTAL_ASSETS",
+  "latest_observation": "2026-07-01",
+  "provider": "European Central Bank",
+  "retrieved_at": "2026-08-30T09:59:41.730278+00:00",
+  "rows": 331,
+  "series_key": "M.U2.N.C.T00.A.1.Z5.0000.Z01.E",
+  "source_url": "https://data.ecb.europa.eu/data/datasets/BSI/BSI.M.U2.N.C.T00.A.1.Z5.0000.Z01.E",
+  "title": "Total assets of the Eurosystem, stocks",
+  "units": "EUR millions"
+}

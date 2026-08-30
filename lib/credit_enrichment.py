@@ -68,25 +68,25 @@ def compute_enrichment(
 
     # Depth
     if depth_source is not None:
-        out[depth_col] = depth_source
+        out.loc[:, depth_col] = depth_source
     else:
         # heuristic scaling fallback using depth_scale
         l_series = out[l_real_col].astype(float)
         # If all zeros or NaN, assign uniform DEFAULT_DEPTH_FALLBACK
         if l_series.notna().sum() == 0 or l_series.abs().sum() == 0:
-            out[depth_col] = depth_fallback
+            out.loc[:, depth_col] = pd.Series(depth_fallback, index=out.index, dtype=float)
         else:
             med = l_series.median() or 1.0
             scaled = l_series * depth_fallback / med
-            out[depth_col] = scaled.fillna(depth_fallback)
+            out.loc[:, depth_col] = scaled.fillna(depth_fallback)
 
     # Turnover heuristic: U / L_real (capacity over stock)
     if turnover_source is not None:
-        out[turnover_col] = turnover_source
+        out.loc[:, turnover_col] = turnover_source
     else:
         with np.errstate(divide="ignore", invalid="ignore"):
             base_ratio = out[u_col].astype(float) / out[l_real_col].replace({0: np.nan}).astype(float)
-        out[turnover_col] = base_ratio.replace([np.inf, -np.inf], np.nan).fillna(turnover_fallback)
+        out.loc[:, turnover_col] = base_ratio.replace([np.inf, -np.inf], np.nan).fillna(turnover_fallback)
 
     # Clip turnover to sane bounds
     clipped_low = out[turnover_col] < turnover_min

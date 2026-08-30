@@ -109,12 +109,12 @@ class CompareBuilder:
                 part = df[["date", col]].copy()
                 part = part[part["date"] >= self.start_date]
                 part = part.rename(columns={col: "value"})
-                part["Region"] = label
+                part.loc[:, "Region"] = label
                 long_parts.append(part)
             if not long_parts:
                 continue
             long_df = pd.concat(long_parts, ignore_index=True)
-            long_df["date"] = pd.to_datetime(long_df["date"], errors="coerce")
+            long_df = long_df.assign(date=pd.to_datetime(long_df["date"], errors="coerce"))
             long_df = long_df.dropna(subset=["date", "value"]).sort_values("date")
             if long_df.empty:
                 continue
@@ -160,11 +160,11 @@ class CompareBuilder:
             part = df[["date", "S_M_hat"]].copy()
             part = part[part["date"] >= self.start_date]
             part = part.rename(columns={"S_M_hat": "value"})
-            part["Region"] = label
+            part.loc[:, "Region"] = label
             long_parts_hat.append(part)
         if long_parts_hat:
             long_df_hat = pd.concat(long_parts_hat, ignore_index=True)
-            long_df_hat["date"] = pd.to_datetime(long_df_hat["date"], errors="coerce")
+            long_df_hat = long_df_hat.assign(date=pd.to_datetime(long_df_hat["date"], errors="coerce"))
             long_df_hat = long_df_hat.dropna(subset=["date", "value"]).sort_values("date")
             if not long_df_hat.empty:
                 fig_hat = px.line(
@@ -460,7 +460,7 @@ def _compare_interpretation(short_label: str, frame: Optional[pd.DataFrame]) -> 
     if not {"value", "Region"}.issubset(frame.columns):
         return "Within-region standardized view; raw levels are not cross-region comparable."
     data = frame.copy()
-    data["value"] = pd.to_numeric(data["value"], errors="coerce")
+    data.loc[:, "value"] = pd.to_numeric(data["value"], errors="coerce")
     data = data.dropna(subset=["value"])
     if "date" in data.columns:
         data = data.sort_values("date")
@@ -636,7 +636,7 @@ def _load_csv(path: str) -> Optional[pd.DataFrame]:
     except Exception:
         return None
     if "date" in df.columns:
-        df["date"] = pd.to_datetime(df["date"], errors="coerce")
+        df = df.assign(date=pd.to_datetime(df["date"], errors="coerce"))
         df = df.dropna(subset=["date"])
     return df
 
@@ -684,7 +684,7 @@ def _calc_effective_window(frame: pd.DataFrame, requested: int) -> Tuple[int, st
 
 def make_dual_axis_sm_tl(plot_df: pd.DataFrame, title: str) -> go.Figure:
     df = plot_df.copy()
-    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df = df.assign(date=pd.to_datetime(df["date"], errors="coerce"))
     df = df.dropna(subset=["date"])
     fig = make_subplots(specs=[[{"secondary_y": True}]])
     col_sm = "#62d2ff"
@@ -773,7 +773,7 @@ def _augment_region_frame(frame: pd.DataFrame, effective_window: int, has_thermo
     local = frame.copy()
     for col in local.columns:
         if col != "date":
-            local[col] = pd.to_numeric(local[col], errors="coerce")
+            local.loc[:, col] = pd.to_numeric(local[col], errors="coerce")
     has_derivatives = all(c in local.columns for c in DERIVATIVE_COLS) and not local[DERIVATIVE_COLS].dropna(how="all").empty
     if has_thermo and effective_window >= 3 and not has_derivatives:
         local = compute_diagnostics(local.copy(), window=effective_window)
@@ -781,7 +781,7 @@ def _augment_region_frame(frame: pd.DataFrame, effective_window: int, has_thermo
     needed_extra = DERIVATIVE_COLS + FIRSTLAW_COLS + ["Q_like", "W_like", "dU_pred"]
     for col in needed_extra:
         if col not in local.columns:
-            local[col] = np.nan
+            local.loc[:, col] = np.nan
     return local, has_derivatives
 
 

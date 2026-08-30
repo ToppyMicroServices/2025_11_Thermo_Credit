@@ -68,7 +68,7 @@ def load_and_normalize(enabled: List[Dict]) -> Optional[pd.DataFrame]:
             val_col = next((c for c in df.columns if str(c).lower() == "value"), None)
             if not date_col or not val_col:
                 continue
-            df[date_col] = pd.to_datetime(df[date_col])
+            df.loc[:, date_col] = pd.to_datetime(df[date_col])
             df = df[[date_col, val_col]].dropna().sort_values(date_col)
             if df.empty:
                 continue
@@ -76,16 +76,19 @@ def load_and_normalize(enabled: List[Dict]) -> Optional[pd.DataFrame]:
             if first == 0 or first is None:
                 continue
             sid = e.get("id") or e.get("title") or "series"
-            df["norm"] = df[val_col] / first * 100.0
+            df.loc[:, "norm"] = df[val_col] / first * 100.0
             frames.append(df.rename(columns={date_col: "date", "norm": sid})[["date", sid]])
             meta.append((sid, (e.get("country") or e.get("Country") or "").upper()))
         except Exception:
             continue
     if not frames:
         return None
-    out = frames[0]
-    for fr in frames[1:]:
-        out = out.merge(fr, on="date", how="outer")
+    indexed = []
+    for frame in frames:
+        values = frame.drop(columns=["date"]).copy()
+        values.index = pd.DatetimeIndex(frame["date"].to_numpy(), name="date")
+        indexed.append(values)
+    out = pd.concat(indexed, axis=1, join="outer").reset_index()
     # Attach simple metadata map for plotting color grouping by country (if caller wants it)
     out = out.sort_values("date")
     out.attrs["series_country_map"] = {sid: country for sid, country in meta if sid}
