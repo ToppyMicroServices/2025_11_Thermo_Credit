@@ -148,8 +148,15 @@ def build_features(series_prefs: dict, project_config: dict) -> None:
     money.to_csv("data/money.csv", index=False)
 
     # 2) credit.csv
-    credit = fred_series("CRDQJPAPABIS"); credit["date"] = pd.to_datetime(credit["date"])  # real private credit
+    credit = fred_series("CRDQJPAPABIS")
+    credit["date"] = (
+        pd.to_datetime(credit["date"])
+        .dt.to_period("Q-DEC")
+        .dt.end_time
+        .dt.normalize()
+    )  # real private credit; FRED timestamps this quarterly series at quarter start
     gdp = worldbank_series("JPN", "NY.GDP.MKTP.CN")
+    gdp["date"] = pd.to_datetime(gdp["date"])
     jgb = yield_choice["data"].copy(); jgb["date"] = pd.to_datetime(jgb["date"])
     # Use explicit quarter ending convention (December) with new alias 'QE-DEC'
     jgbq = jgb.resample("QE-DEC", on="date").mean().reset_index().rename(columns={"value": "spread"})

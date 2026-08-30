@@ -1,0 +1,37 @@
+{
+  "flat_range_tolerance": 0.0001,
+  "flat_sd_tolerance": 1e-05,
+  "interpretation": "If all observed partitions for a region are flat, S_M_hat is treated as an allocation-table diagnostic rather than main empirical evidence.",
+  "overall": {
+    "all_observed_flat": false,
+    "flat_observed_partitions": 12,
+    "max_random_walk_sd": 0.03310100611546701,
+    "observed_partitions": 18
+  },
+  "regions": {
+    "eu": {
+      "exclude_entropy_from_main_text": true,
+      "flat_observed_partitions": 6,
+      "max_observed_range": 0.0,
+      "max_observed_sd": 3.3306690738754696e-16,
+      "observed_partitions": 6,
+      "region_label": "Euro Area (EU)"
+    },
+    "jp": {
+      "exclude_entropy_from_main_text": false,
+      "flat_observed_partitions": 0,
+      "max_observed_range": 0.9533343355209491,
+      "max_observed_sd": 0.2823110954478821,
+      "observed_partitions": 6,
+      "region_label": "Japan (JP)"
+    },
+    "us": {
+      "exclude_entropy_from_main_text": true,
+      "flat_observed_partitions": 6,
+      "max_observed_range": 0.0,
+      "max_observed_sd": 2.220446049250313e-16,
+      "observed_partitions": 6,
+      "region_label": "United States (US)"
+    }
+  }
+}

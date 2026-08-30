@@ -110,6 +110,17 @@
     "enabled": false
   },
   {
+    "id": "BOJ_LA01_CREDIT_DESTINATION_JP",
+    "title": "Loans and Bills Discounted by Sector",
+    "provider": "Bank of Japan",
+    "country": "JP",
+    "frequency": "Quarterly",
+    "units": "100 million yen",
+    "url": "https://www.stat-search.boj.or.jp/",
+    "note": "Source for data/credit_destination_jp.csv; BOJ Time-Series Data Search database LA01, sectoral outstanding loans, household housing and consumer-purpose outstanding loans, net/positive stock changes, and new loans for fixed investment audit columns",
+    "enabled": true
+  },
+  {
     "id": "CRDQJPAPABIS",
     "title": "BIS Private Non-financial Credit (Japan)",
     "provider": "BIS",

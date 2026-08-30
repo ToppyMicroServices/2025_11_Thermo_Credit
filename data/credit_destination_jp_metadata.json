@@ -1,0 +1,665 @@
+{
+  "api_endpoint": "https://www.stat-search.boj.or.jp/api/v1/getDataCode",
+  "bucket_mapping": [
+    {
+      "bucket": "G",
+      "muller_verner_bucket": "TRADABLE",
+      "primary_bucket": "NFB",
+      "sector": "manufacturing",
+      "stock_code": "DLLILKG21_DLLI5DS2TMK",
+      "werner_bucket": "COMPLEMENT"
+    },
+    {
+      "bucket": "G",
+      "muller_verner_bucket": "TRADABLE",
+      "primary_bucket": "NFB",
+      "sector": "agriculture_forestry",
+      "stock_code": "DLLILKG86_DLLI5DS2TAF",
+      "werner_bucket": "COMPLEMENT"
+    },
+    {
+      "bucket": "G",
+      "muller_verner_bucket": "TRADABLE",
+      "primary_bucket": "NFB",
+      "sector": "fishery",
+      "stock_code": "DLLILKG24_DLLI5DS2TFS",
+      "werner_bucket": "COMPLEMENT"
+    },
+    {
+      "bucket": "G",
+      "muller_verner_bucket": "TRADABLE",
+      "primary_bucket": "NFB",
+      "sector": "mining_quarrying",
+      "stock_code": "DLLILKG25_DLLI5DS2TMN",
+      "werner_bucket": "COMPLEMENT"
+    },
+    {
+      "bucket": "G",
+      "muller_verner_bucket": "OTHER_NFB",
+      "primary_bucket": "NFB",
+      "sector": "electricity_gas_water",
+      "stock_code": "DLLILKG29_DLLI5DS2TEG",
+      "werner_bucket": "COMPLEMENT"
+    },
+    {
+      "bucket": "G",
+      "muller_verner_bucket": "NONTRADABLE",
+      "primary_bucket": "NFB",
+      "sector": "information_communications",
+      "stock_code": "DLLILKG74_DLLI5DS2TIC",
+      "werner_bucket": "COMPLEMENT"
+    },
+    {
+      "bucket": "G",
+      "muller_verner_bucket": "NONTRADABLE",
+      "primary_bucket": "NFB",
+      "sector": "transport_postal",
+      "stock_code": "DLLILKG75_DLLI5DS2TTR",
+      "werner_bucket": "COMPLEMENT"
+    },
+    {
+      "bucket": "G",
+      "muller_verner_bucket": "NONTRADABLE",
+      "primary_bucket": "NFB",
+      "sector": "wholesale_trade",
+      "stock_code": "DLLILKG40_DLLI5DS2TWS",
+      "werner_bucket": "COMPLEMENT"
+    },
+    {
+      "bucket": "G",
+      "muller_verner_bucket": "NONTRADABLE",
+      "primary_bucket": "NFB",
+      "sector": "retail_trade",
+      "stock_code": "DLLILKG43_DLLI5DS2TRT",
+      "werner_bucket": "COMPLEMENT"
+    },
+    {
+      "bucket": "G",
+      "muller_verner_bucket": "OTHER_NFB",
+      "primary_bucket": "NFB",
+      "sector": "goods_rental_leasing",
+      "stock_code": "DLLILKG51_DLLI5DS2TLS",
+      "werner_bucket": "COMPLEMENT"
+    },
+    {
+      "bucket": "G",
+      "muller_verner_bucket": "OTHER_NFB",
+      "primary_bucket": "NFB",
+      "sector": "professional_technical_services",
+      "stock_code": "DLLILKG97_DLLI5DS2TSC",
+      "werner_bucket": "COMPLEMENT"
+    },
+    {
+      "bucket": "G",
+      "muller_verner_bucket": "NONTRADABLE",
+      "primary_bucket": "NFB",
+      "sector": "hotels",
+      "stock_code": "DLLILKG52_DLLI5DS2THL",
+      "werner_bucket": "COMPLEMENT"
+    },
+    {
+      "bucket": "G",
+      "muller_verner_bucket": "NONTRADABLE",
+      "primary_bucket": "NFB",
+      "sector": "eating_drinking_services",
+      "stock_code": "DLLILKG44_DLLI5DS2TRS",
+      "werner_bucket": "COMPLEMENT"
+    },
+    {
+      "bucket": "G",
+      "muller_verner_bucket": "OTHER_NFB",
+      "primary_bucket": "NFB",
+      "sector": "living_personal_amusement_services",
+      "stock_code": "DLLILKG98_DLLI5DS2TLA",
+      "werner_bucket": "COMPLEMENT"
+    },
+    {
+      "bucket": "G",
+      "muller_verner_bucket": "OTHER_NFB",
+      "primary_bucket": "NFB",
+      "sector": "education_learning_support",
+      "stock_code": "DLLILKG78_DLLI5DS2TED",
+      "werner_bucket": "COMPLEMENT"
+    },
+    {
+      "bucket": "G",
+      "muller_verner_bucket": "OTHER_NFB",
+      "primary_bucket": "NFB",
+      "sector": "medical_health_welfare",
+      "stock_code": "DLLILKG77_DLLI5DS2TME",
+      "werner_bucket": "COMPLEMENT"
+    },
+    {
+      "bucket": "G",
+      "muller_verner_bucket": "OTHER_NFB",
+      "primary_bucket": "NFB",
+      "sector": "other_services",
+      "stock_code": "DLLILKG79_DLLI5DS2TMS",
+      "werner_bucket": "COMPLEMENT"
+    },
+    {
+      "bucket": "G",
+      "muller_verner_bucket": "UNRESOLVED",
+      "primary_bucket": "NFB_RESIDUAL_COMPONENT",
+      "sector": "other_organizations",
+      "stock_code": "DLLILKG80_DLLI5DS2TRE",
+      "werner_bucket": "COMPLEMENT"
+    },
+    {
+      "bucket": "G",
+      "muller_verner_bucket": "EXCLUDE_LOCAL_GOVERNMENT",
+      "primary_bucket": "EXCLUDE_LOCAL_GOVERNMENT",
+      "sector": "local_governments",
+      "stock_code": "DLLILKG61_DLLI5DS2TRO",
+      "werner_bucket": "EXCLUDE_LOCAL_GOVERNMENT"
+    },
+    {
+      "bucket": "B",
+      "muller_verner_bucket": "NONTRADABLE",
+      "primary_bucket": "NFB",
+      "sector": "construction",
+      "stock_code": "DLLILKG26_DLLI5DS2TCT",
+      "werner_bucket": "FCP"
+    },
+    {
+      "bucket": "E",
+      "muller_verner_bucket": "FIN",
+      "primary_bucket": "FIN",
+      "sector": "finance_insurance",
+      "stock_code": "DLLILKG49_DLLI5DS2TFI",
+      "werner_bucket": "FCP"
+    },
+    {
+      "bucket": "E",
+      "muller_verner_bucket": "NONTRADABLE",
+      "primary_bucket": "PROP",
+      "sector": "real_estate",
+      "stock_code": "DLLILKG50_DLLI5DS2TFX",
+      "werner_bucket": "FCP"
+    },
+    {
+      "bucket": "E",
+      "muller_verner_bucket": "HH",
+      "primary_bucket": "HOUSEHOLD_SPLIT",
+      "sector": "households_housing_consumer_tax",
+      "stock_code": "DLLILKG62_DLLI5DS2TPN",
+      "werner_bucket": "COMPLEMENT"
+    },
+    {
+      "bucket": "U",
+      "muller_verner_bucket": "UNRESOLVED",
+      "primary_bucket": "NFB_RESIDUAL_COMPONENT",
+      "sector": "overseas_yen_and_transferred_loans",
+      "stock_code": "DLLILKG63_DLLI5DS2TFL",
+      "werner_bucket": "COMPLEMENT"
+    }
+  ],
+  "common_taxonomy_stock_start": "2009-06-30",
+  "construction": "The primary Bezemer-Samarina-Zhang Japan crosswalk has four buckets: non-financial business (including construction), financial business, property/mortgage (real-estate borrowers plus purpose-coded household housing loans), and household non-housing (household total less housing). C_t is the sum of positive quarterly net changes after stocks are aggregated within those four buckets; C_t_raw_delta is the signed change in exactly the same included stock population. The primary four-quarter composition vector uses the common denominator sum_4q(C_NFB+C_FIN+C_PROP+C_HH_NONHOUSING), and q_t is its NFB coordinate. Household non-housing is not labelled consumer credit; the BOJ consumer-purpose series is an audit comparator. Local governments, overseas-linked loans, and the unresolved residual are reported explicitly. Werner (1997) and Muller-Verner (2024) mappings are literature-anchored robustness taxonomies reported jointly over the same included population; the current-sample declaration is not an externally time-stamped preregistration. Legacy G/B/E columns remain for Appendix and archive compatibility. The 2009Q2 classification-break difference is excluded; the first valid common-taxonomy flow is 2009Q3.",
+  "db": "LA01",
+  "display_coordinate": "q_t = borrower_composition_NFB_4q",
+  "end_date": "202601",
+  "first_valid_common_taxonomy_flow": "2009-09-30",
+  "generated_at_utc": "2026-07-30T10:47:52.931820+00:00",
+  "legacy_aliases": {
+    "legacy_C_t": "sum(C_G, C_B, C_E)",
+    "legacy_q_t": "borrower_composition_G_4q",
+    "mapped_domestic_stock": "legacy_mapped_domestic_stock; retained for archive compatibility and not the primary Bezemer population scale",
+    "operating_borrower_share": "borrower_composition_G_4q",
+    "operating_borrower_share_1q": "borrower_composition_G_1q",
+    "operating_borrower_share_4q": "borrower_composition_G_4q"
+  },
+  "legacy_taxonomy_id": "author_gbe_legacy_v1",
+  "mapping_version": "boj-bezemer-four-way-common-population-2026-07-30-v1",
+  "primary_population_note": "primary_included_stock equals the official total for domestically licensed banks less local-government loans. Borrower geography is not restricted to domestic borrowers: the published residual NFB formula absorbs the explicitly reported overseas-linked series.",
+  "primary_scale_flow_column": "C_t",
+  "primary_scale_stock_column": "primary_included_stock",
+  "primary_signed_scale_flow_column": "C_t_raw_delta",
+  "primary_taxonomy_id": "bezemer_samarina_zhang_2020_japan_v1",
+  "primary_vector_columns": [
+    "borrower_composition_NFB_4q",
+    "borrower_composition_FIN_4q",
+    "borrower_composition_PROP_4q",
+    "borrower_composition_HH_NONHOUSING_4q"
+  ],
+  "robustness_taxonomy_ids": [
+    "werner_1997_financial_circulation_v1",
+    "muller_verner_2024_sector_v1"
+  ],
+  "series_metadata": {
+    "DLCLLKG71_DLCL2DSTSL": {
+      "category": "Loans to Households (Consumer Loans)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Consumer Loans/Amounts Outstanding/Loans to Households /Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLHLLKG71_DLHL2DSSL": {
+      "category": "Loans to Households (Housing Loans)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Housing Loans/Amount Outstanding/Loans to Households/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG21_DLLI5DS2TMK": {
+      "category": "Loans and Bills Discounted by Sector (Outstanding, Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Manufacturing/Outstanding/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG21_DLLI5DS5TMK": {
+      "category": "Loans and Bills Discounted by Sector (New Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Manufacturing/New Loans for Fixed Investment/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG24_DLLI5DS2TFS": {
+      "category": "Loans and Bills Discounted by Sector (Outstanding, Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Fishery/Outstanding/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG24_DLLI5DS5TFS": {
+      "category": "Loans and Bills Discounted by Sector (New Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Fishery/New Loans for Fixed Investment/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG25_DLLI5DS2TMN": {
+      "category": "Loans and Bills Discounted by Sector (Outstanding, Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Mining and Quarrying of Stone and Gravel/Outstanding/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG25_DLLI5DS5TMN": {
+      "category": "Loans and Bills Discounted by Sector (New Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Mining and Quarrying of Stone and Gravel/New Loans for Fixed Investment/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG26_DLLI5DS2TCT": {
+      "category": "Loans and Bills Discounted by Sector (Outstanding, Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Construction/Outstanding/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG26_DLLI5DS5TCT": {
+      "category": "Loans and Bills Discounted by Sector (New Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Construction/New Loans for Fixed Investment/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG29_DLLI5DS2TEG": {
+      "category": "Loans and Bills Discounted by Sector (Outstanding, Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Electricity, Gas, Heat Supply, and Water/Outstanding/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG29_DLLI5DS5TEG": {
+      "category": "Loans and Bills Discounted by Sector (New Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Electricity, Gas, Heat Supply, and Water/New Loans for Fixed Investment/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG40_DLLI5DS2TWS": {
+      "category": "Loans and Bills Discounted by Sector (Outstanding, Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Wholesale Trade/Outstanding/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG40_DLLI5DS5TWS": {
+      "category": "Loans and Bills Discounted by Sector (New Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Wholesale Trade/New Loans for Fixed Investment/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG43_DLLI5DS2TRT": {
+      "category": "Loans and Bills Discounted by Sector (Outstanding, Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Retail Trade/Outstanding/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG43_DLLI5DS5TRT": {
+      "category": "Loans and Bills Discounted by Sector (New Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Retail Trade/New Loans for Fixed Investment/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG44_DLLI5DS2TRS": {
+      "category": "Loans and Bills Discounted by Sector (Outstanding, Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Eating and Drinking Services/Outstanding/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG44_DLLI5DS5TRS": {
+      "category": "Loans and Bills Discounted by Sector (New Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Eating and Drinking Services/New Loans for Fixed Investment/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG49_DLLI5DS2TFI": {
+      "category": "Loans and Bills Discounted by Sector (Outstanding, Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Finance and Insurance/Outstanding/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG49_DLLI5DS5TFI": {
+      "category": "Loans and Bills Discounted by Sector (New Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Finance and Insurance/New Loans for Fixed Investment/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG50_DLLI5DS2TFX": {
+      "category": "Loans and Bills Discounted by Sector (Outstanding, Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Real Estate/Outstanding/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG50_DLLI5DS5TFX": {
+      "category": "Loans and Bills Discounted by Sector (New Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Real Estate/New Loans for Fixed Investment/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG51_DLLI5DS2TLS": {
+      "category": "Loans and Bills Discounted by Sector (Outstanding, Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Goods Rental and Leasing/Outstanding/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG51_DLLI5DS5TLS": {
+      "category": "Loans and Bills Discounted by Sector (New Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Goods Rental and Leasing/New Loans for Fixed Investment/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG52_DLLI5DS2THL": {
+      "category": "Loans and Bills Discounted by Sector (Outstanding, Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Hotels/Outstanding/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG52_DLLI5DS5THL": {
+      "category": "Loans and Bills Discounted by Sector (New Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Hotels/New Loans for Fixed Investment/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG61_DLLI5DS2TRO": {
+      "category": "Loans and Bills Discounted by Sector (Outstanding, Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Local Governments/Outstanding/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG61_DLLI5DS5TRO": {
+      "category": "Loans and Bills Discounted by Sector (New Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Local Governments/New Loans for Fixed Investment/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG62_DLLI5DS2TPN": {
+      "category": "Loans and Bills Discounted by Sector (Outstanding, Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Households/Outstanding/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG62_DLLI5DS5TPN": {
+      "category": "Loans and Bills Discounted by Sector (New Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Households/New Loans for Fixed Investment/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG63_DLLI5DS2TFL": {
+      "category": "Loans and Bills Discounted by Sector (Outstanding, Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Overseas Yen Loans and Domestic Loans Transferred Overseas/Outstanding/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG63_DLLI5DS5TFL": {
+      "category": "Loans and Bills Discounted by Sector (New Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Overseas Yen Loans and Domestic Loans Transferred Overseas/New Loans for Fixed Investment/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG74_DLLI5DS2TIC": {
+      "category": "Loans and Bills Discounted by Sector (Outstanding, Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Information and Communications/Outstanding/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG74_DLLI5DS5TIC": {
+      "category": "Loans and Bills Discounted by Sector (New Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Information and Communications/New Loans for Fixed Investment/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG75_DLLI5DS2TTR": {
+      "category": "Loans and Bills Discounted by Sector (Outstanding, Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Transport and Postal Activities/Outstanding/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG75_DLLI5DS5TTR": {
+      "category": "Loans and Bills Discounted by Sector (New Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Transport and Postal Activities/New Loans for Fixed Investment/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG77_DLLI5DS2TME": {
+      "category": "Loans and Bills Discounted by Sector (Outstanding, Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Medical, Health Care, and Welfare Services/Outstanding/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG77_DLLI5DS5TME": {
+      "category": "Loans and Bills Discounted by Sector (New Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Medical, Health Care, and Welfare Services/New Loans for Fixed Investment/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG78_DLLI5DS2TED": {
+      "category": "Loans and Bills Discounted by Sector (Outstanding, Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Education and Learning Support/Outstanding/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG78_DLLI5DS5TED": {
+      "category": "Loans and Bills Discounted by Sector (New Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Education and Learning Support/New Loans for Fixed Investment/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG79_DLLI5DS2TMS": {
+      "category": "Loans and Bills Discounted by Sector (Outstanding, Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Other Services/Outstanding/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG79_DLLI5DS5TMS": {
+      "category": "Loans and Bills Discounted by Sector (New Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Other Services/New Loans for Fixed Investment/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG80_DLLI5DS2TRE": {
+      "category": "Loans and Bills Discounted by Sector (Outstanding, Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Other Organizations/Outstanding/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG80_DLLI5DS5TRE": {
+      "category": "Loans and Bills Discounted by Sector (New Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Other Organizations/New Loans for Fixed Investment/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG86_DLLI5DS2TAF": {
+      "category": "Loans and Bills Discounted by Sector (Outstanding, Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Agriculture and Forestry/Outstanding/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG86_DLLI5DS5TAF": {
+      "category": "Loans and Bills Discounted by Sector (New Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Agriculture and Forestry/New Loans for Fixed Investment/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG90_DLLI5DS2T": {
+      "category": "Loans and Bills Discounted by Sector (Outstanding, Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Total/Outstanding/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG90_DLLI5DS5T": {
+      "category": "Loans and Bills Discounted by Sector (New Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Total/New Loans for Fixed Investment/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG97_DLLI5DS2TSC": {
+      "category": "Loans and Bills Discounted by Sector (Outstanding, Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Scientific Research, and Professional and Technical Services/Outstanding/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG97_DLLI5DS5TSC": {
+      "category": "Loans and Bills Discounted by Sector (New Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Scientific Research, and Professional and Technical Services/New Loans for Fixed Investment/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG98_DLLI5DS2TLA": {
+      "category": "Loans and Bills Discounted by Sector (Outstanding, Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Living-related and Personal Services, and Amusement Services/Outstanding/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    },
+    "DLLILKG98_DLLI5DS5TLA": {
+      "category": "Loans and Bills Discounted by Sector (New Loans for Fixed Investment)",
+      "frequency": "QUARTERLY",
+      "last_update": 20260520,
+      "name": "Living-related and Personal Services, and Amusement Services/New Loans for Fixed Investment/Banking Accounts, Trust Accounts and Overseas Office Accounts/Domestically Licensed Banks",
+      "unit": "100 million yen"
+    }
+  },
+  "source": "Bank of Japan Time-Series Data Search API",
+  "start_date": "197701",
+  "taxonomies": {
+    "author_gbe_legacy_v1": {
+      "buckets": {
+        "B": "Construction.",
+        "E": "Finance/insurance, real estate, and households.",
+        "G": "Broad sectors, local governments, and other organisations."
+      },
+      "citation": "Author-defined G/B/E grouping retained only for archive compatibility.",
+      "construction_placement": "Construction is separate in this legacy grouping.",
+      "population": "Mapped legacy G/B/E borrower groups.",
+      "role": "appendix_legacy"
+    },
+    "bezemer_samarina_zhang_2020_japan_v1": {
+      "buckets": {
+        "FIN": "Finance and insurance borrowers.",
+        "HH_NONHOUSING": "Total household borrowing less purpose-coded household housing loans; this is not labelled consumer credit.",
+        "NFB": "Published Japan residual: official total less finance/insurance, real estate, local government, and total household loans. Construction is included. Mapped NFB industries, overseas-linked loans, and the remaining unresolved component are disclosed separately.",
+        "PROP": "Real-estate borrowers plus purpose-coded household housing loans."
+      },
+      "citation": "Bezemer, Samarina, and Zhang (2020), Journal of Banking & Finance 113, 105760, https://doi.org/10.1016/j.jbankfin.2020.105760; Japan crosswalk documented in DNB Working Paper 559.",
+      "construction_placement": "Construction is an NFB detail in the primary crosswalk; it is not a stand-alone purpose bucket.",
+      "embedded_nfb_components": {
+        "overseas_yen_and_transferred_loans": "Explicitly disclosed because the published residual formula absorbs this non-domestic borrower category in the current BOJ total.",
+        "unresolved_residual": "Explicitly disclosed residual after mapped NFB industries and the overseas-linked series are removed from published residual NFB."
+      },
+      "exclusions": {
+        "local_governments": "Reported separately, outside the private-credit population."
+      },
+      "population": "Total outstanding loans of domestically licensed banks less local-government loans, exactly exhausted by non-financial business, financial business, property/mortgage, and household non-housing. Domestically licensed describes the lenders, not borrower geography; the residual NFB series includes the explicit overseas-linked component.",
+      "role": "primary"
+    },
+    "muller_verner_2024_sector_v1": {
+      "buckets": {
+        "FIN": "Finance/insurance retained to exhaust the common population.",
+        "HH": "Total household borrowing retained to exhaust the common population.",
+        "NONTRADABLE": "Construction, real estate, trade, hotels/restaurants, transport, and information/communications.",
+        "OTHER_NFB": "Remaining mapped NFB industries.",
+        "TRADABLE": "Agriculture, fishery, mining, and manufacturing NFB.",
+        "UNRESOLVED": "Overseas-linked and unresolved components retained explicitly to exhaust the common population; outside the paper's core sector contrast."
+      },
+      "citation": "Muller and Verner (2024), Review of Economic Studies 91(6), https://doi.org/10.1093/restud/rdad112.",
+      "construction_placement": "Construction is nontradable, following the published tradable/nontradable sector crosswalk.",
+      "population": "Exactly the included population of bezemer_samarina_zhang_2020_japan_v1.",
+      "role": "literature_anchored_robustness"
+    },
+    "werner_1997_financial_circulation_v1": {
+      "buckets": {
+        "COMPLEMENT": "Complement within the same included population, including disclosed overseas-linked and unresolved residual components.",
+        "FCP": "Werner-inspired BOJ borrower-sector proxy: construction, real estate, and the available finance/insurance aggregate. Werner's original Japan measure referred to non-bank financial institutions, so this is not an exact series match."
+      },
+      "citation": "Werner (1997), Kredit und Kapital 30(2), 276-309, https://doi.org/10.3790/ccm.30.2.276.",
+      "construction_placement": "Construction enters the Werner-inspired financial-circulation proxy; the available BOJ finance/insurance series is broader than Werner's original non-bank-financial-institution component.",
+      "population": "Exactly the included population of bezemer_samarina_zhang_2020_japan_v1.",
+      "role": "literature_anchored_robustness"
+    }
+  },
+  "taxonomy_selection": {
+    "legacy_taxonomy_id": "author_gbe_legacy_v1",
+    "oos_results_used": false,
+    "outcome_columns_used": [],
+    "primary_taxonomy_id": "bezemer_samarina_zhang_2020_japan_v1",
+    "robustness_taxonomy_ids": [
+      "werner_1997_financial_circulation_v1",
+      "muller_verner_2024_sector_v1"
+    ],
+    "selection_basis": "literature-anchored mappings reported jointly; the current-sample declaration is not an externally time-stamped preregistration"
+  },
+  "unit": "100 million yen"
+}

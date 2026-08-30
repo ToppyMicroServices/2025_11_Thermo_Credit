@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "retrieved_on": "2026-07-30",
+  "sources": {
+    "mof_manufacturing": {
+      "agency": "Ministry of Finance, Policy Research Institute",
+      "dataset": "Financial Statements Statistics of Corporations by Industry, Quarterly",
+      "official_landing_url": "https://www.mof.go.jp/english/pri/reference/ssc/historical.htm",
+      "official_file_url": "https://www.mof.go.jp/english/pri/reference/ssc/historical/liabilities.xls",
+      "official_file_name": "liabilities.xls",
+      "official_file_sha256_at_retrieval": "1a7271db84180132b05bb2abb6d73d9a4d5585ed4d30547605870fc9b8a90652",
+      "snapshot_file": "data/external_validation/mof_manufacturing_bank_borrowing.csv",
+      "snapshot_sha256": "109925ad8ecc071596d9010391314e77256f0ed8e0735d7d29101967bc04a0fc",
+      "snapshot_period": "2009Q2-2026Q1",
+      "frequency": "quarterly",
+      "unit": "100 million yen",
+      "population": "Commercial corporations with capital, contributions, or funds of at least JPY 10 million; manufacturing is assigned principally under the Japan Standard Industrial Classification using the corporation's largest-sales activity.",
+      "extraction": {
+        "short_term_source_sheet": "26",
+        "long_term_source_sheet": "32",
+        "source_column": "Manufacturing / A (all covered capital sizes)",
+        "transformation": "total_bank_borrowing = short_term_bank_borrowing + long_term_bank_borrowing",
+        "measurement_interval": "four-quarter difference for validation"
+      },
+      "supported_primary_branch": "NFB / manufacturing",
+      "validation_type": "independent debtor-side borrower-composition convergence",
+      "purpose_status": "not purpose validation",
+      "sample_change_control": "Four-quarter differences are used instead of quarter-to-quarter differences to reduce sensitivity to the April-June sample replacement. This does not eliminate survey-population or lender-coverage differences.",
+      "estimand": "Association between the four-quarter change in MOF manufacturing corporations' short-plus-long bank borrowings and the four-quarter change in BOJ loans outstanding to manufacturing borrowers over their common quarter-end sample.",
+      "does_not_validate": [
+        "loan purpose",
+        "the entire NFB bucket",
+        "equality of MOF and BOJ levels",
+        "households, finance, property, local government, or unresolved sectors"
+      ],
+      "raw_file_storage": "not committed; the official URL is an in-place historical workbook and the recorded source checksum identifies the retrieved vintage"
+    },
+    "mlit_private_housing": {
+      "agency": "Ministry of Land, Infrastructure, Transport and Tourism",
+      "dataset": "Survey of Actual Conditions of Private Housing Loans, FY2025 report",
+      "official_landing_url": "https://www.mlit.go.jp/statistics/details/t-other-2_tk_000207.html",
+      "official_file_url": "https://www.mlit.go.jp/report/press/content/001991057.pdf",
+      "official_file_name": "001991057.pdf",
+      "official_file_sha256_at_retrieval": "25475437af36a6aee3418719d80e5da73b2db2c2309014b0e7e74ac4e2446f05",
+      "snapshot_file": "data/external_validation/mlit_private_housing_2024.csv",
+      "snapshot_sha256": "f12dfef29f6195dca9c050793b16207176c8b31bf39864234f92a7bc60976d03",
+      "snapshot_period": "FY2024",
+      "frequency": "annual",
+      "unit": "shares and 100 million yen",
+      "population": "Nationwide private financial institutions supplying housing loans; 1,175 institutions were targeted, 1,112 responded (94.6 percent), and 1,021 respondents handled housing loans.",
+      "extraction": {
+        "purpose_share_page": 13,
+        "individual_housing_total_page": 11,
+        "apartment_loan_page": 36,
+        "transformation": "acquisition_purpose_share = new_housing_purpose_share + existing_housing_purpose_share"
+      },
+      "supported_primary_branch": "PROP / household housing component",
+      "validation_type": "independent direct-purpose partial validation",
+      "purpose_status": "direct purpose for the housing branch only",
+      "estimand": "Published FY2024 composition of purpose-classified individual housing-loan originations, supplemented by the published amount of apartment-loan originations and balances.",
+      "does_not_validate": [
+        "corporate real-estate loan purpose",
+        "the entire PROP bucket",
+        "quarterly BOJ stock changes",
+        "the BOJ lender population",
+        "the NFB, FIN, or HH_NONHOUSING buckets"
+      ],
+      "raw_file_storage": "not committed because the official PDF is substantially larger than the extracted table; the stable report URL and source checksum identify the retrieved file"
+    }
+  }
+}

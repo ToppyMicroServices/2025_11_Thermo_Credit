@@ -13,7 +13,8 @@ from lib.theory_calibration import calibrate_regions, write_calibration_outputs
 
 def main() -> None:
     source_ref = os.getenv("THEORY_SOURCE_REF") or None
-    results = calibrate_regions(ROOT / "site", source_ref=source_ref)
+    panel_mode = os.getenv("CALIBRATION_PANEL_MODE", "realtime")
+    results = calibrate_regions(ROOT / "site", source_ref=source_ref, panel_mode=panel_mode)
     if not results:
         raise SystemExit("No calibration results were produced.")
     outputs = write_calibration_outputs(

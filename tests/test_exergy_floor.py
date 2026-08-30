@@ -61,6 +61,10 @@ def test_exergy_floor_clips_negative_values():
     xc = pd.to_numeric(df["X_C"], errors="coerce")
     assert np.allclose(xc.values, np.clip(fc.values, 0, None), equal_nan=True)
     assert (xc >= 0).all()
+    assert "X_C_pre_floor" in df.columns
+    assert "X_C_was_clipped" in df.columns
+    assert bool(df["X_C_was_clipped"].any())
+    np.testing.assert_allclose(pd.to_numeric(df["X_C_pre_floor"], errors="coerce").values, fc.values)
 
 
 def test_exergy_floor_can_be_disabled():
@@ -106,3 +110,17 @@ def test_free_energy_baseline_min_shifts_upward():
     assert (xc_shift > 0).all()
     assert shifted_df["F_C_baseline_mode"].iloc[0] == "min"
     assert np.isclose(float(shifted_df["F_C_baseline_offset"].iloc[0]), offset)
+
+
+def test_loop_quality_missing_when_previous_xc_is_clipped():
+    money, q, cred, reg = _inputs()
+    cfg = _base_cfg({
+        "exergy_floor_zero": True,
+        "exergy_floor_mode": "clip",
+        "loop_cycle_window": 3,
+    })
+    df = build_indicators_core(money, q, cred, reg, cfg)
+
+    assert "loop_closed_area" in df.columns
+    assert "loop_loss_ratio" in df.columns
+    assert np.isnan(df["loop_loss_ratio"].iloc[-1])

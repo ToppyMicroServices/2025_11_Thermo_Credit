@@ -1,7 +1,8 @@
-"""Utilities for constructing external pressure/temperature indices.
+"""Utilities for constructing external pressure/liquidity-state indices.
 
-The helper builds monthly indices by z-scoring individual driver series and
-averaging them with equal weights (skip NaNs so missing drivers do not backfill).
+The helper builds monthly indices by expanding-window z-scoring individual
+driver series and averaging them with equal weights (skip NaNs so missing
+drivers do not backfill).
 """
 from __future__ import annotations
 
@@ -16,24 +17,25 @@ SeriesFetcher = Callable[[str, Optional[str]], pd.DataFrame]
 def _to_monthly(series_df: pd.DataFrame, freq: str) -> pd.Series:
     if series_df is None or series_df.empty:
         return pd.Series(dtype=float)
-    df = series_df.copy()
+    df = series_df.copy(deep=True)
     if "date" not in df.columns:
         raise ValueError("series dataframe must contain a 'date' column")
-    df["date"] = pd.to_datetime(df["date"])
+    df = df.assign(date=pd.to_datetime(df["date"]))
     values = pd.to_numeric(df["value"], errors="coerce")
     ser = pd.Series(values.values, index=df["date"])
     monthly = ser.resample(freq).mean()
     return monthly
 
 
-def _zscore(series: pd.Series) -> pd.Series:
+def _expanding_zscore(series: pd.Series, min_periods: int = 8) -> pd.Series:
     if series.empty:
         return series
-    mean = series.mean(skipna=True)
-    std = series.std(skipna=True, ddof=0)
-    if std is None or np.isnan(std) or std == 0:
-        return series * np.nan
-    return (series - mean) / std
+    numeric = pd.to_numeric(series, errors="coerce").astype(float)
+    expanding = numeric.expanding(min_periods=max(2, int(min_periods)))
+    mean = expanding.mean()
+    std = expanding.std(ddof=0)
+    out = (numeric - mean) / std.replace(0.0, np.nan)
+    return out.replace([np.inf, -np.inf], np.nan)
 
 
 def _transform_series(
@@ -63,6 +65,7 @@ def _component_series(
     fetcher: SeriesFetcher,
     freq: str,
     cache: Dict[Tuple[str, Optional[str]], pd.DataFrame],
+    min_periods: int,
 ) -> pd.Series:
     series_id = spec.get("id")
     if not series_id:
@@ -94,7 +97,7 @@ def _component_series(
         ser = ser * float(spec.get("scale"))
     key = spec.get("key") or series_id
     ser.name = str(key)
-    return _zscore(ser)
+    return _expanding_zscore(ser, min_periods=min_periods)
 
 
 def _build_group(
@@ -102,11 +105,12 @@ def _build_group(
     fetcher: SeriesFetcher,
     freq: str,
     cache: Dict[Tuple[str, Optional[str]], pd.DataFrame],
+    min_periods: int,
 ) -> Tuple[pd.DataFrame, List[str]]:
     frames = []
     keys: List[str] = []
     for spec in specs or []:
-        series = _component_series(spec, fetcher, freq, cache)
+        series = _component_series(spec, fetcher, freq, cache, min_periods=min_periods)
         if series.empty:
             continue
         frames.append(series)
@@ -123,7 +127,7 @@ def build_external_coupling_indices(
     ext_cfg: Dict[str, Any],
     fetcher: SeriesFetcher,
 ) -> pd.DataFrame:
-    """Return monthly external pressure/temperature indices.
+    """Return monthly external pressure/liquidity-state indices.
 
     Parameters
     ----------
@@ -135,11 +139,15 @@ def build_external_coupling_indices(
     if not isinstance(ext_cfg, dict) or not ext_cfg.get("enabled"):
         return pd.DataFrame()
     freq = str(ext_cfg.get("frequency", "MS")).upper()
+    try:
+        min_periods = int(ext_cfg.get("zscore_min_periods", 8))
+    except Exception:
+        min_periods = 8
     cache: Dict[Tuple[str, Optional[str]], pd.DataFrame] = {}
     pressure_specs = ext_cfg.get("pressure_components", [])
     temperature_specs = ext_cfg.get("temperature_components", [])
-    pressure_df, pressure_keys = _build_group(pressure_specs, fetcher, freq, cache)
-    temp_df, temp_keys = _build_group(temperature_specs, fetcher, freq, cache)
+    pressure_df, pressure_keys = _build_group(pressure_specs, fetcher, freq, cache, min_periods=min_periods)
+    temp_df, temp_keys = _build_group(temperature_specs, fetcher, freq, cache, min_periods=min_periods)
     frames = [df for df in (pressure_df, temp_df) if not df.empty]
     if not frames:
         return pd.DataFrame()
@@ -149,7 +157,7 @@ def build_external_coupling_indices(
     if temp_keys:
         monthly["E_T"] = monthly[temp_keys].mean(axis=1, skipna=True)
     monthly = monthly.reset_index().rename(columns={"index": "date"})
-    monthly["date"] = pd.to_datetime(monthly["date"]).dt.tz_localize(None)
+    monthly = monthly.assign(date=pd.to_datetime(monthly["date"]).dt.tz_localize(None))
     return monthly
 
 __all__ = ["build_external_coupling_indices"]

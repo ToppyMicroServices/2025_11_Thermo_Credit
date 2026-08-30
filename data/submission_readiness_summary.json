@@ -1,0 +1,11 @@
+{
+  "blockers": [
+    "borrower_composition_oos",
+    "calibrated_xc_oos",
+    "tl_loop_robustness"
+  ],
+  "passed": 2,
+  "recommended_positioning": "Position the submission as a borrower-composition measurement paper. The BOJ mapping and validation audits are the main evidence; the OOS table is a bounded use example.",
+  "submit_now": false,
+  "total": 5
+}

@@ -2,7 +2,7 @@
 
 Functions:
   build_indicators_core(money, q, cred, reg, cfg) -> DataFrame
-    - merges entropy & temperature with credit & regulatory tables
+    - merges entropy & liquidity-state metrics with credit & regulatory tables
     - canonical column renames (p_R->p_C, V_R->V_C, T->T_L)
     - loop area streaming estimator
     - free energy F_C and exergy X_C (fallback to F_C)
@@ -17,9 +17,10 @@ import pandas as pd
 import numpy as np
 from typing import Dict, Any, Optional, Tuple
 
-from lib.loop_area import LoopArea
+from lib.loop_area import LoopArea, rolling_loop_diagnostics
 from lib.entropy import money_entropy
 from lib.temperature import liquidity_temperature
+from lib.credit_destination import build_credit_destination_panel
 
 
 DEFAULT_HEADROOM_COLS = ("capital_headroom", "lcr_headroom", "nsfr_headroom")
@@ -79,6 +80,42 @@ def _apply_u_detrend(df: pd.DataFrame, cfg: Dict[str, Any]) -> pd.DataFrame:
     except Exception:
         df["U_trend"] = np.nan
         df["U_star"] = np.nan
+    return df
+
+
+def _apply_loop_geometry(df: pd.DataFrame, cfg: Dict[str, Any]) -> pd.DataFrame:
+    if not {"p_C", "V_C"}.issubset(df.columns):
+        return df
+    try:
+        window = int(cfg.get("loop_cycle_window", cfg.get("loop_window", 12)))
+    except Exception:
+        window = 12
+    try:
+        metrics = rolling_loop_diagnostics(
+            pd.to_numeric(df["p_C"], errors="coerce").to_numpy(),
+            pd.to_numeric(df["V_C"], errors="coerce").to_numpy(),
+            window=window,
+        )
+    except Exception:
+        return df
+    for col, values in metrics.items():
+        df[col] = values
+    df["loop_cycle_window"] = float(window)
+    return df
+
+
+def _apply_loop_quality(df: pd.DataFrame) -> pd.DataFrame:
+    if "loop_closed_area" not in df.columns or "X_C_pre_floor" not in df.columns:
+        return df
+    denom = pd.to_numeric(df["X_C_pre_floor"], errors="coerce").shift(1)
+    loss = pd.to_numeric(df["loop_closed_area"], errors="coerce").abs() / denom
+    clipped_prev = pd.Series(False, index=df.index)
+    if "X_C_was_clipped" in df.columns:
+        clipped_prev = df["X_C_was_clipped"].astype("boolean").shift(1).fillna(False).astype(bool)
+    valid = denom.gt(0) & ~clipped_prev & np.isfinite(loss)
+    df["loop_loss_ratio"] = np.where(valid, loss, np.nan)
+    q_valid = valid & pd.Series(loss, index=df.index).gt(0)
+    df["Q_C"] = np.where(q_valid, 2.0 * np.pi / loss, np.nan)
     return df
 
 
@@ -282,7 +319,7 @@ def build_indicators_core(money: pd.DataFrame,
         S = money_entropy(money, q, k=k_val, q_cols=q_cols_cfg, per_category=per_cat)
     else:
         S = money_entropy(money, q, k=k_val, per_category=per_cat)  # provides S_M
-    T = liquidity_temperature(cred)       # provides T (later T_L)
+    T = liquidity_temperature(cred)       # provides T_L liquidity state index
 
     df = cred.merge(S, on="date").merge(T, on="date").merge(reg, on="date")
     df = df.sort_values("date").reset_index(drop=True)
@@ -300,11 +337,16 @@ def build_indicators_core(money: pd.DataFrame,
         df_money = money[["date"] + money_cols].drop_duplicates("date")
         df = df.merge(df_money, on="date", how="left")
 
+    dest = build_credit_destination_panel(df, cfg)
+    if not dest.empty:
+        df = df.merge(dest, on="date", how="left", suffixes=("", "_destination"))
+
     la = LoopArea(lam=lam)
     areas = []
     for _, r in df.iterrows():
         areas.append(la.update(r.get("p_R"), r.get("V_R")))
     df["loop_area"] = areas
+    df["loop_streaming_area"] = areas
 
     rename_map = {}
     if "p_R" in df.columns and "p_C" not in df.columns:
@@ -320,6 +362,7 @@ def build_indicators_core(money: pd.DataFrame,
     chem_cols = tuple(q_cols_cfg) if q_cols_cfg else tuple(q_share_cols)
     df = _apply_chemical_potentials(df, cfg, chem_cols)
     df = _apply_vc_formula(df, cfg)
+    df = _apply_loop_geometry(df, cfg)
     df = _apply_u_detrend(df, cfg)
 
     # Choose which U-series to use for free energy / exergy.
@@ -361,19 +404,25 @@ def build_indicators_core(money: pd.DataFrame,
     else:
         df["X_C"] = df["F_C"]
 
+    df["X_C_model_raw"] = df["X_C"]
+
     # Shift F_C/X_C upward using a configurable baseline (e.g., min or quantile)
     df = _apply_free_energy_baseline(df, cfg)
+    if "X_C" in df.columns:
+        df["X_C_pre_floor"] = df["X_C"]
 
     # Enforce non-negative exergy by baseline adjustment or clipping.
     # Default behavior: clip negatives at 0 (shift, if used, is for visualization only).
     # Configure via cfg:
     #   exergy_floor_zero: bool (default True)
     #   exergy_floor_mode: 'clip' (default) or 'shift'
+    clip_mask = pd.Series(False, index=df.index)
     try:
         if bool(cfg.get("exergy_floor_zero", True)) and "X_C" in df.columns:
             mode = str(cfg.get("exergy_floor_mode", "clip")).strip().lower()
             xnum = pd.to_numeric(df["X_C"], errors="coerce")
             if mode == "clip":
+                clip_mask = xnum < 0
                 df["X_C"] = xnum.clip(lower=0)
             else:
                 xmin = float(xnum.min()) if np.isfinite(xnum.min()) else np.nan
@@ -382,6 +431,11 @@ def build_indicators_core(money: pd.DataFrame,
     except Exception:
         # If anything goes wrong, leave X_C as-is
         pass
+    if "X_C" in df.columns:
+        if "X_C_pre_floor" not in df.columns:
+            df["X_C_pre_floor"] = df["X_C"]
+        df["X_C_was_clipped"] = clip_mask.reindex(df.index, fill_value=False).fillna(False).astype(bool)
+        df["X_C_nonpositive"] = pd.to_numeric(df["X_C"], errors="coerce").le(0)
 
     # Fixed-reference split of free energy into surplus/shortage components
     # ΔF_C(t) = F_C(t) - F_C_ref; X_C_plus = max(0, ΔF_C); X_C_minus = max(0, -ΔF_C)
@@ -423,6 +477,7 @@ def build_indicators_core(money: pd.DataFrame,
         df["X_C_plus"] = np.nan
         df["X_C_minus"] = np.nan
 
+    df = _apply_loop_quality(df)
     return df
 
 
@@ -430,7 +485,8 @@ def compute_diagnostics(df: pd.DataFrame, window: int = 24) -> pd.DataFrame:
     """Add Maxwell-like and first-law diagnostics.
 
     Drops leading rows until at least window non-missing observations exist for core variables
-    to stabilize OLS. Window can be overridden by DIAG_WINDOW env variable.
+    to stabilize local linear regressions. Window can be overridden by DIAG_WINDOW
+    env variable.
     """
     import os
     try:
@@ -470,9 +526,11 @@ def compute_diagnostics(df: pd.DataFrame, window: int = 24) -> pd.DataFrame:
                 out[i] = np.nan
         return out
 
-    df["dS_dV_at_T"] = _rolling_partial_beta("S_M", "V_C", "T_L")
-    df["dp_dT_at_V"] = _rolling_partial_beta("p_C", "T_L", "V_C")
-    df["maxwell_gap"] = df["dS_dV_at_T"] - df["dp_dT_at_V"]
+    df["dT_dV_at_S"] = _rolling_partial_beta("T_L", "V_C", "S_M")
+    df["dp_dS_at_V"] = _rolling_partial_beta("p_C", "S_M", "V_C")
+    df["maxwell_curl"] = df["dT_dV_at_S"] + df["dp_dS_at_V"]
+    # Backward-compatible report column; it now stores the Maxwell curl Ω.
+    df["maxwell_gap"] = df["maxwell_curl"]
 
     df["dU"] = df["U"].astype(float).diff()
     df["dS"] = df["S_M"].astype(float).diff()

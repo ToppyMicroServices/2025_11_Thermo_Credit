@@ -1,0 +1,44 @@
+{
+  "all_requested_variants_monotone": true,
+  "interpretation": "The additive z-score liquidity index remains the main specification. The rejected signed raw-product diagnostic has monotonicity violations; monotone multiplicative, soft-min, harmonic, and exclusion variants are robustness checks.",
+  "legacy_signed_product": {
+    "monotone_pass": false,
+    "note": "Rejected diagnostic: signed raw-product z-score formula is not coordinate-wise monotone.",
+    "violations": 120
+  },
+  "regions": {
+    "eu": {
+      "additive_latest": 0.8392815469964916,
+      "all_requested_variants_monotone": true,
+      "minimum_corr_vs_additive": 0.8700229289923036,
+      "minimum_low_liquidity_agreement": 0.788235294117647,
+      "region_label": "Euro Area (EU)",
+      "variants": 7
+    },
+    "jp": {
+      "additive_latest": 0.6190396431778284,
+      "all_requested_variants_monotone": true,
+      "minimum_corr_vs_additive": 0.6596019603715175,
+      "minimum_low_liquidity_agreement": 0.8148148148148148,
+      "region_label": "Japan (JP)",
+      "variants": 7
+    },
+    "us": {
+      "additive_latest": 0.5123172438639733,
+      "all_requested_variants_monotone": true,
+      "minimum_corr_vs_additive": 0.7476601443655119,
+      "minimum_low_liquidity_agreement": 0.8461538461538461,
+      "region_label": "United States (US)",
+      "variants": 7
+    }
+  },
+  "requested_variants": [
+    "multiplicative",
+    "additive_zscore",
+    "soft_min",
+    "harmonic_mean",
+    "spread_only",
+    "turnover_excluded",
+    "depth_excluded"
+  ]
+}
