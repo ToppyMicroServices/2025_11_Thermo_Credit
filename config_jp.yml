@@ -12,6 +12,17 @@ external_coupling:
   alpha: 0.2   # Strength of external pressure coupling into JP indicators (E_p).
   delta: 0.0   # Strength of external temperature coupling (E_T); 0.0 = disabled.
 
+# Japan uses the literature-anchored BOJ borrower-sector bridge when the CSV
+# is present. The primary four-bucket crosswalk measures borrower composition,
+# not loan purpose; legacy lambda_B fields remain for compatibility only.
+credit_destination:
+  enabled: true
+  source: jp_boj_sector_observed
+  direct_panel_path: data/credit_destination_jp.csv
+  lambda_B: 0.5
+  housing_construction_share: 0.35
+  household_housing_share: 0.4
+
 # Internal energy detrending (U -> U_star). No-lookahead rolling mean by default.
 U_detrend:
   enabled: true

@@ -6,202 +6,279 @@
     "coverage_end": "2025-03-31",
     "source_ref": null,
     "params": {
-      "T0": 0.29339375,
-      "p0": 1.7066062499999999,
-      "U0": 809879.04695625,
-      "V0": 1072697.5256626958,
-      "S0": 2313837.1741647227
+      "T0": 0.8346250000000001,
+      "p0": 1.1220625,
+      "U0": 811970.3252663297,
+      "V0": 337221.04519666685,
+      "S0": 3347849.783945213
     },
     "defaults": {
       "T0": 1.0,
       "p0": 1.0,
-      "U0": 872981.25,
-      "V0": 1380427.9209666667,
-      "S0": 2313837.1741647227
+      "U0": 862916.8325475797,
+      "V0": 1351021.9421333335,
+      "S0": 2278692.2610905035
     },
     "scales": {
-      "U": 151392.30000000005,
-      "V": 3699238.4108666675,
-      "S": 6558993.868628595
+      "U": 146083.17500000005,
+      "V": 3686548.7161333333,
+      "S": 6426190.971328082
     },
-    "objective": 3.9650139618684266,
+    "objective": 2.6880877068030022,
     "diagnostics": {
-      "growth_corr": 0.494615031468363,
-      "stress_corr": 0.3810773381232429,
-      "loop_corr": 0.3453975212719881,
-      "liquidity_corr": 0.04909247392130044,
-      "negative_share": 0.0,
-      "dispersion": 0.6215449573468401,
-      "regularization": 1.179237605390625,
+      "growth_corr": -0.13709738174191788,
+      "stress_corr": 0.2320051904231541,
+      "loop_corr": 0.0,
+      "liquidity_corr": 0.1823244519118157,
+      "negative_share": 0.17592592592592593,
+      "dispersion": 0.9693630985209302,
+      "regularization": 0.2669005603542967,
       "growth_pairs": 104.0,
       "stress_pairs": 104.0,
       "loop_pairs": 104.0,
       "liquidity_pairs": 108.0
     },
     "baseline_diagnostics": {
-      "growth_corr": -0.7467944783769105,
-      "stress_corr": -0.40038587723052954,
-      "loop_corr": -0.22198155028353567,
+      "growth_corr": -0.6601439633132777,
+      "stress_corr": -0.3489551537920169,
+      "loop_corr": 0.0,
       "growth_pairs": 104.0,
       "stress_pairs": 104.0,
       "loop_pairs": 104.0
     },
-    "latest": {
-      "S_M": 11351004.321727185,
-      "T_L": 0.3998126809889496,
-      "X_C_calibrated": 1.994016823928204,
-      "X_C_pipeline": 1090132.075245984,
-      "loop_area": 2808931.5555758867
-    },
-    "deltas_4q": {
-      "S_M": -414618.203978315,
-      "T_L": 0.001973641432259421,
-      "X_C_calibrated": 0.08928047842187548,
-      "loop_area": -1147515.7166292942
-    },
-    "notes": [
-      "coverage through 2025-03-31",
-      "T_L is currently high in its own regional history",
-      "implicit headroom is rising over the last four quarters",
-      "loop dissipation is easing over the last four quarters",
-      "forward-growth correlation improves from -0.747 to 0.495"
-    ]
-  },
-  {
-    "region_key": "eu",
-    "region_label": "Euro Area (EU)",
-    "coverage_start": "1999-03-31",
-    "coverage_end": "2025-09-30",
-    "source_ref": null,
-    "params": {
-      "T0": 1.0433124999999999,
-      "p0": 1.618125,
-      "U0": 2052593.62405279,
-      "V0": 50.16173118424173,
-      "S0": 160.64644904810683
-    },
-    "defaults": {
-      "T0": 1.0,
-      "p0": 1.5,
-      "U0": 2456956.60913064,
-      "V0": 81.69706592616231,
-      "S0": 160.64644904810683
-    },
-    "scales": {
-      "U": 808725.9701557001,
-      "V": 63.07066948384116,
-      "S": 90.52492771215714
-    },
-    "objective": 3.185873252425312,
-    "diagnostics": {
-      "growth_corr": 0.2694316046063389,
-      "stress_corr": 0.17803327489867116,
-      "loop_corr": -0.5982238152229911,
-      "liquidity_corr": -0.07337176919749801,
-      "negative_share": 0.0,
-      "dispersion": 0.5729091338249077,
-      "regularization": 0.50807753515625,
-      "growth_pairs": 103.0,
-      "stress_pairs": 103.0,
-      "loop_pairs": 103.0,
-      "liquidity_pairs": 107.0
-    },
-    "baseline_diagnostics": {
-      "growth_corr": 0.0,
-      "stress_corr": 0.0,
-      "loop_corr": 0.0,
-      "growth_pairs": 103.0,
-      "stress_pairs": 103.0,
-      "loop_pairs": 103.0
+    "oos_diagnostics": {
+      "target": "spread widening",
+      "n": 80.0,
+      "rmse": 0.712501558186805,
+      "mae": 0.5722730432330014,
+      "baseline_rmse": 0.6743982072924182,
+      "baseline_mae": 0.5394259991750501,
+      "auc": 0.5888746803069054,
+      "log_score": 0.677758366035244,
+      "dm_stat": 1.1446061577936264,
+      "dm_p": 0.2523723403222191
     },
     "latest": {
-      "S_M": 281.9458000224948,
-      "T_L": 0.5032155656293386,
-      "X_C_calibrated": 1.9383616546471418,
-      "X_C_pipeline": 0.0,
-      "loop_area": 105.51143465506436
+      "S_M": 11634482.77061807,
+      "T_L": 0.5913658427637531,
+      "X_C_calibrated": 1.6391006962069874,
+      "X_C_pipeline": 905850.6042807326,
+      "loop_area": 0.0,
+      "q_t": 0.3065194447353792,
+      "destination_coverage": 0.8729173540085781,
+      "S_M_pctile": 96.26168224299066,
+      "T_L_pctile": 82.4074074074074,
+      "X_C_calibrated_pctile": 98.14814814814815,
+      "X_C_pipeline_pctile": 5.825242718446602,
+      "loop_area_pctile": 100.0,
+      "q_t_pctile": 28.333333333333332
     },
     "deltas_4q": {
-      "S_M": 7.63116984163446,
-      "T_L": 0.0009511937394950376,
-      "X_C_calibrated": 0.03803991119196204,
-      "loop_area": 7.568671144583405
-    },
-    "notes": [
-      "coverage through 2025-09-30",
-      "T_L is currently high in its own regional history",
-      "implicit headroom is roughly flat over the last four quarters",
-      "loop dissipation is worsening over the last four quarters",
-      "forward-growth correlation improves from 0.000 to 0.269",
-      "pipeline X_C is clipped at zero at the sample end, so calibration is doing real work"
-    ]
-  },
-  {
-    "region_key": "us",
-    "region_label": "United States (US)",
-    "coverage_start": "2003-03-31",
-    "coverage_end": "2025-03-31",
-    "source_ref": null,
-    "params": {
-      "T0": 1.086625,
-      "p0": 1.85514375,
-      "U0": 21585.286999999997,
-      "V0": 1891556.0483600001,
-      "S0": 6059078.588701777
-    },
-    "defaults": {
-      "T0": 1.0,
-      "p0": 2.0,
-      "U0": 30230.057999999997,
-      "V0": 3483099.1344,
-      "S0": 6059078.588701777
-    },
-    "scales": {
-      "U": 17289.541999999998,
-      "V": 3183086.1720799995,
-      "S": 5156769.900001254
-    },
-    "objective": 4.076021628614287,
-    "diagnostics": {
-      "growth_corr": -0.07647888586599774,
-      "stress_corr": 0.02418909597582481,
-      "loop_corr": 0.0,
-      "liquidity_corr": -0.1639591574066323,
-      "negative_share": 0.0,
-      "dispersion": 8.837009877919307,
-      "regularization": 0.598855083971447,
-      "growth_pairs": 85.0,
-      "stress_pairs": 85.0,
-      "loop_pairs": 85.0,
-      "liquidity_pairs": 89.0
-    },
-    "baseline_diagnostics": {
-      "growth_corr": 0.11262851779327959,
-      "stress_corr": 0.06064604638416311,
-      "loop_corr": 0.0,
-      "growth_pairs": 85.0,
-      "stress_pairs": 85.0,
-      "loop_pairs": 85.0
-    },
-    "latest": {
-      "S_M": 10586505.906924931,
-      "T_L": 0.9207998214479012,
-      "X_C_calibrated": 1.4774431821956384,
-      "X_C_pipeline": 3560611.5292644147,
-      "loop_area": 0.0
-    },
-    "deltas_4q": {
-      "S_M": -1169318.9315924682,
-      "T_L": -0.07920017855187,
-      "X_C_calibrated": -20.46251913454019,
+      "S_M": -30660.61192825809,
+      "T_L": 0.00680244233723748,
+      "X_C_calibrated": 0.11342429562509593,
       "loop_area": NaN
     },
     "notes": [
       "coverage through 2025-03-31",
       "T_L is currently high in its own regional history",
-      "implicit headroom is falling over the last four quarters",
-      "loop dissipation is unclear over the last four quarters",
-      "forward-growth correlation does not yet improve over pipeline X_C (-0.076 versus 0.113)"
-    ]
+      "credit-destination q_t proxy is 0.307 with 0.873 destination coverage",
+      "implicit headroom is rising over the last four quarters",
+      "streaming loop area is unclear over the last four quarters",
+      "OOS spread widening RMSE does not beat pipeline (0.713 versus 0.674, DM p=0.252)"
+    ],
+    "audit_notes": [],
+    "comparison_basis": "within-region percentiles/z-scores only; calibrated levels are not cross-region comparable",
+    "preprocessing_mode": "real_time_release_lagged",
+    "panel_source": "site/indicators_realtime.csv"
+  },
+  {
+    "region_key": "eu",
+    "region_label": "Euro Area (EU)",
+    "coverage_start": "1999-03-31",
+    "coverage_end": "2020-03-31",
+    "source_ref": null,
+    "params": {
+      "T0": 1.0175,
+      "p0": 1.2549234375000002,
+      "U0": 94.15995000000001,
+      "V0": 50.939782993369334,
+      "S0": 4402095.957713898
+    },
+    "defaults": {
+      "T0": 1.0,
+      "p0": 1.5,
+      "U0": 111.6829,
+      "V0": 73.89289467772228,
+      "S0": 2947378.8667630986
+    },
+    "scales": {
+      "U": 35.0459,
+      "V": 45.906223368705895,
+      "S": 2909434.1819015993
+    },
+    "objective": 2.2338693454529275,
+    "diagnostics": {
+      "growth_corr": -0.24856210017814584,
+      "stress_corr": -0.07960089261218924,
+      "loop_corr": 0.0,
+      "liquidity_corr": 0.41468909120865,
+      "negative_share": 0.0,
+      "dispersion": 0.5102751498845132,
+      "regularization": 0.7703018686980929,
+      "growth_pairs": 81.0,
+      "stress_pairs": 81.0,
+      "loop_pairs": 81.0,
+      "liquidity_pairs": 85.0
+    },
+    "baseline_diagnostics": {
+      "growth_corr": 0.0,
+      "stress_corr": 0.0,
+      "loop_corr": 0.0,
+      "growth_pairs": 81.0,
+      "stress_pairs": 81.0,
+      "loop_pairs": 81.0
+    },
+    "oos_diagnostics": {
+      "target": "spread widening",
+      "n": 57.0,
+      "rmse": 1.0235008063679647,
+      "mae": 0.775237462578209,
+      "baseline_rmse": 1.0385197883464015,
+      "baseline_mae": 0.7993028551406541,
+      "auc": 0.6547314578005116,
+      "log_score": 0.6506535366346595,
+      "dm_stat": -0.5517515308069687,
+      "dm_p": 0.5811185992075747
+    },
+    "latest": {
+      "S_M": 7298068.681319377,
+      "T_L": 0.8372939705982161,
+      "X_C_calibrated": 1.8437125324412937,
+      "X_C_pipeline": 0.0,
+      "loop_area": 0.0,
+      "q_t": 0.3209999999999999,
+      "destination_coverage": 0.6699999999999999,
+      "S_M_pctile": 97.61904761904762,
+      "T_L_pctile": 95.29411764705883,
+      "X_C_calibrated_pctile": 100.0,
+      "X_C_pipeline_pctile": 100.0,
+      "loop_area_pctile": 100.0,
+      "q_t_pctile": 37.878787878787875
+    },
+    "deltas_4q": {
+      "S_M": 35767.084582503885,
+      "T_L": 0.10922044159117228,
+      "X_C_calibrated": 0.20724898785324597,
+      "loop_area": NaN
+    },
+    "notes": [
+      "coverage through 2020-03-31",
+      "T_L is currently high in its own regional history",
+      "credit-destination q_t proxy is 0.321 with 0.670 destination coverage",
+      "implicit headroom is rising over the last four quarters",
+      "streaming loop area is unclear over the last four quarters",
+      "OOS spread widening RMSE beats pipeline (1.024 versus 1.039, DM p=0.581)",
+      "pipeline X_C is clipped at zero at the sample end, so the calibrated score remains a diagnostic rather than confirmed OOS evidence",
+      "the tuned signal weakens the link to future spread widening from 0.000 to -0.080"
+    ],
+    "audit_notes": [],
+    "comparison_basis": "within-region percentiles/z-scores only; calibrated levels are not cross-region comparable",
+    "preprocessing_mode": "real_time_release_lagged",
+    "panel_source": "site/indicators_eu_realtime.csv"
+  },
+  {
+    "region_key": "us",
+    "region_label": "United States (US)",
+    "coverage_start": "2003-03-31",
+    "coverage_end": "2025-09-30",
+    "source_ref": null,
+    "params": {
+      "T0": 1.7066062499999999,
+      "p0": 0.5867875,
+      "U0": 22350.398537499997,
+      "V0": 2904868.8957810253,
+      "S0": 6414639.88523565
+    },
+    "defaults": {
+      "T0": 1.0,
+      "p0": 2.0,
+      "U0": 24771.868,
+      "V0": 3331909.3106,
+      "S0": 5150378.067652963
+    },
+    "scales": {
+      "U": 10762.086500000005,
+      "V": 3735728.0684,
+      "S": 4597315.700300681
+    },
+    "objective": 2.1041006076986646,
+    "diagnostics": {
+      "growth_corr": -0.29592811988776296,
+      "stress_corr": -0.393335621551944,
+      "loop_corr": 0.0,
+      "liquidity_corr": 0.220458984020526,
+      "negative_share": 0.054945054945054944,
+      "dispersion": 0.45016253811273954,
+      "regularization": 1.1392400733795198,
+      "growth_pairs": 87.0,
+      "stress_pairs": 87.0,
+      "loop_pairs": 87.0,
+      "liquidity_pairs": 91.0
+    },
+    "baseline_diagnostics": {
+      "growth_corr": 0.09861696295705169,
+      "stress_corr": 0.43696693195413483,
+      "loop_corr": 0.0,
+      "growth_pairs": 87.0,
+      "stress_pairs": 87.0,
+      "loop_pairs": 87.0
+    },
+    "oos_diagnostics": {
+      "target": "spread widening",
+      "n": 63.0,
+      "rmse": 1.3570074851378178,
+      "mae": 1.0862099783812154,
+      "baseline_rmse": 1.2792853091501093,
+      "baseline_mae": 1.071581122463398,
+      "auc": 0.5484848484848485,
+      "log_score": 0.6923161430501753,
+      "dm_stat": 1.1877999936678492,
+      "dm_p": 0.23491221690550224
+    },
+    "latest": {
+      "S_M": 8894604.386876058,
+      "T_L": 0.5511567380847544,
+      "X_C_calibrated": 1.0578446064384945,
+      "X_C_pipeline": 3197886.298045771,
+      "loop_area": 0.0,
+      "q_t": 0.3245,
+      "destination_coverage": 0.64,
+      "S_M_pctile": 78.02197802197803,
+      "T_L_pctile": 2.197802197802198,
+      "X_C_calibrated_pctile": 75.82417582417582,
+      "X_C_pipeline_pctile": 46.666666666666664,
+      "loop_area_pctile": 100.0,
+      "q_t_pctile": 100.0
+    },
+    "deltas_4q": {
+      "S_M": -759614.060786251,
+      "T_L": -0.1728390754205713,
+      "X_C_calibrated": 0.24443889142012287,
+      "loop_area": NaN
+    },
+    "notes": [
+      "coverage through 2025-09-30",
+      "T_L is currently low in its own regional history",
+      "credit-destination q_t proxy is 0.325 with 0.640 destination coverage",
+      "implicit headroom is rising over the last four quarters",
+      "streaming loop area is unclear over the last four quarters",
+      "OOS spread widening RMSE does not beat pipeline (1.357 versus 1.279, DM p=0.235)",
+      "the tuned signal weakens the link to future spread widening from 0.437 to -0.393"
+    ],
+    "audit_notes": [],
+    "comparison_basis": "within-region percentiles/z-scores only; calibrated levels are not cross-region comparable",
+    "preprocessing_mode": "real_time_release_lagged",
+    "panel_source": "site/indicators_us_realtime.csv"
   }
 ]

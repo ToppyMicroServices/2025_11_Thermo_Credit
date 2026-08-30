@@ -1,0 +1,287 @@
+{
+  "aggregation_order": "sum stocks within each reported taxonomy bucket, difference, then take the positive part",
+  "display_coordinate": "q_t is an alias for borrower_composition_NFB_4q = sum_4q(C_NFB) / sum_4q(C_NFB + C_FIN + C_PROP + C_HH_NONHOUSING)",
+  "legacy_appendix_columns": [
+    "C_G",
+    "C_B",
+    "C_E",
+    "legacy_C_t",
+    "legacy_q_t"
+  ],
+  "legacy_lambda_argument_ignored": true,
+  "legacy_mapping_rows": [
+    {
+      "ambiguous": "Borrower sector does not reveal whether funds finance operations, fixed assets, refinancing, or financial assets.",
+      "bias": "Measures borrower composition, not loan purpose or macroeconomic use.",
+      "borrower": "Manufacturing, trade, services, utilities, transport, local governments, and other organisations",
+      "bucket": "Group G: broad sectors, local governments, and other organisations",
+      "coverage": "34.4%",
+      "lag": "Quarterly BOJ LA01 release; forecast panels apply release-lag dating.",
+      "negative": "Sector stocks are summed within the bucket before the positive part; the signed audit keeps the bucket net change.",
+      "rationale": "Author-defined broad borrower grouping used to construct the composition share.",
+      "source": "Outstanding loans by sector, 19 author-defined Group G series: 19 codes in replication metadata; examples: DLLILKG21 / DLLI5DS2TMK; DLLILKG86 / DLLI5DS2TAF; DLLILKG61 / DLLI5DS2TRO",
+      "type": "sectoral stock-difference"
+    },
+    {
+      "ambiguous": "Building finance, land purchase, working capital, and refinancing are not separated.",
+      "bias": "A separate borrower bucket does not identify construction loan purpose.",
+      "borrower": "Construction",
+      "bucket": "Group B: construction",
+      "coverage": "5.6%",
+      "lag": "Quarterly BOJ LA01 release; forecast panels apply release-lag dating.",
+      "negative": "The bucket net change is computed before the positive part; the signed audit keeps the sign.",
+      "rationale": "Author-defined construction borrower group kept separate without fractional allocation.",
+      "source": "Construction outstanding: DLLILKG26 / DLLI5DS2TCT",
+      "type": "sectoral stock-difference"
+    },
+    {
+      "ambiguous": "Real-estate, finance, housing, and household-consumption uses are mixed.",
+      "bias": "The group is heterogeneous and must not be read as an asset-purpose measure.",
+      "borrower": "Finance and insurance; real estate; households",
+      "bucket": "Group E: finance, real estate, and households",
+      "coverage": "54.2%",
+      "lag": "Quarterly BOJ LA01 release; forecast panels apply release-lag dating.",
+      "negative": "Sector stocks are summed within the bucket before the positive part; the signed audit keeps the bucket net change.",
+      "rationale": "Author-defined grouping of the remaining mapped domestic borrower sectors without a common purpose assignment.",
+      "source": "Finance, real-estate, and household outstanding sectors: DLLILKG49 / DLLI5DS2TFI; DLLILKG50 / DLLI5DS2TFX; DLLILKG62 / DLLI5DS2TPN",
+      "type": "sectoral stock-difference"
+    },
+    {
+      "ambiguous": "Could contain many borrower sectors and loan uses outside the domestic map.",
+      "bias": "Exclusion narrows the mapped domestic denominator; direction for the Group G share is unknown.",
+      "borrower": "Overseas yen loans and domestic loans transferred overseas",
+      "bucket": "Excluded from domestic borrower composition",
+      "coverage": "5.8%",
+      "lag": "Quarterly BOJ LA01 release; forecast panels apply release-lag dating.",
+      "negative": "Its bucket-positive change enters the selected-series coverage denominator; the signed audit keeps the sign.",
+      "rationale": "The reported category is not a domestic borrower-sector group comparable with G, B, or E.",
+      "source": "Unclassified outstanding sector: DLLILKG63 / DLLI5DS2TFL",
+      "type": "sectoral stock-difference"
+    },
+    {
+      "ambiguous": "Excludes working capital, refinancing, rollovers, and many asset purchases.",
+      "bias": "Narrower than total lending and tilted toward investment-intensive borrowers.",
+      "borrower": "Same sector map as the outstanding-loan series",
+      "bucket": "Within-BOJ purpose-coded comparator",
+      "coverage": "audit only",
+      "lag": "Quarterly BOJ LA01 release; forecast panels apply release-lag dating.",
+      "negative": "Used as reported and kept separate from the borrower-stock-change measure.",
+      "rationale": "Provides a purpose-coded fixed-investment comparator within the same BOJ sector map.",
+      "source": "New loans for fixed investment by sector: 24 codes in replication metadata; examples: DLLILKG21 / DLLI5DS5TMK; DLLILKG86 / DLLI5DS5TAF; DLLILKG63 / DLLI5DS5TFL",
+      "type": "claim-boundary audit"
+    }
+  ],
+  "primary_mapping_rows": [
+    {
+      "rationale": "Official total less finance/insurance, real estate, local government, and total household loans; construction is included.",
+      "risk": "The residual also absorbs the separately disclosed overseas-linked and unresolved components.",
+      "role": "$P_t^{NFB}$",
+      "share": "40.1%",
+      "source": "Published Japan residual NFB"
+    },
+    {
+      "rationale": "Direct BOJ borrower-sector match to financial business.",
+      "risk": "Borrower sector does not identify the use of funds.",
+      "role": "$P_t^{FIN}$",
+      "share": "17.9%",
+      "source": "Finance and insurance"
+    },
+    {
+      "rationale": "Published Japan property/mortgage crosswalk.",
+      "risk": "Combines a borrower-sector stock with a household-purpose stock.",
+      "role": "$P_t^{PROP}$",
+      "share": "40.0%",
+      "source": "Real estate plus household housing"
+    },
+    {
+      "rationale": "Published residual construction for household non-housing credit.",
+      "risk": "Includes tax and other household borrowing; it is not labelled consumer credit.",
+      "role": "$P_t^{HHN}$",
+      "share": "2.1%",
+      "source": "Household total less household housing"
+    },
+    {
+      "rationale": "Removed by the published Japan residual formula.",
+      "risk": "Exclusion changes the population relative to the official total.",
+      "role": "excluded, explicit",
+      "share": "6.0%",
+      "source": "Local governments"
+    },
+    {
+      "rationale": "Disclosed because the current BOJ total makes it part of residual NFB.",
+      "risk": "Not a domestic borrower-sector observation.",
+      "role": "NFB component, explicit",
+      "share": "5.9%",
+      "source": "Overseas-linked loans"
+    },
+    {
+      "rationale": "Residual after mapped NFB industries and overseas-linked loans.",
+      "risk": "Has no independent borrower or purpose label.",
+      "role": "NFB component, explicit",
+      "share": "0.0%",
+      "source": "Unresolved residual"
+    },
+    {
+      "rationale": "Checks, but does not define, the household non-housing residual.",
+      "risk": "Same provider and narrower concept; not independent external validation.",
+      "role": "validation comparator",
+      "share": "validation audit",
+      "source": "BOJ consumer-purpose loans"
+    },
+    {
+      "rationale": "Taxonomy definitions are literature-anchored and all three are reported jointly.",
+      "risk": "A published crosswalk does not eliminate BOJ measurement error.",
+      "role": "literature source",
+      "share": "not selected on fit",
+      "source": "Bezemer, Samarina, and Zhang (2020), Journal of Banking & Finance 113, 105760; Japan crosswalk in DNB Working Paper 559."
+    }
+  ],
+  "primary_metric": "four-quarter borrower-composition vector with NFB/FIN/PROP/HH_NONHOUSING coordinates formed from one denominator",
+  "primary_taxonomy_id": "bezemer_samarina_zhang_2020_japan_v1",
+  "primary_vector_columns": [
+    "borrower_composition_NFB_4q",
+    "borrower_composition_FIN_4q",
+    "borrower_composition_PROP_4q",
+    "borrower_composition_HH_NONHOUSING_4q"
+  ],
+  "rows": 197,
+  "same_population_scale": {
+    "positive_bucket_flow": "C_t",
+    "signed_flow": "C_t_raw_delta",
+    "stock": "primary_included_stock"
+  },
+  "taxonomies": {
+    "author_gbe_legacy_v1": {
+      "buckets": {
+        "B": "Construction.",
+        "E": "Finance/insurance, real estate, and households.",
+        "G": "Broad sectors, local governments, and other organisations."
+      },
+      "citation": "Author-defined G/B/E grouping retained only for archive compatibility.",
+      "construction_placement": "Construction is separate in this legacy grouping.",
+      "population": "Mapped legacy G/B/E borrower groups.",
+      "role": "appendix_legacy"
+    },
+    "bezemer_samarina_zhang_2020_japan_v1": {
+      "buckets": {
+        "FIN": "Finance and insurance borrowers.",
+        "HH_NONHOUSING": "Total household borrowing less purpose-coded household housing loans; this is not labelled consumer credit.",
+        "NFB": "Published Japan residual: official total less finance/insurance, real estate, local government, and total household loans. Construction is included. Mapped NFB industries, overseas-linked loans, and the remaining unresolved component are disclosed separately.",
+        "PROP": "Real-estate borrowers plus purpose-coded household housing loans."
+      },
+      "citation": "Bezemer, Samarina, and Zhang (2020), Journal of Banking & Finance 113, 105760, https://doi.org/10.1016/j.jbankfin.2020.105760; Japan crosswalk documented in DNB Working Paper 559.",
+      "construction_placement": "Construction is an NFB detail in the primary crosswalk; it is not a stand-alone purpose bucket.",
+      "embedded_nfb_components": {
+        "overseas_yen_and_transferred_loans": "Explicitly disclosed because the published residual formula absorbs this non-domestic borrower category in the current BOJ total.",
+        "unresolved_residual": "Explicitly disclosed residual after mapped NFB industries and the overseas-linked series are removed from published residual NFB."
+      },
+      "exclusions": {
+        "local_governments": "Reported separately, outside the private-credit population."
+      },
+      "population": "Total outstanding loans of domestically licensed banks less local-government loans, exactly exhausted by non-financial business, financial business, property/mortgage, and household non-housing. Domestically licensed describes the lenders, not borrower geography; the residual NFB series includes the explicit overseas-linked component.",
+      "role": "primary"
+    },
+    "muller_verner_2024_sector_v1": {
+      "buckets": {
+        "FIN": "Finance/insurance retained to exhaust the common population.",
+        "HH": "Total household borrowing retained to exhaust the common population.",
+        "NONTRADABLE": "Construction, real estate, trade, hotels/restaurants, transport, and information/communications.",
+        "OTHER_NFB": "Remaining mapped NFB industries.",
+        "TRADABLE": "Agriculture, fishery, mining, and manufacturing NFB.",
+        "UNRESOLVED": "Overseas-linked and unresolved components retained explicitly to exhaust the common population; outside the paper's core sector contrast."
+      },
+      "citation": "Muller and Verner (2024), Review of Economic Studies 91(6), https://doi.org/10.1093/restud/rdad112.",
+      "construction_placement": "Construction is nontradable, following the published tradable/nontradable sector crosswalk.",
+      "population": "Exactly the included population of bezemer_samarina_zhang_2020_japan_v1.",
+      "role": "literature_anchored_robustness"
+    },
+    "werner_1997_financial_circulation_v1": {
+      "buckets": {
+        "COMPLEMENT": "Complement within the same included population, including disclosed overseas-linked and unresolved residual components.",
+        "FCP": "Werner-inspired BOJ borrower-sector proxy: construction, real estate, and the available finance/insurance aggregate. Werner's original Japan measure referred to non-bank financial institutions, so this is not an exact series match."
+      },
+      "citation": "Werner (1997), Kredit und Kapital 30(2), 276-309, https://doi.org/10.3790/ccm.30.2.276.",
+      "construction_placement": "Construction enters the Werner-inspired financial-circulation proxy; the available BOJ finance/insurance series is broader than Werner's original non-bank-financial-institution component.",
+      "population": "Exactly the included population of bezemer_samarina_zhang_2020_japan_v1.",
+      "role": "literature_anchored_robustness"
+    }
+  },
+  "taxonomy_robustness_rows": [
+    {
+      "construction": "Construction is an NFB detail in the primary crosswalk; it is not a stand-alone purpose bucket.",
+      "population": "Total outstanding loans of domestically licensed banks less local-government loans, exactly exhausted by non-financial business, financial business, property/mortgage, and household non-housing. Domestically licensed describes the lenders, not borrower geography; the residual NFB series includes the explicit overseas-linked component.",
+      "role": "primary",
+      "selection": "literature-anchored mappings reported jointly; the current-sample declaration is not an externally time-stamped preregistration",
+      "taxonomy_id": "bezemer_samarina_zhang_2020_japan_v1"
+    },
+    {
+      "construction": "Construction enters the Werner-inspired financial-circulation proxy; the available BOJ finance/insurance series is broader than Werner's original non-bank-financial-institution component.",
+      "population": "Exactly the included population of bezemer_samarina_zhang_2020_japan_v1.",
+      "role": "literature_anchored_robustness",
+      "selection": "literature-anchored mappings reported jointly; the current-sample declaration is not an externally time-stamped preregistration",
+      "taxonomy_id": "werner_1997_financial_circulation_v1"
+    },
+    {
+      "construction": "Construction is nontradable, following the published tradable/nontradable sector crosswalk.",
+      "population": "Exactly the included population of bezemer_samarina_zhang_2020_japan_v1.",
+      "role": "literature_anchored_robustness",
+      "selection": "literature-anchored mappings reported jointly; the current-sample declaration is not an externally time-stamped preregistration",
+      "taxonomy_id": "muller_verner_2024_sector_v1"
+    },
+    {
+      "construction": "Construction is separate in this legacy grouping.",
+      "population": "Mapped legacy G/B/E borrower groups.",
+      "role": "appendix_legacy",
+      "selection": "Appendix compatibility only.",
+      "taxonomy_id": "author_gbe_legacy_v1"
+    }
+  ],
+  "taxonomy_selection": {
+    "legacy_taxonomy_id": "author_gbe_legacy_v1",
+    "oos_results_used": false,
+    "outcome_columns_used": [],
+    "primary_taxonomy_id": "bezemer_samarina_zhang_2020_japan_v1",
+    "robustness_taxonomy_ids": [
+      "werner_1997_financial_circulation_v1",
+      "muller_verner_2024_sector_v1"
+    ],
+    "selection_basis": "literature-anchored mappings reported jointly; the current-sample declaration is not an externally time-stamped preregistration"
+  },
+  "validation_rows": [
+    {
+      "audit": "Primary same-population identity",
+      "interpretation": "Allocation and scale are constructed from one included population. This is an accounting identity, not purpose validation.",
+      "readout": "max |C_t-sum four buckets|=0.000000; max |included stock-sum four stocks|=0.000000; max |signed-scale gap|=0.000000"
+    },
+    {
+      "audit": "Published residual NFB decomposition",
+      "interpretation": "The primary NFB series follows the published Japan residual exactly. Overseas-linked and unresolved components absorbed by that residual are visible rather than silently treated as mapped domestic industries.",
+      "readout": "median mapped-NFB/NFB=94.3%; median overseas/NFB=5.7%; median unresolved/NFB=0.001%; max decomposition gap=0.000000"
+    },
+    {
+      "audit": "Household non-housing split",
+      "interpretation": "Household non-housing is total household credit less housing credit. The narrower consumer-purpose series is a same-provider comparator, not independent external validation.",
+      "readout": "negative residual rows=0; max split-identity gap=0.000000; consumer-purpose pair N=67, corr=0.904, median absolute stock gap=35947 (JPY 100m)"
+    },
+    {
+      "audit": "Explicit official-population coverage",
+      "interpretation": "The primary population plus the explicit local-government exclusion reconciles to the official total; coverage does not validate loan purpose.",
+      "readout": "median included/official stock=94.5%; median local-government/official=5.5%; max explicit-scope gap=0.000000"
+    },
+    {
+      "audit": "Literature-anchored taxonomy population identity",
+      "interpretation": "The Werner-inspired and Muller-Verner BOJ adaptations are defined in metadata and exhaust the same included population. They are reported jointly; this is not a claim of externally time-stamped preregistration.",
+      "readout": "Werner max population gap=0.000000; Muller-Verner max population gap=0.000000"
+    },
+    {
+      "audit": "Primary four-quarter vector availability",
+      "interpretation": "q_t is only the displayed NFB coordinate of the four-part, common-denominator borrower-composition vector.",
+      "readout": "valid q_t=64/67; first=2010-06-30; max |vector sum-1|=0.000000; max |q_t-NFB alias gap|=0.000000"
+    },
+    {
+      "audit": "Current-vintage and stock-flow boundary",
+      "interpretation": "The bridge remains a current-vintage stock-difference measure and does not establish incremental predictability or loan-purpose identification.",
+      "readout": "rows=197; refinancing, rollovers, write-offs, and reclassifications are not separately observed"
+    }
+  ]
+}

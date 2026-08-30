@@ -1,0 +1,49 @@
+{
+  "interpretation": "The local-linear Maxwell/vorticity diagnostic is exact on clean quadratic-potential data, detects the designed non-integrable rotational component, and rises when the observed proxies are contaminated even though the latent potential is integrable.",
+  "overall": {
+    "clean_integrable_zero_curl_pass": true,
+    "clean_nonintegrable_detection_pass": true,
+    "clean_proxy_warning_pass": true,
+    "noise_levels": [
+      0.0,
+      0.02,
+      0.05,
+      0.1
+    ],
+    "rows": 36,
+    "sampling_steps": [
+      1,
+      2,
+      4
+    ]
+  },
+  "scenarios": {
+    "integrable_potential": {
+      "decisions": [
+        "passes_zero_curl"
+      ],
+      "max_mean_abs_omega": 0.14675743403629565,
+      "max_rmse_to_expected": 0.22650175021125404,
+      "median_mean_abs_omega": 0.020490259846949407,
+      "rows": 12
+    },
+    "nonintegrable_vorticity": {
+      "decisions": [
+        "detects_nonintegrable"
+      ],
+      "max_mean_abs_omega": 0.6274769753880305,
+      "max_rmse_to_expected": 0.44595935320448377,
+      "median_mean_abs_omega": 0.5504299183156554,
+      "rows": 12
+    },
+    "proxy_misspecified": {
+      "decisions": [
+        "proxy_warning"
+      ],
+      "max_mean_abs_omega": 0.4028059676847905,
+      "max_rmse_to_expected": null,
+      "median_mean_abs_omega": 0.24295083514074206,
+      "rows": 12
+    }
+  }
+}

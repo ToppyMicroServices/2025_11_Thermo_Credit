@@ -16,6 +16,24 @@ U_detrend:
   window: 12        # quarters
   min_periods: 4
 
+# Forecasting preprocessing. The dashboard CSV remains retrospective; the
+# separate *_realtime.csv panels apply these release lags before indicators,
+# calibration, and OOS forecast diagnostics are computed.
+preprocessing:
+  real_time_forecast:
+    enabled: true
+    profile: default_release_lags
+    default_lag_days: 0
+    release_lags_days:
+      gdp: 90
+      credit: 120
+      spread: 1
+      market: 1
+      money: 30
+      allocation: 90
+      destination: 90
+      regulatory: 90
+
 # V_C formula: use min of headroom components by default
 V_C_formula: min_headroom   # legacy to skip
 V_C_headroom_cols:
@@ -35,6 +53,18 @@ q_cols:
   - q_financial
   - q_government
 entropy_per_category: true
+
+# Credit-destination core. When direct loan-purpose data are absent, the
+# pipeline builds an explicitly labelled allocation_proxy panel for
+# C_G, C_B, C_E, C_R, C_A, and q_t from credit-stock changes and allocation
+# shares. Replace these proxy settings with observed mappings when available.
+credit_destination:
+  enabled: true
+  source: allocation_proxy
+  direct_panel_path: ""
+  lambda_B: 0.5
+  housing_construction_share: 0.35
+  household_housing_share: 0.4
 
 # Optional: preferred series (env > config > default order)
 series:

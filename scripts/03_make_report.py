@@ -82,52 +82,69 @@ def _build_compare_context(region_ctxs: List[Dict[str, Any]]) -> Optional[Dict[s
     summary_html = ""
     if not compare_data.latest_rows.empty:
         latest_df = compare_data.latest_rows.copy()
-        cols = [c for c in ["Region", "Latest date", "S_M", "T_L", "loop_area", "X_C"] if c in latest_df.columns]
+        metric_labels = {
+            "S_M": "S_M",
+            "T_L": "T_L",
+            "loop_area": "Loop",
+            "X_C": "X_C",
+        }
+        cols: List[str] = [c for c in ["Region", "Latest date"] if c in latest_df.columns]
+        for metric in metric_labels:
+            for suffix in ("pctile", "rank"):
+                col = f"{metric} {suffix}"
+                if col in latest_df.columns:
+                    cols.append(col)
         if cols:
             latest_df = latest_df[cols]
+        latest_df = latest_df.rename(
+            columns={
+                key: value
+                for metric, label in metric_labels.items()
+                for key, value in (
+                    (f"{metric} pctile", f"{label} pctile"),
+                    (f"{metric} rank", f"{label} rank"),
+                )
+            }
+        )
         try:
             dates = pd.to_datetime(latest_df.get("Latest date"), errors="coerce").dropna()
             latest_dt_str = dates.max().strftime("%Y-%m-%d") if not dates.empty else ""
         except Exception:
             latest_dt_str = ""
         headline = (
-            f"<p><strong>At the latest date</strong>{' (' + latest_dt_str + ')' if latest_dt_str else ''}, this section compares dispersion (S<sub>M</sub>), liquidity temperature (T<sub>L</sub>), loop dissipation, and remaining credit exergy (X<sub>C</sub>) across regions. The table below gives exact values.</p>"
+            f"<p><strong>At the latest date</strong>{' (' + latest_dt_str + ')' if latest_dt_str else ''}, this section compares only within-region historical position. Percentiles and ranks are computed inside each regional history; raw indicator levels are not compared across JP/EU/US.</p>"
         )
         snapshot = latest_df.to_html(index=False, border=0, classes="mini", float_format=lambda x: f"{x:.4g}")
         highlight_rows: List[str] = []
         for metric, label in [
-            ("S_M", "Dispersion peak"),
-            ("T_L", "Liquidity peak"),
-            ("loop_area", "Loop peak"),
-            ("X_C", "Headroom peak"),
+            ("S_M", "Highest S_M rank"),
+            ("T_L", "Highest T_L rank"),
+            ("loop_area", "Highest loop rank"),
+            ("X_C", "Highest X_C rank"),
         ]:
-            if metric in latest_df.columns:
-                vals = pd.to_numeric(latest_df[metric], errors="coerce")
+            pct_col = f"{metric_labels[metric]} pctile"
+            rank_col = f"{metric_labels[metric]} rank"
+            if pct_col in latest_df.columns:
+                vals = pd.to_numeric(latest_df[pct_col], errors="coerce")
                 if vals.notna().any():
                     row = latest_df.loc[vals.idxmax()]
-                    highlight_rows.append(_summary_card(label, str(row.get("Region", "")), f"{metric} = {float(row[metric]):.4g}"))
+                    detail = f"within-region pctile = {float(row[pct_col]):.1f}"
+                    if rank_col in latest_df.columns and pd.notna(row.get(rank_col)):
+                        detail += f", rank {row.get(rank_col)}"
+                    highlight_rows.append(_summary_card(label, str(row.get("Region", "")), detail))
         highlights = '<div class="summary-grid compare-highlights">' + "".join(highlight_rows) + "</div>" if highlight_rows else ""
-        summary_html = headline + highlights + "<h2>Compare – Latest snapshot</h2>" + _table_scroll(snapshot)
+        summary_html = headline + highlights + "<h2>Compare – Latest within-region ranks</h2>" + _table_scroll(snapshot)
 
-    raw_charts_html = _figs_html(compare_data.raw_figs)
     std_charts_html = _figs_html(compare_data.std_figs) if compare_data.std_figs else ""
 
-    toggle_html = (
-        '<div class="subtabs compare-toggle" role="tablist">'
-        '<button class="active" data-mode="std" aria-pressed="true">Standardized</button>'
-        '<button data-mode="raw" aria-pressed="false">Raw</button>'
-        '</div>'
-    )
     _std_inner = std_charts_html if std_charts_html else "<p class=\"note small\">No standardized charts available.</p>"
-    _raw_inner = raw_charts_html if raw_charts_html else "<p class=\"note small\">No raw charts available.</p>"
     panes_html = (
         '<div class="compare-block">'
         f'<div class="pane std active">{_std_inner}</div>'
-        f'<div class="pane raw">{_raw_inner}</div>'
         '</div>'
     )
     region_html = (
-        f"<section class=\"region-summary\"><h2>Compare (JP/EU/US)</h2>{summary_html}{toggle_html}</section>" + panes_html
+        f"<section class=\"region-summary\"><h2>Compare (within-region ranks)</h2>{summary_html}</section>" + panes_html
     )
 
     return {
@@ -195,12 +212,12 @@ def _summary_cards_html(items: List[str]) -> str:
     details = {
         "Latest date": "Most recent observation in this panel.",
         "S_M": "Dispersion and allocation spread.",
-        "T_L": "Liquidity temperature.",
-        "Loop area": "Dissipation along the policy loop.",
+        "T_L": "Liquidity state index.",
+        "Loop area": "Streaming open-path area in the policy-credit state plane.",
         "U": "Stored potential.",
         "X_C": "Remaining adjustment room.",
         "F_C": "Free-energy proxy.",
-        "Maxwell gap": "Proxy consistency diagnostic.",
+        "Maxwell curl Ω": "Proxy consistency diagnostic.",
         "First-law resid": "Energy-balance residual.",
     }
     cards: List[str] = []
@@ -267,8 +284,8 @@ def _build_dashboard_summary(region_ctxs: List[Dict[str, Any]]) -> str:
     cards = [_summary_card("Latest observation", latest_date, "Freshest regional panel.")]
     for metric, label, detail in [
         ("S_M", "Dispersion peak", "Largest money/credit dispersion."),
-        ("T_L", "Liquidity peak", "Highest liquidity temperature."),
-        ("loop_area", "Loop peak", "Most policy-loop dissipation."),
+        ("T_L", "Liquidity peak", "Highest liquidity state index."),
+        ("loop_area", "Loop peak", "Largest streaming loop area."),
         ("X_C", "Headroom peak", "Largest remaining adjustment room."),
     ]:
         item = leader(metric)
@@ -497,13 +514,13 @@ def _definitions_table(ref_df: pd.DataFrame) -> str:
     defs = {
         "date": ("Date", "End-of-month timestamp", "YYYY-MM-DD"),
         "S_M": ("Money entropy", "Mixing entropy", "index"),
-        "T_L": ("Liquidity temperature", "Composite flow proxy", "index"),
+        "T_L": ("Liquidity state", "Composite flow proxy", "index"),
         "p_C": ("Credit pressure", "Conjugate to V_C", "index"),
         "V_C": ("Credit volume", "Capacity proxy", "index"),
         "U": ("Internal energy", "Stored potential", "index"),
         "F_C": ("Free energy F_C", "Helmholtz proxy", "index"),
         "X_C": ("Exergy ceiling X_C", "Usable potential", "index"),
-        "loop_area": ("Loop area", "Streaming dissipation", "index^2"),
+        "loop_area": ("Loop area", "Streaming open-path area", "index^2"),
     }
     cols = [c for c in defs if c == "date" or c in ref_df.columns]
     rows = [
@@ -547,8 +564,8 @@ def _build_raw_inputs_fig(raw_df: Optional[pd.DataFrame]):
         return None
     long_df = raw_df.melt(id_vars="date", value_vars=value_cols, var_name="Series", value_name="Value")
     color_map = raw_df.attrs.get("series_country_map", {})
-    palette = {"JP": "#1f77b4", "JPN": "#1f77b4", "EU": "#ff7f0e", "EZ": "#ff7f0e", "US": "#2ca02c", "USA": "#2ca02c"}
-    discrete_map = {series: palette.get(country, "#6c757d") for series, country in color_map.items()}
+    palette = {"JP": "#62d2ff", "JPN": "#62d2ff", "EU": "#ffbd69", "EZ": "#ffbd69", "US": "#70e1c8", "USA": "#70e1c8"}
+    discrete_map = {series: palette.get(country, "#b4cad9") for series, country in color_map.items()}
     fig = px.line(
         long_df,
         x="date",
@@ -622,7 +639,7 @@ def _build_region_context(
         _style_figure(fig)
         _apply_hover(fig, ".3f")
         interp = _chart_interpretation("S_M & T_L", plot_df)
-        fig_specs.append((fig, "S_M & T_L", "Entropy & temperature", interp))
+        fig_specs.append((fig, "S_M & T_L", "Entropy & liquidity state", interp))
     # Stacked MECE entropy view when per-category columns exist
     cat_cols = [c for c in plot_df.columns if c.startswith("S_M_in_")]
     cat_cols = [c for c in cat_cols if pd.to_numeric(plot_df[c], errors="coerce").dropna().abs().sum() > 0]
@@ -651,13 +668,13 @@ def _build_region_context(
             plot_df,
             x="date",
             y="loop_area",
-            title=f"{label} – Policy Loop Dissipation",
-            labels={"loop_area": "Loop area (dissipation)", "date": "Date"},
+            title=f"{label} – Loop Path Monitor",
+            labels={"loop_area": "Streaming loop area", "date": "Date"},
         )
         _style_figure(fig)
         _apply_hover(fig, ".3f")
-    interp = _chart_interpretation("Policy Loop Dissipation", plot_df)
-    fig_specs.append((fig, "Policy Loop Dissipation", "Loop area", interp))
+    interp = _chart_interpretation("Loop Path Monitor", plot_df)
+    fig_specs.append((fig, "Loop Path Monitor", "Loop area", interp))
     # Exergy, free energy, internal energy, change in free energy, and surplus/shortage figures
     if not plot_df.empty:
         # Exergy X_C (if available)
@@ -804,7 +821,7 @@ def _build_region_context(
     if "T_L" in local.columns:
         summary_items.append(f"T_L: {fmt(last_row.get('T_L'))}")
     if "loop_area" in local.columns:
-        summary_items.append(f"Loop area: {fmt(last_row.get('loop_area'))}")
+        summary_items.append(f"Streaming loop area: {fmt(last_row.get('loop_area'))}")
     if "U" in local.columns:
         summary_items.append(f"U: {fmt(last_row.get('U'))}")
     # Summary: show X_C if present; otherwise F_C label it accordingly
@@ -815,8 +832,9 @@ def _build_region_context(
         xc_series = pd.to_numeric(local["X_C"], errors="coerce").dropna()
     elif "F_C" in local.columns and pd.to_numeric(local["F_C"], errors="coerce").dropna().size > 0:
         summary_items.append(f"F_C: {fmt(last_row.get('F_C'))}")
-    if has_derivatives and "maxwell_gap" in local.columns:
-        summary_items.append(f"Maxwell gap: {fmt(last_row.get('maxwell_gap'))}")
+    maxwell_col = "maxwell_curl" if "maxwell_curl" in local.columns else "maxwell_gap"
+    if has_derivatives and maxwell_col in local.columns:
+        summary_items.append(f"Maxwell curl Ω: {fmt(last_row.get(maxwell_col))}")
     if has_thermo and "firstlaw_resid" in local.columns:
         summary_items.append(f"First-law resid: {fmt(last_row.get('firstlaw_resid'))}")
     summary_html = _summary_cards_html(summary_items)
@@ -852,14 +870,14 @@ def _build_region_context(
 
     parts: List[str] = []
     if sm_bucket and tl_bucket:
-        parts.append(f"{label} sits in a <strong>{sm_bucket}-dispersion, {tl_bucket}-temperature</strong> regime.")
+        parts.append(f"{label} sits in a <strong>{sm_bucket}-dispersion, {tl_bucket}-liquidity</strong> regime.")
     elif sm_bucket or tl_bucket:
         if sm_bucket:
             parts.append(f"Dispersion is <strong>{sm_bucket}</strong>.")
         if tl_bucket:
-            parts.append(f"Liquidity temperature is <strong>{tl_bucket}</strong>.")
+            parts.append(f"Liquidity state is <strong>{tl_bucket}</strong>.")
     if la_desc:
-        parts.append(f"Loop area is <strong>{la_desc}</strong>, indicating {'ongoing dissipation' if la_desc=='non-zero' else 'a quiet loop'}.")
+        parts.append(f"Streaming loop area is <strong>{la_desc}</strong>, indicating {'an active loop path' if la_desc=='non-zero' else 'a quiet loop path'}.")
     if xc_desc:
         parts.append(f"X<sub>C</sub> is <strong>{xc_desc}</strong>.")
     comment_html = ("<p>" + " ".join(parts) + "</p>") if parts else ""
@@ -878,16 +896,17 @@ def _build_region_context(
     if "loop_area" in local.columns and last_la is not None:
         loop_trend = _series_trend(local.get("loop_area"))
         trend_txt = f" and {loop_trend}" if loop_trend else ""
-        chart_lines.append(("Policy Loop Dissipation", f"Loop area is {la_desc or fmt(last_la)}{trend_txt}."))
+        chart_lines.append(("Loop Path Monitor", f"Streaming loop area is {la_desc or fmt(last_la)}{trend_txt}."))
     if last_xc is not None:
         xc_trend = _series_trend(xc_series) if xc_series is not None else None
         xc_text = xc_desc or f"{fmt(last_xc)}"
         suffix = f" and {xc_trend}" if xc_trend else ""
         chart_lines.append(("Credit Exergy Ceiling", f"X_C is {xc_text}{suffix}."))
-    if has_derivatives and "maxwell_gap" in local.columns:
-        gap_desc = fmt(last_row.get("maxwell_gap"))
+    maxwell_col = "maxwell_curl" if "maxwell_curl" in local.columns else "maxwell_gap"
+    if has_derivatives and maxwell_col in local.columns:
+        gap_desc = fmt(last_row.get(maxwell_col))
         spec = "alerts active" if out_of_spec_ranges else "inside spec"
-        chart_lines.append(("Maxwell-like Test", f"Gap is {gap_desc} ({spec})."))
+        chart_lines.append(("Maxwell-like Test", f"Curl Ω is {gap_desc} ({spec})."))
     if has_thermo and "firstlaw_resid" in local.columns:
         resid_desc = fmt(last_row.get("firstlaw_resid"))
         chart_lines.append(("First-law Decomposition", f"Residual is {resid_desc} (ΔU minus predicted)."))
@@ -1125,7 +1144,7 @@ def main() -> None:
         "<li>Change in free energy: $\\Delta F_C(t) = F_C(t) - F_C^{\\mathrm{ref}}$</li>"
         "<li>Surplus/shortage split: $X_C^{+}(t) = \\max(0,\\, \\Delta F_C(t)),\\; X_C^{-}(t) = \\max(0,\\, -\\Delta F_C(t))$</li>"
         "<li>First-law (discrete approximation): $\\Delta U \\approx \\bar T\\, \\Delta S - \\bar p\\, \\Delta V$</li>"
-        "<li>Maxwell-like relation (rolling OLS): $\\left. \\partial S / \\partial V \\right|_T \\approx \\left. \\partial p / \\partial T \\right|_V$</li>"
+        "<li>Maxwell-like relation (rolling local linear regression): $\\left. \\partial T / \\partial V \\right|_S + \\left. \\partial p / \\partial S \\right|_V \\approx 0$</li>"
         "</ul>"
     )
     sources_html = _sources_table(sources_meta)
@@ -1158,7 +1177,7 @@ def main() -> None:
 
     label_to_filename = {
         "S_M & T_L": "fig1.png",
-        "Policy Loop Dissipation": "fig2.png",
+        "Loop Path Monitor": "fig2.png",
         "Credit Exergy Ceiling": "fig3.png",
         "Maxwell-like Test": "fig4.png",
         "First-law Decomposition": "fig5.png",
@@ -1233,24 +1252,35 @@ def main() -> None:
         ".inputs-summary .inputs-row{margin:.35rem 0}.inputs-summary .region-tag{display:inline-block;background:#333;color:#fff;border-radius:3px;padding:.15rem .4rem;font-size:.75rem;margin-right:.4rem}"
         ".inputs-summary .pill-list{display:inline}.inputs-summary .pill{display:inline-block;border:1px solid #ddd;background:#fff;border-radius:999px;padding:.15rem .5rem;margin:.15rem .25rem;font-size:.75rem}"
         """
-:root{--page-bg:#f4f6f8;--surface:#fff;--surface-muted:#f8fafc;--ink:#101828;--accent:#0f766e;--border:#dfe4ea;--border-strong:#cbd5e1;--text:#111827;--muted:#475467;--soft:#667085;--shadow:0 12px 28px rgba(16,24,40,.07);--radius:8px}
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+:root{color-scheme:dark;--page-bg:#02213b;--surface:#072d4a;--surface-muted:#0a3857;--fg:#f5fbff;--ink:#f5fbff;--ink-soft:#d9edf8;--accent:#62d2ff;--accent-cool:#62d2ff;--sand:#62d2ff;--border:rgba(185,226,255,.2);--border-strong:rgba(185,226,255,.34);--text:#f5fbff;--muted:#b4cad9;--soft:#8fb1c5;--shadow:0 22px 60px rgba(0,10,24,.28);--shadow-soft:0 10px 30px rgba(0,10,24,.2);--radius:20px;--radius-sm:12px}
 *,*::before,*::after{box-sizing:border-box}
-html{background:var(--page-bg)}
-body{margin:0;overflow-x:hidden;background:var(--page-bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.5}
-h1{margin:0;font-size:2.15rem;line-height:1.08}h2{margin:0;font-size:1.05rem;line-height:1.25}h3{margin:.2rem 0 .5rem;font-size:.92rem}p,ul{margin-top:0}.wrap{max-width:1180px;margin:0 auto;padding:1.35rem}.page-header,.page-content{display:grid;gap:1rem}.page-header{margin-bottom:1rem}.page-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:1rem;padding:.25rem 0 .85rem;border-bottom:1px solid var(--border)}.page-kicker,.section-kicker{display:block;color:var(--accent);font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.page-subtitle,.note{color:var(--muted);margin:.4rem 0 0;max-width:760px}.note.small{color:var(--soft);font-size:.85rem}
-.intro,.coverage-summary,.region-summary,.inputs-summary,.event-summary,.reference-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:1rem}.decision-summary{overflow:hidden;background:var(--ink);border:1px solid #1f2937;border-radius:var(--radius);box-shadow:var(--shadow);color:#fff;padding:1.05rem}
-.intro{background:#eef6f4;border-color:#cfe7e1}.intro ul{margin:.45rem 0 .75rem;padding-left:1.1rem}.intro li{margin:.25rem 0}.section-heading{display:grid;gap:.15rem;margin-bottom:.8rem}.decision-summary .section-kicker{color:#5eead4}.decision-summary h2{color:#fff}
-.summary-grid,.coverage-grid,.event-grid,.chart-grid{display:grid;gap:.8rem}.summary-grid{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin:0}.kpi-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.coverage-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.event-grid{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
-.summary-card,.coverage-card,.event-card{min-width:0;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);padding:.85rem .9rem}.decision-summary .summary-card{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.16)}.summary-label,.coverage-region{display:block;color:var(--muted);font-size:.72rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase}.decision-summary .summary-label{color:#a7f3d0}.summary-value,.coverage-date,.event-title{display:block;color:var(--text);font-size:1.02rem;font-weight:800;line-height:1.2;overflow-wrap:anywhere}.decision-summary .summary-value{color:#fff}.summary-detail,.coverage-note,.event-note,.event-date{display:block;margin-top:.25rem;color:var(--soft);font-size:.78rem;line-height:1.4}.decision-summary .summary-detail{color:#d1fae5}
-.coverage-head,.event-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.45rem;margin-bottom:.45rem}.status-badge,.event-chip{display:inline-flex;align-items:center;border-radius:999px;padding:.16rem .52rem;border:1px solid transparent;font-size:.7rem;font-weight:800}.tone-current{border-color:#86efac!important;background:#f2fbf5!important;color:#166534!important}.tone-delayed{border-color:#fcd34d!important;background:#fffaf0!important;color:#92400e!important}.tone-stale,.tone-crisis{border-color:#fca5a5!important;background:#fff3f3!important;color:#991b1b!important}.tone-bubble{border-color:#fcd34d!important;background:#fef3c7!important;color:#92400e!important}.tone-pandemic{border-color:#93c5fd!important;background:#dbeafe!important;color:#1d4ed8!important}.tone-policy{border-color:#c4b5fd!important;background:#f3f0ff!important;color:#6d28d9!important}
-.table-scroll{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}table.mini{width:100%;border-collapse:collapse;margin:.5rem 0;background:transparent}table.mini th,table.mini td{padding:.42rem .58rem;border-bottom:1px solid var(--border);text-align:right;vertical-align:top;white-space:nowrap}table.mini th:first-child,table.mini td:first-child{text-align:left}
-.tabs,.subtabs{display:flex;flex-wrap:wrap;gap:.45rem}.tabs{position:sticky;top:0;z-index:5;margin:.1rem 0 .2rem;padding:.45rem;background:rgba(244,246,248,.92);backdrop-filter:blur(10px);border:1px solid var(--border);border-radius:999px}.tabs button,.subtabs button{border:1px solid var(--border-strong);background:#fff;color:var(--text);border-radius:999px;cursor:pointer;transition:background 120ms ease,color 120ms ease,border-color 120ms ease}.tabs button{padding:.5rem .9rem;font-size:.82rem;font-weight:700}.subtabs button{padding:.34rem .72rem;font-size:.78rem;font-weight:700}.tabs button.active,.subtabs button.active{border-color:var(--ink);background:var(--ink);color:#fff}.compare-block .pane,.region{display:none}.compare-block .pane.active,.region.active{display:block}
-.chart-grid{grid-template-columns:1fr;margin-top:1rem}.compare-block .chart-grid{gap:1rem}figure.chart-card{margin:0;padding:1rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}.chart-card .plotly-graph-div{min-height:420px}figcaption{margin-top:.65rem;color:var(--muted);font-size:.82rem}.chart-notes{margin:.8rem 0;padding:.55rem .75rem;background:#f1f4fb;border:1px solid var(--border-strong);border-radius:var(--radius)}.chart-note{display:flex;flex-direction:column;gap:.12rem;margin:.28rem 0;font-size:.82rem}.chart-note strong{color:#1b2a43;font-weight:600}.chart-note span,.chart-note-inline{display:block;color:var(--muted);font-size:.78rem}
-details{margin:.5rem 0}details>summary{cursor:pointer;font-weight:800;list-style:none}details>summary::-webkit-details-marker{display:none}.inputs-row{margin:.4rem 0}.inputs-summary .region-tag{display:inline-block;margin-right:.45rem;padding:.18rem .45rem;border-radius:999px;background:var(--ink);color:#fff;font-size:.74rem;font-weight:700}.inputs-summary .pill-list{display:inline}.inputs-summary .pill{display:inline-block;margin:.15rem .25rem;padding:.18rem .56rem;border:1px solid var(--border);border-radius:999px;background:#fff;font-size:.75rem}
+html{scroll-behavior:smooth;background:var(--page-bg)}
+body{margin:0;overflow-x:hidden;background:radial-gradient(circle at 8% 0%,rgba(23,126,115,.14),transparent 27rem),radial-gradient(circle at 100% 30%,rgba(241,199,109,.15),transparent 30rem),var(--page-bg);color:var(--text);font-family:"Avenir Next","Gill Sans",Candara,"Trebuchet MS",sans-serif;line-height:1.58}
+h1,h2,h3{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;color:var(--ink)}h1{max-width:780px;margin:0;font-size:clamp(2.65rem,5.2vw,5.15rem);font-weight:600;letter-spacing:-.045em;line-height:.96}h2{margin:0;font-size:clamp(1.35rem,2vw,1.85rem);font-weight:600;line-height:1.16}h3{margin:.2rem 0 .5rem;font-size:1rem}p,ul{margin-top:0}.wrap{max-width:1320px;margin:0 auto;padding:1.5rem}.page-header,.page-content{display:grid;gap:1.25rem}.page-header{position:relative;isolation:isolate;overflow:hidden;margin-bottom:1.4rem;border:1px solid rgba(255,255,255,.14);border-radius:30px;background:linear-gradient(135deg,#0b2526 0%,#123b39 57%,#1d514a 100%);box-shadow:0 30px 80px rgba(9,39,39,.2);color:#fff}.page-header::before{position:absolute;z-index:-1;inset:0;content:"";opacity:.22;background-image:linear-gradient(rgba(255,255,255,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.08) 1px,transparent 1px);background-size:42px 42px;mask-image:linear-gradient(110deg,transparent 10%,#000 85%)}.page-header::after{position:absolute;z-index:-1;right:-8rem;bottom:-15rem;width:34rem;height:34rem;border:1px solid rgba(241,199,109,.35);border-radius:50%;box-shadow:0 0 0 4rem rgba(241,199,109,.035),0 0 0 9rem rgba(241,199,109,.025);content:""}.page-hero{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:2rem;padding:3.8rem 3rem 3.4rem;border:0}.page-hero::after{align-self:end;max-width:230px;padding:1rem 1.1rem;border:1px solid rgba(255,255,255,.18);border-radius:16px;background:rgba(4,22,22,.24);box-shadow:inset 0 1px rgba(255,255,255,.08);color:#d9ece7;content:"3 REGIONS\\A 4 CORE METRICS\\A RECALCULABLE MODEL";font-size:.72rem;font-weight:750;letter-spacing:.12em;line-height:1.9;white-space:pre}.page-header h1{color:#fff}.page-kicker,.section-kicker{display:block;color:var(--accent);font-size:.7rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase}.page-kicker{margin-bottom:1rem;color:var(--sand)}.page-subtitle,.note{max-width:760px;margin:.85rem 0 0;color:var(--muted)}.page-subtitle{color:#c7dad6;font-size:1.02rem}.note.small{color:var(--soft);font-size:.84rem}
+.intro,.coverage-summary,.region-summary,.inputs-summary,.event-summary,.reference-panel{padding:1.45rem;background:rgba(255,253,248,.94);border:1px solid rgba(190,200,191,.7);border-radius:var(--radius);box-shadow:var(--shadow-soft)}.decision-summary{position:relative;overflow:hidden;padding:1.65rem;background:linear-gradient(125deg,#f7ecd2,#fff9ea 58%,#f5e2bb);border:1px solid #e5d1a4;border-radius:var(--radius);box-shadow:var(--shadow);color:var(--ink)}.decision-summary::after{position:absolute;right:-2rem;top:-3.5rem;width:12rem;height:12rem;border:1px solid rgba(230,109,50,.22);border-radius:50%;content:""}.intro{background:#e9f3ef;border-color:#c8ddd6}.intro ul{margin:.5rem 0 .8rem;padding-left:1.15rem}.intro li{margin:.28rem 0}.section-heading{display:grid;gap:.25rem;margin-bottom:1rem}.decision-summary .section-kicker{color:#a44a25}.decision-summary h2{color:var(--ink)}
+.summary-grid,.coverage-grid,.event-grid,.chart-grid{display:grid;gap:1rem}.summary-grid{grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin:0}.kpi-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.coverage-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.event-grid{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.summary-card,.coverage-card,.event-card{min-width:0;padding:1rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface)}.summary-card{transition:transform .2s ease,box-shadow .2s ease}.summary-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-soft)}.decision-summary .summary-card{background:rgba(255,255,255,.58);border-color:rgba(165,120,57,.2);box-shadow:inset 0 1px rgba(255,255,255,.8)}.summary-label,.coverage-region{display:block;color:var(--muted);font-size:.68rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase}.decision-summary .summary-label{color:#87552d}.summary-value,.coverage-date,.event-title{display:block;margin-top:.48rem;color:var(--text);font-size:1.05rem;font-weight:800;line-height:1.2;overflow-wrap:anywhere}.decision-summary .summary-value{color:var(--ink);font-size:1.18rem}.summary-detail,.coverage-note,.event-note,.event-date{display:block;margin-top:.32rem;color:var(--soft);font-size:.78rem;line-height:1.45}.decision-summary .summary-detail{color:#705f48}
+.coverage-card{position:relative;overflow:hidden;padding:1.15rem 1.2rem!important;background:var(--surface)!important;color:var(--text)!important}.coverage-card::before{position:absolute;inset:0 auto 0 0;width:4px;background:var(--border-strong);content:""}.coverage-card.tone-current::before{background:#2b9a77}.coverage-card.tone-delayed::before{background:#dc9b2f}.coverage-card.tone-stale::before{background:#d55245}.coverage-head,.event-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.45rem;margin-bottom:.45rem}.status-badge,.event-chip{display:inline-flex;align-items:center;border-radius:999px;padding:.2rem .58rem;border:1px solid transparent;font-size:.66rem;font-weight:800;letter-spacing:.03em}.tone-current{border-color:#9cd5bf!important;background:#eef8f3!important;color:#166649!important}.tone-delayed{border-color:#e9c06e!important;background:#fff7e6!important;color:#855817!important}.tone-stale,.tone-crisis{border-color:#e8aaa4!important;background:#fff0ee!important;color:#8e2e27!important}.tone-bubble{border-color:#e9c06e!important;background:#fff5d8!important;color:#855817!important}.tone-pandemic{border-color:#9ebedc!important;background:#edf5fb!important;color:#275d87!important}.tone-policy{border-color:#99cfc5!important;background:#edf8f5!important;color:#17695e!important}
+.table-scroll{width:100%;margin-top:1rem;overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius-sm);-webkit-overflow-scrolling:touch}table.mini{width:100%;border-collapse:collapse;margin:0;background:var(--surface);font-size:.82rem}table.mini th,table.mini td{padding:.72rem .78rem;border-bottom:1px solid #e6e9e3;text-align:right;vertical-align:top;white-space:nowrap}table.mini thead th{position:sticky;top:0;background:#e9efeb;color:var(--ink);font-size:.68rem;letter-spacing:.06em;text-transform:uppercase}table.mini tbody tr:nth-child(even){background:#faf8f1}table.mini tbody tr:last-child td{border-bottom:0}table.mini th:first-child,table.mini td:first-child{text-align:left}
+.tabs,.subtabs{display:flex;flex-wrap:wrap;gap:.45rem}.tabs{position:sticky;top:.7rem;z-index:8;justify-content:center;width:max-content;max-width:100%;margin:.15rem auto .35rem;padding:.42rem;background:rgba(16,42,42,.92);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.15);border-radius:999px;box-shadow:0 14px 35px rgba(16,42,42,.18)}.tabs button,.subtabs button{border:1px solid var(--border-strong);background:var(--surface);color:var(--text);border-radius:999px;cursor:pointer;transition:background .18s ease,color .18s ease,border-color .18s ease,transform .18s ease}.tabs button{padding:.58rem 1.05rem;border-color:transparent;background:transparent;color:#d6e4e0;font-size:.78rem;font-weight:750}.subtabs button{padding:.38rem .76rem;font-size:.76rem;font-weight:700}.tabs button:hover{color:#fff;transform:translateY(-1px)}.tabs button.active{border-color:rgba(241,199,109,.5);background:var(--sand);color:#18312f}.subtabs button.active{border-color:var(--ink);background:var(--ink);color:#fff}.compare-block .pane,.region{display:none}.compare-block .pane.active,.region.active{display:block;animation:panel-in .36s ease both}
+.region-summary{padding:1.65rem}.region-summary>h2{margin-bottom:.85rem}.region-summary>p{max-width:900px;color:var(--muted)}.chart-grid{grid-template-columns:1fr;margin-top:1.15rem}.compare-block .chart-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:1.1rem}figure.chart-card{position:relative;margin:0;padding:1.1rem;background:rgba(255,253,248,.96);border:1px solid rgba(190,200,191,.75);border-radius:var(--radius);box-shadow:var(--shadow-soft);overflow:hidden;transition:transform .2s ease,box-shadow .2s ease}figure.chart-card:hover{transform:translateY(-2px);box-shadow:var(--shadow)}figure.chart-card::before{position:absolute;top:0;left:1.1rem;width:3.6rem;height:3px;border-radius:0 0 4px 4px;background:var(--accent-cool);content:""}.chart-card .plotly-graph-div{min-height:420px}figcaption{display:grid;gap:.25rem;padding:.8rem .2rem .1rem;border-top:1px solid #e8e9e2;color:var(--muted);font-size:.82rem}figcaption strong{color:var(--ink);font-size:.9rem}.chart-notes{margin:.9rem 0;padding:.7rem .85rem;background:#eef4f0;border:1px solid #d1ded7;border-radius:var(--radius-sm)}.chart-note{display:flex;flex-direction:column;gap:.12rem;margin:.28rem 0;font-size:.82rem}.chart-note strong{color:var(--ink);font-weight:700}.chart-note span,.chart-note-inline{display:block;color:var(--muted);font-size:.78rem}
+details{margin:.55rem 0}details>summary{position:relative;padding-right:2.2rem;cursor:pointer;color:var(--ink);font-weight:800;list-style:none}details>summary::after{position:absolute;right:.15rem;top:50%;width:1.5rem;height:1.5rem;border:1px solid var(--border);border-radius:50%;content:"+";font-size:1rem;font-weight:500;line-height:1.35rem;text-align:center;transform:translateY(-50%);transition:transform .18s ease}details[open]>summary::after{transform:translateY(-50%) rotate(45deg)}details>summary::-webkit-details-marker{display:none}.inputs-row{margin:.7rem 0;padding:.75rem 0;border-bottom:1px solid var(--border)}.inputs-row:last-child{border-bottom:0}.inputs-summary .region-tag{display:inline-block;margin-right:.45rem;padding:.22rem .55rem;border-radius:999px;background:var(--ink);color:#fff;font-size:.7rem;font-weight:700}.inputs-summary .pill-list{display:inline}.inputs-summary .pill{display:inline-block;margin:.18rem .22rem;padding:.25rem .62rem;border:1px solid var(--border);border-radius:999px;background:#f9f7f0;font-size:.74rem}.event-card{border-left:3px solid var(--accent);box-shadow:0 5px 16px rgba(17,42,42,.04)}
+/* Toppy main-site theme */
+body{background:radial-gradient(circle at 8% 0%,rgba(98,210,255,.12),transparent 28rem),radial-gradient(circle at 100% 28%,rgba(12,113,155,.18),transparent 32rem),var(--page-bg);font-family:"Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+h1,h2,h3{font-family:"Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--fg)}
+.page-header{border-color:var(--border);background:linear-gradient(135deg,#02213b 0%,#072d4a 58%,#0c719b 145%);box-shadow:0 30px 80px rgba(0,10,24,.34)}.page-header::before{background-image:linear-gradient(rgba(98,210,255,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(98,210,255,.08) 1px,transparent 1px)}.page-header::after{border-color:rgba(98,210,255,.3);box-shadow:0 0 0 4rem rgba(98,210,255,.035),0 0 0 9rem rgba(98,210,255,.02)}.page-hero::after{border-color:var(--border);background:rgba(2,33,59,.5);color:var(--muted)}.page-kicker,.section-kicker{color:var(--accent)}.page-subtitle{color:var(--muted)}
+.intro,.coverage-summary,.region-summary,.inputs-summary,.event-summary,.reference-panel{background:rgba(7,45,74,.94);border-color:var(--border);box-shadow:var(--shadow-soft)}.decision-summary{background:linear-gradient(125deg,#072d4a,#093957 62%,#0b4968);border-color:var(--border);color:var(--fg)}.decision-summary::after{border-color:rgba(98,210,255,.24)}.decision-summary .section-kicker,.decision-summary h2{color:var(--accent)}.intro{background:#083852;border-color:var(--border)}
+.summary-card,.coverage-card,.event-card{border-color:var(--border);background:rgba(2,33,59,.52)}.decision-summary .summary-card{background:rgba(2,33,59,.42);border-color:var(--border);box-shadow:inset 0 1px rgba(255,255,255,.04)}.decision-summary .summary-label{color:var(--accent)}.decision-summary .summary-value{color:var(--fg)}.decision-summary .summary-detail{color:var(--muted)}
+.coverage-card{background:var(--surface)!important;color:var(--fg)!important}.tone-current{border-color:rgba(98,210,255,.42)!important;background:rgba(98,210,255,.1)!important;color:#bcecff!important}.tone-delayed{border-color:rgba(180,202,217,.42)!important;background:rgba(180,202,217,.08)!important;color:#dcebf4!important}.tone-stale,.tone-crisis{border-color:rgba(255,137,137,.4)!important;background:rgba(255,91,91,.09)!important;color:#ffbaba!important}.tone-bubble{border-color:rgba(98,210,255,.35)!important;background:rgba(98,210,255,.08)!important;color:#bcecff!important}.tone-pandemic{border-color:rgba(125,184,255,.4)!important;background:rgba(125,184,255,.09)!important;color:#c7e0ff!important}.tone-policy{border-color:rgba(98,210,255,.42)!important;background:rgba(98,210,255,.1)!important;color:#bcecff!important}
+.table-scroll{border-color:var(--border)}table.mini{background:var(--surface)}table.mini th,table.mini td{border-bottom-color:var(--border)}table.mini thead th{background:#0a3a59;color:var(--fg)}table.mini tbody tr:nth-child(even){background:rgba(98,210,255,.035)}
+.tabs{background:rgba(2,33,59,.94);border-color:var(--border);box-shadow:0 14px 35px rgba(0,10,24,.28)}.tabs button{color:var(--muted)}.tabs button.active{border-color:var(--accent);background:var(--accent);color:var(--page-bg)}.subtabs button{border-color:var(--border);background:var(--surface);color:var(--muted)}.subtabs button.active{border-color:var(--accent-strong);background:var(--accent-strong);color:#fff}
+figure.chart-card{background:rgba(7,45,74,.96);border-color:var(--border);box-shadow:var(--shadow-soft)}figure.chart-card::before{background:var(--accent)}figcaption{border-top-color:var(--border);color:var(--muted)}figcaption strong{color:var(--fg)}.chart-notes{background:rgba(98,210,255,.06);border-color:var(--border)}.chart-note strong{color:var(--fg)}.event-card{border-left-color:var(--accent);box-shadow:0 5px 16px rgba(0,10,24,.18)}
+details>summary{color:var(--fg)}details>summary::after{border-color:var(--border)}.inputs-row{border-bottom-color:var(--border)}.inputs-summary .region-tag{background:var(--accent-strong);color:#fff}.inputs-summary .pill{border-color:var(--border);background:rgba(2,33,59,.5)}
+@keyframes panel-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}@keyframes rise-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}.page-header,.decision-summary,.coverage-summary{animation:rise-in .55s ease both}.decision-summary{animation-delay:.08s}.coverage-summary{animation-delay:.14s}
 """.strip()
         + f":root{{--brand-bg:{BRAND_BG};--brand-bg2:{BRAND_BG2};--brand-text:{BRAND_TEXT};}}"
-        + ".brandbar,.footer-brand{display:flex;align-items:center;gap:10px;color:var(--brand-text);background:linear-gradient(90deg,var(--brand-bg),var(--brand-bg2));border-radius:var(--radius)}.brandbar{min-height:52px;padding:.45rem .7rem}.brandbar img,.footer-brand img{width:auto;border-radius:6px;box-shadow:0 0 0 1px rgba(255,255,255,.2)}.brandbar img{height:36px}.brandbar .brand-name{font-size:.98rem;font-weight:800;color:var(--brand-text)}.brand-tag{margin-left:auto;border:1px solid rgba(255,255,255,.24);border-radius:999px;padding:.18rem .55rem;color:#d1fae5;font-size:.72rem;font-weight:800}.footer-brand{margin-top:1.5rem;padding:.75rem .85rem;font-size:.75rem}.footer-brand img{height:32px}"
-        + "@media(max-width:900px){.kpi-grid,.coverage-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:720px){.wrap{padding:.75rem}h1{font-size:1.6rem}.page-hero{display:block}.intro,.decision-summary,.coverage-summary,.region-summary,.inputs-summary,.event-summary,.brandbar,.footer-brand{padding:.8rem}.kpi-grid,.coverage-grid,.chart-grid{grid-template-columns:1fr}.tabs{border-radius:var(--radius)}.tabs button{flex:1 1 44%;min-width:0}}"
+        + ".brandbar,.footer-brand{display:flex;align-items:center;gap:11px;color:var(--brand-text)}.brandbar{min-height:58px;padding:.65rem 1rem;border-bottom:1px solid rgba(255,255,255,.12);background:transparent}.brandbar img,.footer-brand img{width:auto;border-radius:8px;box-shadow:0 0 0 1px rgba(255,255,255,.22)}.brandbar img{height:34px}.brandbar .brand-name{font-size:.9rem;font-weight:800;letter-spacing:.03em;color:var(--brand-text)}.brand-tag{margin-left:auto;border:1px solid rgba(255,255,255,.2);border-radius:999px;padding:.24rem .62rem;color:#d4e7e2;font-size:.66rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.footer-brand{justify-content:center;margin-top:1.6rem;padding:1rem;color:#c9d9d5;background:var(--ink);border-radius:var(--radius);font-size:.74rem}.footer-brand img{height:28px}@media(max-width:1000px){.kpi-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.compare-block .chart-grid{grid-template-columns:1fr}}@media(max-width:760px){.wrap{padding:.7rem}.page-header{border-radius:22px}.brandbar{padding:.55rem .75rem}.brand-tag{display:none}.page-hero{display:block;padding:2.4rem 1.35rem 2.2rem}.page-hero::after{display:block;margin-top:1.6rem;max-width:none}.decision-summary,.coverage-summary,.region-summary,.intro,.inputs-summary,.event-summary,.reference-panel{padding:1.1rem}.kpi-grid,.coverage-grid,.chart-grid{grid-template-columns:1fr}.tabs{top:.35rem;width:100%;border-radius:16px}.tabs button{flex:1 1 42%;min-width:0;padding:.5rem .35rem}.chart-card .plotly-graph-div{min-height:360px}figure.chart-card{padding:.7rem}}@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.page-header,.decision-summary,.coverage-summary,.region.active,.pane.active{animation:none!important}.summary-card,figure.chart-card,.tabs button{transition:none!important}}"
     )
 
     head = ("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" "
@@ -1258,7 +1288,7 @@ details{margin:.5rem 0}details>summary{cursor:pointer;font-weight:800;list-style
             "content=\"Monthly thermo-credit indicators.\"><style>" + style_block + "</style>"
             + "</head><body><div class=\"wrap\"><header class=\"page-header\"><div class=\"brandbar\">"
             + (f'<img src="{logo_uri}" alt="Company Logo"/>' if logo_uri else "")
-            + '<span class="brand-name">ToppyMicroServices</span><span class="brand-tag">Research dashboard</span></div><div class="page-hero"><div><span class="page-kicker">Thermo-credit monitor</span><h1>Regional Credit Thermodynamics</h1><p class="page-subtitle">Monthly indicators for dispersion, liquidity temperature, policy-loop dissipation, and credit exergy.</p></div></div></header>')
+            + '<span class="brand-name">ToppyMicroServices</span><span class="brand-tag">Research dashboard</span></div><div class="page-hero"><div><span class="page-kicker">Thermo-credit monitor</span><h1>Regional Credit Thermodynamics</h1><p class="page-subtitle">Monthly indicators for dispersion, liquidity state, loop-path monitoring, and credit exergy.</p></div></div></header>')
 
     intro_html = (
         '<details class="intro">'
@@ -1273,8 +1303,8 @@ details{margin:.5rem 0}details>summary{cursor:pointer;font-weight:800;list-style
         '<p>Under the hood, the framework uses four core metrics:</p>'
         '<ul>'
         '<li><strong>S<sub>M</sub></strong> – dispersion of money/credit (size × allocation spread)</li>'
-        '<li><strong>T<sub>L</sub></strong> – liquidity “temperature” (funding &amp; market conditions)</li>'
-        '<li><strong>Loop area</strong> – dissipation along the policy/regulatory loop</li>'
+        '<li><strong>T<sub>L</sub></strong> – liquidity state index (funding &amp; market conditions)</li>'
+        '<li><strong>Loop area</strong> – streaming open-path area in the policy/regulatory state plane</li>'
         '<li><strong>X<sub>C</sub></strong> – remaining “credit exergy”, i.e. safe room to adjust</li>'
         '</ul>'
         '<p>Values here are <strong>experimental</strong> and follow the Thermo-Credit v0.x spec. '
@@ -1299,10 +1329,10 @@ details{margin:.5rem 0}details>summary{cursor:pointer;font-weight:800;list-style
         + formulas_html
         + '</section></main>'
     )
-    script_block = ("\n<script>(function(){const tabs=[...document.querySelectorAll('.tabs button')];if(tabs.length){"
+    script_block = ("\n<script>(function(){const resizePlots=(root)=>{if(!window.Plotly||!root)return;root.querySelectorAll('.plotly-graph-div').forEach(plot=>window.Plotly.Plots.resize(plot));};const tabs=[...document.querySelectorAll('.tabs button')];if(tabs.length){"
                     "tabs.forEach(btn=>btn.addEventListener('click',()=>{tabs.forEach(x=>x.classList.remove('active'));btn.classList.add('active');"
                     "const tgt=btn.getAttribute('data-target');document.querySelectorAll('.region').forEach(r=>r.classList.remove('active'));"
-                    "const el=document.getElementById('region-'+tgt);if(el)el.classList.add('active');}));}"
+                    "const el=document.getElementById('region-'+tgt);if(el){el.classList.add('active');requestAnimationFrame(()=>resizePlots(el));}}));}"
                     "document.querySelectorAll('.compare-toggle').forEach(ct=>{const btns=[...ct.querySelectorAll('button')];const block=ct.parentElement.nextElementSibling;"
                     "btns.forEach(btn=>btn.addEventListener('click',()=>{btns.forEach(x=>x.classList.remove('active'));btn.classList.add('active');const mode=btn.getAttribute('data-mode');"
                     "if(block){block.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));const target=block.querySelector('.pane.'+(mode==='std'?'std':'raw'));if(target)target.classList.add('active');}"
@@ -1332,7 +1362,7 @@ details{margin:.5rem 0}details>summary{cursor:pointer;font-weight:800;list-style
                   "content=\"Monthly thermo-credit indicators.\"><style>" + style_block + "</style>"
                   + "</head><body><div class=\"wrap\"><header class=\"page-header\"><div class=\"brandbar\">"
                   + (f'<img src="{logo_uri}" alt="Company Logo"/>' if logo_uri else "")
-                  + '<span class="brand-name">ToppyMicroServices</span><span class="brand-tag">Research dashboard</span></div><div class="page-hero"><div><span class="page-kicker">Thermo-credit monitor</span><h1>Regional Credit Thermodynamics</h1><p class="page-subtitle">Monthly indicators for dispersion, liquidity temperature, policy-loop dissipation, and credit exergy.</p></div></div></header>')
+                  + '<span class="brand-name">ToppyMicroServices</span><span class="brand-tag">Research dashboard</span></div><div class="page-hero"><div><span class="page-kicker">Thermo-credit monitor</span><h1>Regional Credit Thermodynamics</h1><p class="page-subtitle">Monthly indicators for dispersion, liquidity state, loop-path monitoring, and credit exergy.</p></div></div></header>')
     month_html = month_head + page_body + '<div class="footer-brand">' + (f'<img src="{logo_uri}" alt="Company Logo"/>' if logo_uri else "") + '<span>© ' + datetime.utcnow().strftime('%Y') + ' ToppyMicroServices</span></div></div>' + script_block
     with open(os.path.join(month_dir, "index.html"), "w", encoding="utf-8") as fp:
         fp.write(month_html)
@@ -1372,7 +1402,7 @@ details{margin:.5rem 0}details>summary{cursor:pointer;font-weight:800;list-style
         )
 
     rss_xml = ("<?xml version='1.0' encoding='UTF-8'?><rss version='2.0'><channel><title>Thermo-Credit Monitor</title>"
-               f"<link>{base_url}/</link><description>Monthly thermo-credit indicators: S_M, T_L, loop dissipation, X_C.</description>"
+               f"<link>{base_url}/</link><description>Monthly thermo-credit indicators: S_M, T_L, streaming loop area, X_C.</description>"
                "<language>en</language>" + ''.join(rss_items) + "</channel></rss>")
     with open(os.path.join(SITE_DIR, "feed.xml"), "w", encoding="utf-8") as fp:
         fp.write(rss_xml)

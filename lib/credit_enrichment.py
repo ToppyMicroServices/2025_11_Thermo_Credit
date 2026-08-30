@@ -86,7 +86,7 @@ def compute_enrichment(
     else:
         with np.errstate(divide="ignore", invalid="ignore"):
             base_ratio = out[u_col].astype(float) / out[l_real_col].replace({0: np.nan}).astype(float)
-    out[turnover_col] = base_ratio.replace([np.inf, -np.inf], np.nan).fillna(turnover_fallback)
+        out[turnover_col] = base_ratio.replace([np.inf, -np.inf], np.nan).fillna(turnover_fallback)
 
     # Clip turnover to sane bounds
     clipped_low = out[turnover_col] < turnover_min

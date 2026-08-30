@@ -1,0 +1,105 @@
+{
+  "schema_version": "1.0",
+  "protocol_id": "boj-borrower-composition-prospective-oos",
+  "protocol_version": "1.0.0",
+  "registration_timestamp_utc": null,
+  "prospective_start_rule": "Only a publisher release strictly later than the externally registered protocol timestamp can be labelled prospective.",
+  "current_sample_status": "The sample analyzed before registration is current-vintage retrospective evidence and is not preregistered.",
+  "mapping": {
+    "version": "boj-bezemer-four-way-common-population-2026-07-30-v1",
+    "metadata_file": "data/credit_destination_jp_metadata.json",
+    "primary_taxonomy_id": "bezemer_samarina_zhang_2020_japan_v1",
+    "primary_vector_columns": [
+      "borrower_composition_NFB_4q",
+      "borrower_composition_FIN_4q",
+      "borrower_composition_PROP_4q",
+      "borrower_composition_HH_NONHOUSING_4q"
+    ],
+    "primary_scale_stock_column": "primary_included_stock",
+    "primary_allocation": "sum_4Q(C_NFB)/sum_4Q(C_NFB+C_FIN+C_PROP+C_HH_NONHOUSING)",
+    "taxonomy_selection": {
+      "primary_taxonomy_id": "bezemer_samarina_zhang_2020_japan_v1",
+      "robustness_taxonomy_ids": [
+        "werner_1997_financial_circulation_v1",
+        "muller_verner_2024_sector_v1"
+      ],
+      "legacy_taxonomy_id": "author_gbe_legacy_v1",
+      "selection_basis": "literature-anchored mappings reported jointly; the current-sample declaration is not an externally time-stamped preregistration",
+      "outcome_columns_used": [],
+      "oos_results_used": false
+    },
+    "robustness_taxonomy_ids": [
+      "werner_1997_financial_circulation_v1",
+      "muller_verner_2024_sector_v1"
+    ],
+    "legacy_taxonomy_id": "author_gbe_legacy_v1"
+  },
+  "source": {
+    "name": "Bank of Japan Time-Series Data Search API",
+    "api_endpoint": "https://www.stat-search.boj.or.jp/api/v1/getDataCode",
+    "database": "LA01",
+    "format": "json",
+    "language": "en",
+    "start_date": "197701",
+    "series_ids_rule": "Freeze every series ID present in mapping metadata series_metadata."
+  },
+  "evaluation": {
+    "claim": "Prospective application of the frozen BOJ borrower-composition measurement bridge; not a claim that the current sample established incremental predictability.",
+    "proxy_outcome_interpretation": "Long-term JGB yield change, nominal GDP growth, and BOJ asset growth or acceleration are proxy outcomes rather than direct observations of credit purpose.",
+    "outcomes": [
+      {
+        "id": "jgb_yield_change",
+        "role": "primary",
+        "definition": "Forward change in the long-term JGB yield over the forecast horizon, standardized using only the training window available at the forecast origin.",
+        "loss": "squared_error"
+      },
+      {
+        "id": "nominal_gdp_growth",
+        "role": "secondary",
+        "definition": "Forward nominal GDP growth over the forecast horizon.",
+        "loss": "squared_error"
+      },
+      {
+        "id": "boj_assets_acceleration",
+        "role": "appendix_auxiliary",
+        "definition": "Forward acceleration of BOJ total assets over the forecast horizon.",
+        "loss": "squared_error"
+      }
+    ],
+    "horizons_quarters": [
+      4,
+      8
+    ],
+    "forecast_origin_rule": "At each future release, use only observations in the frozen release payload and other outcome-source releases available at that timestamp.",
+    "training_rule": "Expanding window with a common complete-case sample and a minimum of 28 training cases; 20 and 24 cases are declared sensitivity settings.",
+    "benchmark": {
+      "id": "primary_included_stock_growth",
+      "features": [
+        "primary_included_stock growth"
+      ]
+    },
+    "candidate": {
+      "id": "primary_included_stock_growth_plus_borrower_composition_NFB",
+      "features": [
+        "primary_included_stock growth",
+        "sum_4Q(C_NFB)/sum_4Q(C_NFB+C_FIN+C_PROP+C_HH_NONHOUSING)"
+      ]
+    },
+    "loss": {
+      "id": "outcome_specific_squared_loss",
+      "by_outcome": {
+        "jgb_yield_change": "squared_error",
+        "nominal_gdp_growth": "squared_error",
+        "boj_assets_acceleration": "squared_error"
+      },
+      "scale": "For each continuous outcome, freeze the training-window standardization at the forecast origin.",
+      "comparison": "candidate_loss_minus_benchmark_loss"
+    },
+    "revision_policy": {
+      "predictor_vintages": "Never overwrite a captured BOJ payload. A changed payload at the same reported release timestamp is a new linked vintage.",
+      "forecast_inputs": "Primary forecasts use the first successfully captured payload for each post-registration release; later same-release captures are revision audits.",
+      "outcome_realizations": "The first official outcome release observed after the target period is primary. Later revisions are retained as separately linked sensitivity scores.",
+      "missing_capture": "Do not backfill a missed release and label it prospective; record it as a non-primary audit outside the prospective score sequence."
+    }
+  }
+}

@@ -1,3 +1,4 @@
+import json
 import os, sys
 import numpy as np
 import pandas as pd
@@ -7,14 +8,200 @@ if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 from lib.indicators import build_indicators_core, compute_diagnostics, DEFAULT_HEADROOM_COLS
 from lib.config_loader import load_config
+from lib.no_lookahead import apply_release_lags, realtime_preprocessing_config, resolve_release_lags
 
 DEFAULT_REGIONS = ("jp", "us", "eu")
 MULTI_REGION_TOKENS = {"all", "*", "multi", "all_regions"}
 
 
-def _output_path_for_region(region: str) -> str:
+def _output_path_for_region(region: str, *, realtime: bool = False) -> str:
     region = region.strip().lower()
+    if realtime:
+        return "site/indicators_realtime.csv" if region == "jp" else f"site/indicators_{region}_realtime.csv"
     return "site/indicators.csv" if region == "jp" else f"site/indicators_{region}.csv"
+
+
+def _lag_manifest_path_for_region(region: str) -> str:
+    region = region.strip().lower()
+    return "site/realtime_release_lags.json" if region == "jp" else f"site/realtime_release_lags_{region}.json"
+
+
+def _destination_path_for_region(region: str, *, realtime: bool = False) -> str:
+    region = region.strip().lower()
+    if realtime:
+        return "site/credit_destination_realtime.csv" if region == "jp" else f"site/credit_destination_{region}_realtime.csv"
+    return "site/credit_destination.csv" if region == "jp" else f"site/credit_destination_{region}.csv"
+
+
+def _data_path_for_region(stem: str, region: str) -> str:
+    region = region.strip().lower()
+    if region and region != "jp":
+        candidate = os.path.join("data", f"{stem}_{region}.csv")
+        if os.path.exists(candidate):
+            return candidate
+    return os.path.join("data", f"{stem}.csv")
+
+
+def _read_region_csv(stem: str, region: str) -> pd.DataFrame:
+    return pd.read_csv(_data_path_for_region(stem, region), parse_dates=["date"]).sort_values("date")
+
+
+def _merge_direct_credit_destination(cred: pd.DataFrame, cfg: dict, region: str) -> pd.DataFrame:
+    dest_cfg = cfg.get("credit_destination", {}) if isinstance(cfg, dict) else {}
+    if not isinstance(dest_cfg, dict):
+        return cred
+    raw_path = str(dest_cfg.get("direct_panel_path", "") or "").strip()
+    if not raw_path:
+        return cred
+    path = raw_path
+    if not os.path.isabs(path):
+        path = os.path.join(ROOT, path)
+    if not os.path.exists(path):
+        print(f"[warn] credit_destination.direct_panel_path missing for {region}: {raw_path}")
+        return cred
+    direct = pd.read_csv(path, parse_dates=["date"]).sort_values("date")
+    if direct.empty or "date" not in direct.columns:
+        return cred
+    direct_cols = [
+        col
+        for col in direct.columns
+        if col == "date"
+        or col.startswith("C_")
+        or col.startswith("share_")
+        or col.startswith("borrower_composition_")
+        or col.startswith("fixed_investment_")
+        or col.startswith("legacy_")
+        or col.startswith("primary_")
+        or col.startswith("werner_")
+        or col.startswith("muller_verner_")
+        or col.startswith("stock_primary_")
+        or col.startswith("stock_household_")
+        or col.startswith("household_")
+        or col
+        in {
+            "destination_coverage",
+            "destination_coverage_observed",
+            "classified_positive_flow",
+            "total_positive_flow",
+            "unclassified_positive_flow",
+            "common_taxonomy_delta_valid",
+            "mapped_domestic_stock",
+            "stock_local_governments_explicit",
+            "stock_overseas_explicit",
+            "stock_unresolved_residual",
+            "explicit_scope_stock",
+            "explicit_scope_gap_to_official_stock",
+        }
+    ]
+    direct = direct.loc[:, direct_cols].drop_duplicates("date", keep="last")
+    if cred is None or cred.empty:
+        return direct
+    left = cred.copy()
+    left["date"] = pd.to_datetime(left["date"], errors="coerce")
+    direct["date"] = pd.to_datetime(direct["date"], errors="coerce")
+    left["__quarter"] = left["date"].dt.to_period("Q-DEC")
+    direct["__quarter"] = direct["date"].dt.to_period("Q-DEC")
+    direct = direct.drop(columns=["date"]).drop_duplicates("__quarter", keep="last")
+    merged = left.merge(direct, on="__quarter", how="left").drop(columns=["__quarter"])
+    if "C_t" in merged.columns and "classified_positive_flow" in merged.columns:
+        merged.loc[:, "C_t"] = pd.to_numeric(merged["C_t"], errors="coerce").combine_first(
+            pd.to_numeric(merged["classified_positive_flow"], errors="coerce")
+        )
+    return merged
+
+
+def _write_lag_manifest(region: str, profile: str, default_lag_days: int, column_lags: dict[str, int]) -> None:
+    payload = {
+        "region": region,
+        "profile": profile,
+        "default_lag_days": int(default_lag_days),
+        "group_lags_days": {
+            k.replace("__group__", ""): int(v)
+            for k, v in sorted(column_lags.items())
+            if k.startswith("__group__")
+        },
+        "release_lags_days": {k: int(v) for k, v in sorted(column_lags.items()) if not k.startswith("__group__")},
+        "note": "Lagged panels are as-of transforms: a dated value becomes usable only after date + lag_days.",
+    }
+    path = _lag_manifest_path_for_region(region)
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump(payload, fh, indent=2, sort_keys=True)
+
+
+def _write_credit_destination_panel(frame: pd.DataFrame, region: str, *, realtime: bool = False) -> None:
+    cols = [
+        "date",
+        "C_t",
+        "C_t_raw_delta",
+        "C_G",
+        "C_B",
+        "C_E",
+        "C_NFB",
+        "C_FIN",
+        "C_PROP",
+        "C_HH_NONHOUSING",
+        "C_R",
+        "C_A",
+        "q_t",
+        "q_t_primary",
+        "one_minus_q_t",
+        "borrower_composition_NFB_1q",
+        "borrower_composition_FIN_1q",
+        "borrower_composition_PROP_1q",
+        "borrower_composition_HH_NONHOUSING_1q",
+        "borrower_composition_NFB_4q",
+        "borrower_composition_FIN_4q",
+        "borrower_composition_PROP_4q",
+        "borrower_composition_HH_NONHOUSING_4q",
+        "borrower_composition_G_1q",
+        "borrower_composition_B_1q",
+        "borrower_composition_E_1q",
+        "borrower_composition_G_4q",
+        "borrower_composition_B_4q",
+        "borrower_composition_E_4q",
+        "operating_borrower_share_1q",
+        "operating_borrower_share_4q",
+        "share_G_proxy",
+        "share_B_proxy",
+        "share_E_proxy",
+        "share_G_direct",
+        "share_B_direct",
+        "share_E_direct",
+        "destination_coverage",
+        "lambda_B",
+        "housing_construction_share",
+        "credit_destination_source",
+        "credit_destination_taxonomy_id",
+        "credit_destination_overflow_scaled",
+        "primary_component_total_mismatch",
+        "preprocessing_mode",
+        "release_lag_profile",
+    ]
+    retained_prefixes = (
+        "legacy_",
+        "primary_",
+        "werner_",
+        "muller_verner_",
+        "C_WERNER_",
+        "C_MV_",
+        "stock_primary_",
+        "stock_household_",
+        "household_",
+    )
+    present = list(
+        dict.fromkeys(
+            [c for c in cols if c in frame.columns]
+            + [
+                c
+                for c in frame.columns
+                if c.startswith(retained_prefixes)
+                and not c.endswith("_destination")
+            ]
+        )
+    )
+    if "date" not in present:
+        return
+    frame[present].to_csv(_destination_path_for_region(region, realtime=realtime), index=False)
 
 
 def _bootstrap_region_env() -> str:
@@ -168,37 +355,62 @@ def _ensure_credit_inputs(cred: pd.DataFrame, yield_df: pd.DataFrame) -> pd.Data
         return cred
     df = cred.copy()
     try:
-        df["date"] = pd.to_datetime(df["date"])
+        df.loc[:, "date"] = pd.to_datetime(df["date"])
     except Exception:
         pass
 
     if "spread" not in df.columns:
-        df["spread"] = np.nan
-    df["spread"] = pd.to_numeric(df["spread"], errors="coerce")
-    df["quarter"] = df["date"].dt.to_period("Q-DEC")
+        df.loc[:, "spread"] = np.nan
+    df.loc[:, "spread"] = pd.to_numeric(df["spread"], errors="coerce")
+    df.loc[:, "quarter"] = df["date"].dt.to_period("Q-DEC")
     y_fallback = _prepare_yield_fallback(yield_df)
     if not y_fallback.empty:
         df = df.merge(y_fallback, on="quarter", how="left")
-        df["spread"] = df["spread"].combine_first(df["spread_fallback"])
+        df.loc[:, "spread"] = df["spread"].combine_first(df["spread_fallback"])
         df = df.drop(columns=["spread_fallback"])
 
+    _harmonize_activity_scale(df)
+
     if "U" not in df.columns:
-        df["U"] = np.nan
+        df.loc[:, "U"] = np.nan
     u_series = pd.to_numeric(df["U"], errors="coerce")
     for fallback in ("U_gdp_only", "Y", "L_real"):
         if fallback in df.columns:
             u_series = u_series.combine_first(pd.to_numeric(df[fallback], errors="coerce"))
-    df["U"] = u_series
+    df.loc[:, "U"] = u_series
 
     if "Y" not in df.columns:
-        df["Y"] = np.nan
+        df.loc[:, "Y"] = np.nan
     y_series = pd.to_numeric(df["Y"], errors="coerce")
-    for fallback in ("U", "U_gdp_only", "L_real"):
+    for fallback in ("U_gdp_only",):
         if fallback in df.columns:
             y_series = y_series.combine_first(pd.to_numeric(df[fallback], errors="coerce"))
-    df["Y"] = y_series
+    df.loc[:, "Y"] = y_series
 
     return df.drop(columns=["quarter"], errors="ignore")
+
+
+def _harmonize_activity_scale(df: pd.DataFrame) -> None:
+    if "L_real" not in df.columns:
+        return
+    credit = pd.to_numeric(df["L_real"], errors="coerce").dropna()
+    if credit.empty:
+        return
+    credit_median = float(credit.abs().median())
+    if not np.isfinite(credit_median) or credit_median <= 0:
+        return
+    for column in ("Y", "U", "U_gdp_only"):
+        if column not in df.columns:
+            continue
+        values = pd.to_numeric(df[column], errors="coerce")
+        valid = values.dropna()
+        if valid.empty:
+            continue
+        ratio = float(valid.abs().median() / credit_median)
+        if not np.isfinite(ratio) or ratio <= 1_000:
+            continue
+        scale = 1_000_000_000.0 if ratio > 1_000_000 else 1_000_000.0
+        df.loc[:, column] = values / scale
 
 
 def _tokenize_regions(values) -> list[str]:
@@ -330,13 +542,9 @@ if not money.empty and not q.empty and money["date"].min() < q["date"].min():
     first_row = q.iloc[0]
     ext_idx = pd.date_range(money["date"].min(), q["date"].min() - pd.offsets.QuarterEnd(0), freq="QE-DEC")
     if len(ext_idx) > 0:
-        q_ext = pd.DataFrame({
-            "date": ext_idx,
-            "q_pay": first_row["q_pay"],
-            "q_firm": first_row["q_firm"],
-            "q_asset": first_row["q_asset"],
-            "q_reserve": first_row["q_reserve"],
-        })
+        q_ext = pd.DataFrame({"date": ext_idx})
+        for col in [c for c in q.columns if c.startswith("q_")]:
+            q_ext[col] = first_row[col]
         q = pd.concat([q_ext, q], ignore_index=True).sort_values("date").reset_index(drop=True)
 
 def compute_region(region: str) -> str:
@@ -374,30 +582,32 @@ def compute_region(region: str) -> str:
     money_scale = m2 if not m2.empty else boj
     base = boj
     if money_scale.empty or base.empty:
-        money = pd.read_csv("data/money.csv", parse_dates=["date"]).sort_values("date")
+        money = _read_region_csv("money", region)
     else:
         ms_q = _qe_dec(money_scale)
         bs_q = _qe_dec(base)
         money = ms_q.merge(bs_q, on="date", how="outer", suffixes=("_ms","_bs")).sort_values("date")
         money = money.rename(columns={"value_ms":"M_in","value_bs":"M_out"})
 
-    q = pd.read_csv("data/allocation_q.csv", parse_dates=["date"]).sort_values("date")
+    q = _read_region_csv("allocation_q", region)
+    q_share_cols = [c for c in q.columns if c.startswith("q_")]
+    cfg_q_cols = cfg.get("q_cols") if isinstance(cfg, dict) else None
+    if q_share_cols and (not isinstance(cfg_q_cols, (list, tuple)) or not set(cfg_q_cols).intersection(q_share_cols)):
+        cfg = dict(cfg)
+        cfg["q_cols"] = q_share_cols
     if not money.empty and not q.empty and money["date"].min() < q["date"].min():
         first_row = q.iloc[0]
         ext_idx = pd.date_range(money["date"].min(), q["date"].min() - pd.offsets.QuarterEnd(0), freq="QE-DEC")
         if len(ext_idx) > 0:
-            q_ext = pd.DataFrame({
-                "date": ext_idx,
-                "q_pay": first_row["q_pay"],
-                "q_firm": first_row["q_firm"],
-                "q_asset": first_row["q_asset"],
-                "q_reserve": first_row["q_reserve"],
-            })
+            q_ext = pd.DataFrame({"date": ext_idx})
+            for col in [c for c in q.columns if c.startswith("q_")]:
+                q_ext[col] = first_row[col]
             q = pd.concat([q_ext, q], ignore_index=True).sort_values("date").reset_index(drop=True)
 
-    cred  = pd.read_csv("data/credit.csv", parse_dates=["date"]).sort_values("date")
+    cred  = _read_region_csv("credit", region)
     cred  = _ensure_credit_inputs(cred, yld)
-    reg   = pd.read_csv("data/reg_pressure.csv", parse_dates=["date"]).sort_values("date")
+    cred  = _merge_direct_credit_destination(cred, cfg, region)
+    reg   = _read_region_csv("reg_pressure", region)
     reg   = _ensure_headrooms(reg)
 
     # Normalize all inputs to quarter-end frequency to ensure inner-join alignment
@@ -428,20 +638,58 @@ def compute_region(region: str) -> str:
     cred = _to_quarterly(cred)
     reg = _to_quarterly(reg)
 
-    df = build_indicators_core(money, q, cred, reg, cfg)
-    df = compute_diagnostics(df)
-    # Ensure toy baseline enrichment columns exist for downstream regression tests
-    if "L_asset_toy" not in df.columns and "L_real" in df.columns:
-        df["L_asset_toy"] = df["L_real"] * 0.4
-    if "depth_toy" not in df.columns:
-        df["depth_toy"] = 1000.0
-    if "turnover_toy" not in df.columns:
-        df["turnover_toy"] = 1.0
+    def _build_output_frame(
+        money_in: pd.DataFrame,
+        q_in: pd.DataFrame,
+        cred_in: pd.DataFrame,
+        reg_in: pd.DataFrame,
+        *,
+        preprocessing_mode: str,
+        lag_profile: str,
+    ) -> pd.DataFrame:
+        out = build_indicators_core(money_in, q_in, cred_in, reg_in, cfg)
+        out = compute_diagnostics(out)
+        # Ensure toy baseline enrichment columns exist for downstream regression tests
+        if "L_asset_toy" not in out.columns and "L_real" in out.columns:
+            out["L_asset_toy"] = out["L_real"] * 0.4
+        if "depth_toy" not in out.columns:
+            out["depth_toy"] = 1000.0
+        if "turnover_toy" not in out.columns:
+            out["turnover_toy"] = 1.0
+        out["preprocessing_mode"] = preprocessing_mode
+        out["release_lag_profile"] = lag_profile
+        return out
+
+    df = _build_output_frame(
+        money,
+        q,
+        cred,
+        reg,
+        preprocessing_mode="dashboard_retrospective",
+        lag_profile="none",
+    )
 
     os.makedirs("site", exist_ok=True)
     out_path = _output_path_for_region(region)
     df.to_csv(out_path, index=False)
+    _write_credit_destination_panel(df, region, realtime=False)
     print(f"Wrote {out_path}")
+    rt_cfg = realtime_preprocessing_config(cfg)
+    if rt_cfg.get("enabled", True):
+        column_lags, default_lag_days, lag_profile = resolve_release_lags(cfg)
+        realtime_df = _build_output_frame(
+            apply_release_lags(money, column_lags, default_lag_days=default_lag_days),
+            apply_release_lags(q, column_lags, default_lag_days=default_lag_days),
+            apply_release_lags(cred, column_lags, default_lag_days=default_lag_days),
+            apply_release_lags(reg, column_lags, default_lag_days=default_lag_days),
+            preprocessing_mode="real_time_release_lagged",
+            lag_profile=lag_profile,
+        )
+        rt_path = _output_path_for_region(region, realtime=True)
+        realtime_df.to_csv(rt_path, index=False)
+        _write_credit_destination_panel(realtime_df, region, realtime=True)
+        _write_lag_manifest(region, lag_profile, default_lag_days, column_lags)
+        print(f"Wrote {rt_path}")
     return out_path
 
 def _build_regions_with_cache(targets: list[str]) -> None:

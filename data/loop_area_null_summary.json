@@ -1,0 +1,56 @@
+{
+  "interpretation": "Closed loop area is treated as hysteresis-like evidence only when the observed area is extreme relative to block-shuffle, phase-randomized, AR(1), event-date, and placebo-window null distributions. Otherwise it remains a monitoring statistic.",
+  "overall": {
+    "latest_12_rows": 15,
+    "null_methods": [
+      "block_shuffle",
+      "phase_randomization",
+      "ar_surrogate",
+      "event_date_permutation",
+      "placebo_periods"
+    ],
+    "rows": 135,
+    "segmentation_windows": [
+      8,
+      12,
+      16
+    ],
+    "top_10pct_rows": 31,
+    "top_5pct_rows": 25
+  },
+  "regions": {
+    "eu": {
+      "latest_rows": 15,
+      "max_event_percentile": 1.0,
+      "max_latest_percentile": 1.0,
+      "max_percentile": 1.0,
+      "region_label": "Euro Area (EU)",
+      "registered_event_rows": 25,
+      "rows": 40,
+      "top_10pct_rows": 7,
+      "top_5pct_rows": 4
+    },
+    "jp": {
+      "latest_rows": 15,
+      "max_event_percentile": 1.0,
+      "max_latest_percentile": 1.0,
+      "max_percentile": 1.0,
+      "region_label": "Japan (JP)",
+      "registered_event_rows": 40,
+      "rows": 55,
+      "top_10pct_rows": 13,
+      "top_5pct_rows": 11
+    },
+    "us": {
+      "latest_rows": 15,
+      "max_event_percentile": 1.0,
+      "max_latest_percentile": 1.0,
+      "max_percentile": 1.0,
+      "region_label": "United States (US)",
+      "registered_event_rows": 25,
+      "rows": 40,
+      "top_10pct_rows": 11,
+      "top_5pct_rows": 10
+    }
+  }
+}

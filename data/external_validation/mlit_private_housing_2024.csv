@@ -1,0 +1,7 @@
+reference_period,series_id,purpose,value,unit,denominator_scope,source_page
+FY2024,new_housing_purpose_share,new construction or purchase,0.704,share,"institutions reporting new, existing, and refinancing purpose categories",13
+FY2024,existing_housing_purpose_share,existing home purchase,0.231,share,"institutions reporting new, existing, and refinancing purpose categories",13
+FY2024,refinancing_purpose_share,refinancing,0.064,share,"institutions reporting new, existing, and refinancing purpose categories",13
+FY2024,individual_housing_new_lending,individual housing loans,222473.00,100 million yen,all institutions reporting this amount,11
+FY2024,apartment_loan_new_lending,rental housing construction or purchase,38183.70,100 million yen,all institutions reporting this amount,36
+FY2024,apartment_loan_outstanding,rental housing construction or purchase,367063.24,100 million yen,all institutions reporting this amount,36

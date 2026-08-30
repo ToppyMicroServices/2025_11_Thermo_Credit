@@ -12,7 +12,7 @@ from plotly.subplots import make_subplots
 from lib.indicators import compute_diagnostics
 
 REQUIRED_THERMO_COLS = ["S_M", "T_L", "p_C", "V_C", "U"]
-DERIVATIVE_COLS = ["dS_dV_at_T", "dp_dT_at_V", "maxwell_gap"]
+DERIVATIVE_COLS = ["dT_dV_at_S", "dp_dS_at_V", "maxwell_curl"]
 FIRSTLAW_COLS = ["dU", "Q_like", "W_like", "dU_pred", "firstlaw_resid"]
 CATEGORY_LABELS = {
     "q_productive": "Productive",
@@ -46,7 +46,7 @@ class CompareBuilder:
         if data is None:
             return None
         latest_rows, items = data
-        raw_figs = self._build_raw_figs(items)
+        raw_figs: List[ChartSpec] = []
         std_figs = self._build_std_figs(items)
         latest_df = pd.DataFrame(latest_rows)
         return CompareData(latest_df, raw_figs, std_figs)
@@ -56,12 +56,7 @@ class CompareBuilder:
             return None
         items: List[Tuple[str, pd.DataFrame]] = []
         latest_rows: List[Dict[str, Any]] = []
-        metric_specs = [
-            ("S_M", "S_M"),
-            ("T_L", "T_L"),
-            ("loop_area", "loop_area"),
-            ("X_C", "X_C"),
-        ]
+        metric_specs = ["S_M", "T_L", "loop_area", "X_C"]
         for ctx in self.region_ctxs:
             label = ctx.get("label")
             frame = ctx.get("frame")
@@ -72,14 +67,16 @@ class CompareBuilder:
             if "date" in frame.columns:
                 dlast = pd.to_datetime(frame["date"], errors="coerce").dropna()
                 row["Latest date"] = dlast.iloc[-1].strftime("%Y-%m-%d") if not dlast.empty else ""
-            for col, _ in metric_specs:
+            for col in metric_specs:
                 if col not in frame.columns:
-                    row[col] = None
+                    row[f"{col} pctile"] = None
+                    row[f"{col} rank"] = None
+                    row[f"{col} z"] = None
                     continue
-                try:
-                    row[col] = float(pd.to_numeric(frame[col], errors="coerce").dropna().iloc[-1])
-                except Exception:
-                    row[col] = None
+                pctile, rank_text, z_score = _latest_within_region_position(frame[col])
+                row[f"{col} pctile"] = pctile
+                row[f"{col} rank"] = rank_text
+                row[f"{col} z"] = z_score
             latest_rows.append(row)
         if len(items) < 2:
             return None
@@ -88,8 +85,8 @@ class CompareBuilder:
     def _build_raw_figs(self, items: List[Tuple[str, pd.DataFrame]]) -> List[ChartSpec]:
         metric_specs = [
             ("S_M", "Compare – S_M", "Money entropy"),
-            ("T_L", "Compare – T_L", "Liquidity temperature"),
-            ("loop_area", "Compare – Policy Loop Dissipation", "Loop area"),
+            ("T_L", "Compare – T_L", "Liquidity state"),
+            ("loop_area", "Compare – Loop Path Monitor", "Loop area"),
             ("X_C", "Compare – Credit Exergy Ceiling", "X_C"),
         ]
         raw_figs: List[ChartSpec] = []
@@ -123,8 +120,8 @@ class CompareBuilder:
                 continue
             y_label = {
                 "S_M": "S_M (dispersion)",
-                "T_L": "T_L (liquidity temperature)",
-                "loop_area": "Loop area (dissipation)",
+                "T_L": "T_L (liquidity state)",
+                "loop_area": "Streaming loop area",
                 "X_C": "X_C (credit exergy ceiling)",
             }.get(met, "Value")
             fig = px.line(
@@ -238,6 +235,21 @@ def _plot_start_date() -> pd.Timestamp:
         return pd.Timestamp("2010-01-01")
 
 
+def _latest_within_region_position(series: pd.Series) -> Tuple[Optional[float], Optional[str], Optional[float]]:
+    values = pd.to_numeric(series, errors="coerce").dropna()
+    if values.empty:
+        return None, None, None
+    latest = float(values.iloc[-1])
+    n = int(values.size)
+    rank = int((values <= latest).sum())
+    pctile = 100.0 * rank / n
+    std = float(values.std(ddof=0))
+    z_score = None
+    if np.isfinite(std) and std > 1e-12:
+        z_score = (latest - float(values.mean())) / std
+    return float(pctile), f"{rank}/{n}", float(z_score) if z_score is not None and np.isfinite(z_score) else None
+
+
 def load_dashboard_events(path: str) -> List[Dict[str, Any]]:
     """Load the shared event registry used by the dashboard and theory figures."""
     try:
@@ -314,17 +326,56 @@ def filter_dashboard_events(
 
 
 def _style_figure(fig) -> None:
+    palette = ["#62d2ff", "#ffbd69", "#7fb4ff", "#70e1c8", "#e59fda", "#b4cad9"]
+    fill_palette = [
+        "rgba(98,210,255,.35)",
+        "rgba(255,189,105,.35)",
+        "rgba(127,180,255,.35)",
+        "rgba(112,225,200,.35)",
+        "rgba(229,159,218,.35)",
+        "rgba(180,202,217,.35)",
+    ]
+    for index, trace in enumerate(fig.data):
+        color = palette[index % len(palette)]
+        if getattr(trace, "line", None) is not None:
+            trace.line.color = color
+        if getattr(trace, "marker", None) is not None:
+            trace.marker.color = color
+        if getattr(trace, "fill", None) and trace.fill != "none":
+            trace.fillcolor = fill_palette[index % len(fill_palette)]
+
     fig.update_layout(
         template="plotly_white",
         hovermode="x unified",
-        legend=dict(orientation="h", y=1.02, yanchor="bottom", x=1.0, xanchor="right"),
-        margin=dict(t=60, b=40, l=40, r=20),
+        colorway=palette,
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="#072d4a",
+        hoverlabel=dict(bgcolor="#02213b", bordercolor="#62d2ff", font_color="#f5fbff"),
+        legend=dict(
+            orientation="h",
+            y=1.02,
+            yanchor="bottom",
+            x=1.0,
+            xanchor="right",
+            font=dict(size=11, color="#b4cad9"),
+        ),
+        margin=dict(t=64, b=42, l=48, r=24),
     )
-    fig.update_xaxes(showgrid=False)
-    fig.update_yaxes(showgrid=True, zeroline=True)
+    fig.update_xaxes(showgrid=False, linecolor="#35617e", tickcolor="#35617e", tickfont_color="#b4cad9")
+    fig.update_yaxes(
+        showgrid=True,
+        gridcolor="rgba(185,226,255,.12)",
+        gridwidth=1,
+        linecolor="#35617e",
+        tickcolor="#35617e",
+        tickfont_color="#b4cad9",
+        zeroline=True,
+        zerolinecolor="rgba(185,226,255,.28)",
+    )
     fig.update_layout(font=dict(
-        family="STIX Two Text, Times New Roman, Times, Georgia, serif",
+        family="Avenir Next, Gill Sans, Trebuchet MS, sans-serif",
         size=12,
+        color="#f5fbff",
     ))
 
 
@@ -390,8 +441,8 @@ def _series_trend(series: Optional[pd.Series]) -> Optional[str]:
 def _metric_phrase(metric: str) -> str:
     mapping = {
         "S_M": "dispersion",
-        "T_L": "liquidity temperature",
-        "loop_area": "loop dissipation",
+        "T_L": "liquidity state",
+        "loop_area": "streaming loop area",
         "X_C": "credit exergy",
         "S_M_hat": "normalized dispersion",
         "U": "internal energy",
@@ -405,29 +456,30 @@ def _metric_phrase(metric: str) -> str:
 
 def _compare_interpretation(short_label: str, frame: Optional[pd.DataFrame]) -> Optional[str]:
     if frame is None or not isinstance(frame, pd.DataFrame):
-        return "Cross-region view; tighter clustering implies similar regimes."
+        return "Within-region standardized view; raw levels are not cross-region comparable."
     if not {"value", "Region"}.issubset(frame.columns):
-        return "Cross-region view; tighter clustering implies similar regimes."
+        return "Within-region standardized view; raw levels are not cross-region comparable."
     data = frame.copy()
     data["value"] = pd.to_numeric(data["value"], errors="coerce")
     data = data.dropna(subset=["value"])
     if "date" in data.columns:
         data = data.sort_values("date")
     if data.empty:
-        return "Cross-region view; tighter clustering implies similar regimes."
+        return "Within-region standardized view; raw levels are not cross-region comparable."
     latest = data.groupby("Region").tail(1)
     latest = latest.dropna(subset=["value"])
     if latest.empty or latest["Region"].nunique() < 2:
-        return "Cross-region view; watch relative slopes."
+        return "Within-region standardized view; watch relative slopes."
     leader = latest.loc[latest["value"].idxmax()]
     laggard = latest.loc[latest["value"].idxmin()]
     if leader.get("Region") == laggard.get("Region"):
-        return "Cross-region view; watch relative slopes."
+        return "Within-region standardized view; watch relative slopes."
     metric = short_label.replace("Compare:", "").strip()
     phrase = _metric_phrase(metric)
     return (
-        f"{phrase.capitalize()} highest in {leader['Region']} (≈{leader['value']:.2f}) "
-        f"vs {laggard['Region']} (≈{laggard['value']:.2f})."
+        f"{phrase.capitalize()} standardized position highest in {leader['Region']} "
+        f"(z≈{leader['value']:.2f}) vs {laggard['Region']} (z≈{laggard['value']:.2f}); "
+        "compare historical position, not raw levels."
     )
 
 
@@ -486,14 +538,14 @@ def _chart_interpretation(short_label: str, frame: Optional[pd.DataFrame]) -> Op
         top_parts = [f"{name} {abs(val)/total:.0%}" for name, val in contribs[:2]]
         return "Latest dispersion split: " + ", ".join(top_parts) + "."
 
-    if label == "Policy Loop Dissipation":
+    if label == "Loop Path Monitor":
         val = _latest_numeric(frame, "loop_area")
         if val is None:
             return None
         trend = _series_trend(frame.get("loop_area"))
-        state = "dissipating" if val > 0 else ("amplifying" if val < 0 else "quiet")
+        state = "active" if abs(val) > 1e-12 else "quiet"
         tail = f" and {trend}" if trend else ""
-        return f"Loop area ≈{val:.3f} ({state}{tail})."
+        return f"Streaming loop area ≈{val:.3f} ({state}{tail})."
 
     if label == "Credit Exergy Ceiling":
         val = _latest_numeric(frame, "X_C")
@@ -551,16 +603,19 @@ def _chart_interpretation(short_label: str, frame: Optional[pd.DataFrame]) -> Op
         return f"Shortage≈{minus:.2f}; little positive slack left." if minus is not None else None
 
     if label == "Maxwell-like Test":
-        gap = _latest_numeric(frame, "maxwell_gap")
+        gap = _latest_numeric(frame, "maxwell_curl")
         if gap is None:
-            return "Comparing ∂S/∂V|T and ∂p/∂T|V; overlap means proxies agree."
+            gap = _latest_numeric(frame, "maxwell_gap")
+        if gap is None:
+            return "Comparing ∂T/∂V|S and −∂p/∂S|V; zero curl means proxies agree."
         try:
-            series = pd.to_numeric(frame.get("maxwell_gap"), errors="coerce").dropna()
+            col = "maxwell_curl" if "maxwell_curl" in frame.columns else "maxwell_gap"
+            series = pd.to_numeric(frame.get(col), errors="coerce").dropna()
         except Exception:
             series = pd.Series(dtype=float)
         mad = float((series - series.median()).abs().median()) if not series.empty else 0.0
         spec = "inside spec" if mad == 0 or abs(gap) <= 3 * mad else "out-of-spec"
-        return f"Maxwell gap≈{gap:.3f} ({spec})."
+        return f"Maxwell curl Ω≈{gap:.3f} ({spec})."
 
     if label == "First-law Decomposition":
         resid = _latest_numeric(frame, "firstlaw_resid")
@@ -632,8 +687,8 @@ def make_dual_axis_sm_tl(plot_df: pd.DataFrame, title: str) -> go.Figure:
     df["date"] = pd.to_datetime(df["date"], errors="coerce")
     df = df.dropna(subset=["date"])
     fig = make_subplots(specs=[[{"secondary_y": True}]])
-    col_sm = "#1f77b4"
-    col_tl = "#ff7f0e"
+    col_sm = "#62d2ff"
+    col_tl = "#ffbd69"
     if "S_M" in df.columns:
         fig.add_trace(
             go.Scatter(
@@ -650,7 +705,7 @@ def make_dual_axis_sm_tl(plot_df: pd.DataFrame, title: str) -> go.Figure:
             go.Scatter(
                 x=df["date"],
                 y=pd.to_numeric(df["T_L"], errors="coerce"),
-                name="T_L (liquidity temperature)",
+                name="T_L (liquidity state)",
                 mode="lines",
                 line=dict(color=col_tl, width=2.0, dash="solid"),
             ),
@@ -659,9 +714,9 @@ def make_dual_axis_sm_tl(plot_df: pd.DataFrame, title: str) -> go.Figure:
     fig.update_layout(title=title, legend=dict(orientation="h", y=1.02, yanchor="bottom", x=1.0, xanchor="right"))
     fig.update_xaxes(title_text="Date")
     fig.update_yaxes(title_text="S_M (dispersion)", secondary_y=False)
-    fig.update_yaxes(title_text="T_L (liquidity temperature)", secondary_y=True)
-    fig.update_layout(plot_bgcolor="#fbfbfc")
-    fig.update_yaxes(showgrid=True, gridcolor="#e9ecef", zeroline=True)
+    fig.update_yaxes(title_text="T_L (liquidity state)", secondary_y=True)
+    fig.update_layout(plot_bgcolor="#072d4a")
+    fig.update_yaxes(showgrid=True, gridcolor="rgba(185,226,255,.12)", zeroline=True)
     return fig
 
 
@@ -678,7 +733,7 @@ def _filter_placeholders(df: pd.DataFrame) -> pd.DataFrame:
 def _out_of_spec_mask(df: pd.DataFrame) -> pd.Series:
     idx = df.index
     mask = pd.Series(False, index=idx)
-    for col in ("maxwell_gap", "firstlaw_resid"):
+    for col in ("maxwell_curl", "maxwell_gap", "firstlaw_resid"):
         if col not in df.columns:
             continue
         s = pd.to_numeric(df[col], errors="coerce")

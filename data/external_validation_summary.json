@@ -1,0 +1,90 @@
+{
+  "claim_boundary": "MOF supplies borrower-side convergent evidence for the manufacturing branch of NFB, not purpose validation. MLIT supplies direct-purpose evidence only for the housing branch of PROP. Neither validates the full four-bucket composition.",
+  "mlit_private_housing": {
+    "acquisition_purpose_share": 0.935,
+    "apartment_loan_new_lending_100m_yen": 38183.7,
+    "apartment_loan_outstanding_100m_yen": 367063.24,
+    "classified_share_rounding_gap": 0.001,
+    "classified_share_sum": 0.999,
+    "does_not_validate": [
+      "corporate real-estate loan purpose",
+      "the entire PROP bucket",
+      "quarterly BOJ stock changes",
+      "the BOJ lender population",
+      "the NFB, FIN, or HH_NONHOUSING buckets"
+    ],
+    "estimand": "Published FY2024 composition of purpose-classified individual housing-loan originations, supplemented by the published amount of apartment-loan originations and balances.",
+    "existing_housing_purpose_share": 0.231,
+    "frequency": "annual",
+    "new_housing_purpose_share": 0.704,
+    "official_file_url": "https://www.mlit.go.jp/report/press/content/001991057.pdf",
+    "population": "Nationwide private financial institutions supplying housing loans; 1,175 institutions were targeted, 1,112 responded (94.6 percent), and 1,021 respondents handled housing loans.",
+    "purpose_status": "direct purpose for the housing branch only",
+    "reference_period": "FY2024",
+    "refinancing_purpose_share": 0.064,
+    "status": "published_cross_section",
+    "supported_primary_branch": "PROP / household housing component",
+    "validation_type": "independent direct-purpose partial validation"
+  },
+  "mof_manufacturing": {
+    "boj_latest_change_100m_yen": 55561.0,
+    "common_period": "2010Q2-2026Q1",
+    "direction_agreement": 0.703125,
+    "does_not_validate": [
+      "loan purpose",
+      "the entire NFB bucket",
+      "equality of MOF and BOJ levels",
+      "households, finance, property, local government, or unresolved sectors"
+    ],
+    "estimand": "Association between the four-quarter change in MOF manufacturing corporations' short-plus-long bank borrowings and the four-quarter change in BOJ loans outstanding to manufacturing borrowers over their common quarter-end sample.",
+    "frequency": "quarterly",
+    "measurement_interval": "four-quarter change",
+    "mof_latest_change_100m_yen": 17506.96,
+    "n_common_changes": 64,
+    "official_file_url": "https://www.mof.go.jp/english/pri/reference/ssc/historical/liabilities.xls",
+    "pearson_correlation": 0.7352617925005547,
+    "population": "Commercial corporations with capital, contributions, or funds of at least JPY 10 million; manufacturing is assigned principally under the Japan Standard Industrial Classification using the corporation's largest-sales activity.",
+    "purpose_status": "not purpose validation",
+    "sample_change_control": "Four-quarter differences are used instead of quarter-to-quarter differences to reduce sensitivity to the April-June sample replacement. This does not eliminate survey-population or lender-coverage differences.",
+    "spearman_correlation": 0.7923076923076922,
+    "status": "computed",
+    "supported_primary_branch": "NFB / manufacturing",
+    "validation_type": "independent debtor-side borrower-composition convergence"
+  },
+  "retrieved_on": "2026-07-30",
+  "schema_version": 1,
+  "snapshot_verification": {
+    "mlit_private_housing": {
+      "official_file_sha256_at_retrieval": "25475437af36a6aee3418719d80e5da73b2db2c2309014b0e7e74ac4e2446f05",
+      "official_file_url": "https://www.mlit.go.jp/report/press/content/001991057.pdf",
+      "path": "data/external_validation/mlit_private_housing_2024.csv",
+      "raw_file_storage": "not committed because the official PDF is substantially larger than the extracted table; the stable report URL and source checksum identify the retrieved file",
+      "sha256": "f12dfef29f6195dca9c050793b16207176c8b31bf39864234f92a7bc60976d03",
+      "verified": true
+    },
+    "mof_manufacturing": {
+      "official_file_sha256_at_retrieval": "1a7271db84180132b05bb2abb6d73d9a4d5585ed4d30547605870fc9b8a90652",
+      "official_file_url": "https://www.mof.go.jp/english/pri/reference/ssc/historical/liabilities.xls",
+      "path": "data/external_validation/mof_manufacturing_bank_borrowing.csv",
+      "raw_file_storage": "not committed; the official URL is an in-place historical workbook and the recorded source checksum identifies the retrieved vintage",
+      "sha256": "109925ad8ecc071596d9010391314e77256f0ed8e0735d7d29101967bc04a0fc",
+      "verified": true
+    }
+  },
+  "table_rows": [
+    {
+      "boundary": "Borrower-side convergent evidence only; populations and lender coverage differ, and no loan purpose is observed.",
+      "branch": "NFB: manufacturing",
+      "estimand": "Correlation of debtor-side and BOJ lender-side 4Q changes in manufacturing borrowing stocks.",
+      "period_readout": "2010Q2-2026Q1; N=64; Pearson=0.74; Spearman=0.79; direction=70.3%",
+      "source": "MOF corporate survey"
+    },
+    {
+      "boundary": "Direct purpose only for the annual housing branch; it does not validate corporate real-estate loans or quarterly BOJ stock changes.",
+      "branch": "PROP: household housing",
+      "estimand": "Published purpose composition of individual housing-loan originations and apartment-loan amounts.",
+      "period_readout": "FY2024; acquisition=93.5%; refinancing=6.4%; apartment originations=JPY 3.82tn",
+      "source": "MLIT private housing-loan survey"
+    }
+  ]
+}
