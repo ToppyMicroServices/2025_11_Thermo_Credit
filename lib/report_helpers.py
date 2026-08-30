@@ -772,7 +772,7 @@ def _augment_region_frame(frame: pd.DataFrame, effective_window: int, has_thermo
     local = frame.copy()
     for col in local.columns:
         if col != "date":
-            local.loc[:, col] = pd.to_numeric(local[col], errors="coerce")
+            local[col] = pd.to_numeric(local[col], errors="coerce")
     has_derivatives = all(c in local.columns for c in DERIVATIVE_COLS) and not local[DERIVATIVE_COLS].dropna(how="all").empty
     if has_thermo and effective_window >= 3 and not has_derivatives:
         local = compute_diagnostics(local.copy(), window=effective_window)

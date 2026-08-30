@@ -4,7 +4,22 @@ from pathlib import Path
 
 import pandas as pd
 
-from lib.report_helpers import filter_dashboard_events, load_dashboard_events
+from lib.report_helpers import _augment_region_frame, filter_dashboard_events, load_dashboard_events
+
+
+def test_augment_region_frame_converts_string_columns_to_numeric() -> None:
+    frame = pd.DataFrame(
+        {
+            "date": pd.to_datetime(["2025-03-31", "2025-06-30"]),
+            "X_C": pd.Series(["1.5", "invalid"], dtype="str"),
+        }
+    )
+
+    converted, _ = _augment_region_frame(frame, effective_window=2, has_thermo=False)
+
+    assert converted["X_C"].iloc[0] == 1.5
+    assert pd.isna(converted["X_C"].iloc[1])
+    assert pd.api.types.is_numeric_dtype(converted["X_C"])
 
 
 def test_load_dashboard_events_reads_registry() -> None:
