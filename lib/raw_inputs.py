@@ -68,7 +68,7 @@ def load_and_normalize(enabled: List[Dict]) -> Optional[pd.DataFrame]:
             val_col = next((c for c in df.columns if str(c).lower() == "value"), None)
             if not date_col or not val_col:
                 continue
-            df.loc[:, date_col] = pd.to_datetime(df[date_col])
+            df = df.assign(**{date_col: pd.to_datetime(df[date_col], errors="coerce")})
             df = df[[date_col, val_col]].dropna().sort_values(date_col)
             if df.empty:
                 continue
