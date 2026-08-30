@@ -152,9 +152,9 @@ Use the concept DOI for all versions:
 
 - <https://doi.org/10.5281/zenodo.17563220>
 
-The latest previously published version record is:
+The latest published version record is:
 
-- <https://doi.org/10.5281/zenodo.17778342>
+- <https://doi.org/10.5281/zenodo.22177533>
 
 ## License
 
