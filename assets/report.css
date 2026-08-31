@@ -191,9 +191,13 @@ figure.chart-card {
 .page-hero {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
+  align-items: center;
   gap: 2rem;
   padding: 3.8rem 3rem 3.4rem;
+}
+
+.hero-copy {
+  min-width: 0;
 }
 
 .page-hero::after {
@@ -203,7 +207,7 @@ figure.chart-card {
   border-radius: 16px;
   background: rgba(2, 33, 59, 0.54);
   color: var(--muted);
-  content: "3 REGIONS\A 4 CORE METRICS\A RECALCULABLE MODEL";
+  content: "JP PRIMARY MEASURE\A EU + US PROXIES\A OPEN METHODS + CODE";
   font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.12em;
@@ -230,6 +234,51 @@ figure.chart-card {
   max-width: 780px;
   margin: 0.9rem 0 0;
   color: var(--muted);
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1.45rem;
+}
+
+.hero-button {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  padding: 0.68rem 0.92rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 11px;
+  background: rgba(2, 33, 59, 0.5);
+  color: var(--fg);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-decoration: none;
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.hero-button:hover {
+  border-color: var(--accent);
+  background: rgba(7, 45, 74, 0.86);
+  transform: translateY(-1px);
+}
+
+.hero-button:focus-visible {
+  outline: 3px solid rgba(98, 210, 255, 0.42);
+  outline-offset: 2px;
+}
+
+.hero-button.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--page-bg);
+}
+
+.hero-button.primary:hover {
+  background: #9ae3ff;
 }
 
 .note.small {
@@ -897,6 +946,16 @@ details[open] > summary::after {
     margin-top: 1.6rem;
   }
 
+  .hero-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hero-button.primary,
+  .hero-button:last-child {
+    grid-column: 1 / -1;
+  }
+
   .decision-summary,
   .coverage-summary,
   .freshness-panel,
@@ -953,7 +1012,8 @@ details[open] > summary::after {
 
   .summary-card,
   figure.chart-card,
-  .tabs button {
+  .tabs button,
+  .hero-button {
     transition: none !important;
   }
 }

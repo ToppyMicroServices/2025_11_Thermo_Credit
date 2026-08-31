@@ -108,6 +108,7 @@ def test_mobile_tabs_do_not_cover_charts():
 
     assert ".tabs {" in mobile_css
     assert "position: static;" in mobile_css
+    assert ".hero-button:last-child" in mobile_css
 
 
 def test_missing_optional_diagnostics_do_not_reuse_previous_chart():
@@ -132,6 +133,19 @@ def test_dashboard_entrypoints_have_identical_content(tmp_path, monkeypatch):
     mod._write_dashboard_entrypoints("<html>dashboard</html>")
 
     assert (tmp_path / "index.html").read_bytes() == (tmp_path / "report.html").read_bytes()
+
+
+def test_page_header_explains_scope_and_links_public_outputs():
+    mod = _load_report_module()
+
+    html = mod._build_page_header("body{}", "")
+
+    assert "Credit scale is only half the story." in html
+    assert "borrower composition" in html
+    assert "exploratory proxies" in html
+    assert 'href="#dashboard-tabs"' in html
+    assert "releases/latest/download/theory.pdf" in html
+    assert "10.5281/zenodo.17563220" in html
 
 
 def test_registered_event_bands_add_window_and_optional_label():

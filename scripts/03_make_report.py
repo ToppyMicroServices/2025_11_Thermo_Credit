@@ -55,6 +55,10 @@ from lib.report_helpers import (
 SITE_DIR = os.path.join(ROOT, "site")
 DATA_DIR = os.path.join(ROOT, "data")
 DEFAULT_BASE_URL = "https://toppymicros.com/2025_11_Thermo_Credit"
+PROJECT_URL = "https://github.com/ToppyMicroServices/2025_11_Thermo_Credit"
+PAPER_URL = f"{PROJECT_URL}/releases/latest/download/theory.pdf"
+METHODS_URL = f"{PROJECT_URL}/blob/main/docs/identification_strategy.md"
+DOI_URL = "https://doi.org/10.5281/zenodo.17563220"
 raw_inputs_df: Optional[pd.DataFrame] = None
 
 EVENT_SHORT_LABELS = {
@@ -84,6 +88,43 @@ EVENT_COLORS = {
 
 def _utc_now() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+def _build_page_header(style_block: str, logo_uri: str, month_key: str = "") -> str:
+    page_title = "Thermo-Credit Monitor"
+    brand_tag = "Research dashboard"
+    if month_key:
+        page_title = f"{page_title} - {month_key}"
+        brand_tag = f"Snapshot {month_key}"
+
+    parts = [
+        '<!doctype html><html lang="en"><head><meta charset="utf-8">',
+        '<meta name="viewport" content="width=device-width,initial-scale=1">',
+        f"<title>{html_lib.escape(page_title)}</title>",
+        '<meta name="description" content="Reproducible evidence on credit scale, '
+        'borrower composition, and experimental regional diagnostics.">',
+        f'<style>{style_block}</style></head><body><div class="wrap">',
+        '<header class="page-header"><div class="brandbar">',
+    ]
+    if logo_uri:
+        parts.append(f'<img src="{logo_uri}" alt="ToppyMicroServices logo"/>')
+    parts.extend([
+        '<span class="brand-name">ToppyMicroServices</span>',
+        f'<span class="brand-tag">{html_lib.escape(brand_tag)}</span></div>',
+        '<div class="page-hero"><div class="hero-copy">',
+        '<span class="page-kicker">Thermo Credit / Reproducible research</span>',
+        '<h1>Credit scale is only half the story.</h1>',
+        '<p class="page-subtitle">Track credit scale, borrower composition, and '
+        'experimental stress diagnostics. Japan is the primary measurement result; '
+        'euro-area and US panels are exploratory proxies.</p>',
+        '<nav class="hero-actions" aria-label="Project links">',
+        '<a class="hero-button primary" href="#dashboard-tabs">Explore the charts</a>',
+        f'<a class="hero-button" href="{PAPER_URL}">Read the paper</a>',
+        f'<a class="hero-button" href="{METHODS_URL}">Methods and data</a>',
+        f'<a class="hero-button" href="{DOI_URL}">Cite this work</a>',
+        '</nav></div></div></header>',
+    ])
+    return "".join(parts)
 
 # Try preloading normalized raw inputs so tests can assert against module state.
 try:
@@ -306,10 +347,10 @@ def _build_dashboard_summary(region_ctxs: List[Dict[str, Any]]) -> str:
     gate_value = f"{passed}/{total}" if isinstance(passed, int) and isinstance(total, int) else "Not rated"
     cards = [
         _summary_card("Latest observation", latest_date, "Freshest regional panel.", "neutral"),
-        _summary_card("Primary evidence", "JP measurement bridge", "Borrower composition, not loan purpose.", "supported"),
-        _summary_card("Forecast evidence", "Not established", "Current OOS results do not beat the matched baseline.", "limited"),
-        _summary_card("EU / US role", "Proxy panels", "Portability checks, not cross-country validation.", "proxy"),
-        _summary_card("Research gates", gate_value, "Unmet gates remain visible in the repository.", "limited"),
+        _summary_card("Best-supported result", "Japan", "Borrower composition from BOJ sectoral loan stocks.", "supported"),
+        _summary_card("Forecasting", "Not established", "Composition does not beat a matched scale-only baseline.", "limited"),
+        _summary_card("EU / US evidence", "Exploratory", "Proxy panels, not cross-country validation.", "proxy"),
+        _summary_card("Validation gates", gate_value, "Open gates remain visible and testable.", "limited"),
     ]
     stale_note = ""
     if stale:
@@ -320,7 +361,7 @@ def _build_dashboard_summary(region_ctxs: List[Dict[str, Any]]) -> str:
         )
     return (
         '<section class="decision-summary">'
-        '<div class="section-heading"><span class="section-kicker">Evidence first</span><h2>What the current release supports</h2></div>'
+        '<div class="section-heading"><span class="section-kicker">Evidence first</span><h2>What this release can support</h2></div>'
         '<div class="summary-grid kpi-grid">' + "".join(cards) + "</div>" + stale_note + "</section>"
     )
 
@@ -1314,18 +1355,13 @@ def main() -> None:
         f"--brand-text:{BRAND_TEXT};}}"
     )
 
-    head = ("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" "
-            "content=\"width=device-width,initial-scale=1\"><title>Thermo-Credit Monitor</title><meta name=\"description\" "
-            "content=\"Quarterly regional credit diagnostics and evidence boundaries.\"><style>" + style_block + "</style>"
-            + "</head><body><div class=\"wrap\"><header class=\"page-header\"><div class=\"brandbar\">"
-            + (f'<img src="{logo_uri}" alt="Company Logo"/>' if logo_uri else "")
-            + '<span class="brand-name">ToppyMicroServices</span><span class="brand-tag">Research dashboard</span></div><div class="page-hero"><div><span class="page-kicker">Thermo-credit monitor</span><h1>Regional Credit Thermodynamics</h1><p class="page-subtitle">Quarterly regional diagnostics with explicit measurement and validation limits.</p></div></div></header>')
+    head = _build_page_header(style_block, logo_uri)
 
     intro_html = (
         '<details class="intro">'
-        '<summary>How to read this dashboard</summary>'
-        '<p>This dashboard tracks quarterly diagnostics for Japan, the Euro Area, and the US. '
-        'Read each regional series against its own history. The panels ask:</p>'
+        '<summary>What the indicators mean and do not mean</summary>'
+        '<p>Use these charts as descriptive evidence, not as a score or forecast. Each regional '
+        'series should be compared with its own history. The panels ask:</p>'
         '<ul>'
         '<li>Where does the latest observation sit within that region&apos;s recorded range?</li>'
         '<li>Does the state path change around a registered macro-financial event?</li>'
@@ -1349,7 +1385,7 @@ def main() -> None:
         + dashboard_summary_html
         + freshness_html
         + intro_html
-        + tabs_html
+        + tabs_html.replace('class="tabs"', 'class="tabs" id="dashboard-tabs"', 1)
         + regions_html
         + inputs_summary_html
         + event_summary_html
@@ -1369,7 +1405,7 @@ def main() -> None:
                     "if(block){block.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));const target=block.querySelector('.pane.'+(mode==='std'?'std':'raw'));if(target)target.classList.add('active');}"
                     "}));});})();</script></body></html>")
 
-    final_html = head + page_body + '<div class="footer-brand">' + (f'<img src="{logo_uri}" alt="Company Logo"/>' if logo_uri else "") + '<span>© ' + _utc_now().strftime('%Y') + ' ToppyMicroServices</span></div></div>' + script_block
+    final_html = head + page_body + '<div class="footer-brand">' + (f'<img src="{logo_uri}" alt="ToppyMicroServices logo"/>' if logo_uri else "") + '<span>© ' + _utc_now().strftime('%Y') + ' ToppyMicroServices</span></div></div>' + script_block
     _write_dashboard_entrypoints(final_html)
     print("Wrote site/index.html and site/report.html")
 
@@ -1387,13 +1423,8 @@ def main() -> None:
                 except Exception:
                     pass
 
-    month_head = ("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" "
-                  f"content=\"width=device-width,initial-scale=1\"><title>Thermo-Credit Monitor – {month_key}</title><meta name=\"description\" "
-                  "content=\"Quarterly regional credit diagnostics and evidence boundaries.\"><style>" + style_block + "</style>"
-                  + "</head><body><div class=\"wrap\"><header class=\"page-header\"><div class=\"brandbar\">"
-                  + (f'<img src="{logo_uri}" alt="Company Logo"/>' if logo_uri else "")
-                  + '<span class="brand-name">ToppyMicroServices</span><span class="brand-tag">Research dashboard</span></div><div class="page-hero"><div><span class="page-kicker">Thermo-credit monitor</span><h1>Regional Credit Thermodynamics</h1><p class="page-subtitle">Quarterly regional diagnostics with explicit measurement and validation limits.</p></div></div></header>')
-    month_html = month_head + page_body + '<div class="footer-brand">' + (f'<img src="{logo_uri}" alt="Company Logo"/>' if logo_uri else "") + '<span>© ' + _utc_now().strftime('%Y') + ' ToppyMicroServices</span></div></div>' + script_block
+    month_head = _build_page_header(style_block, logo_uri, month_key)
+    month_html = month_head + page_body + '<div class="footer-brand">' + (f'<img src="{logo_uri}" alt="ToppyMicroServices logo"/>' if logo_uri else "") + '<span>© ' + _utc_now().strftime('%Y') + ' ToppyMicroServices</span></div></div>' + script_block
     with open(os.path.join(month_dir, "index.html"), "w", encoding="utf-8") as fp:
         fp.write(month_html)
 

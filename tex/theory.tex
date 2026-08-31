@@ -28,27 +28,28 @@
 \maketitle
 
 \begin{abstract}
-Theories of endogenous credit distinguish credit creation from allocation,
-while public statistics often report aggregates or borrower-sector stocks. We
+Bank lending can grow while its borrower mix changes. Theories of endogenous
+credit therefore distinguish credit creation from credit allocation, but
+public data often report only aggregate lending or borrower-sector stocks. We
 construct a reproducible borrower-composition measure from Bank of Japan (BOJ)
-sectoral loan stocks. The primary mapping implements
-\citet{BezemerSamarinaZhang2020}'s published Japan crosswalk: non-financial
-business, financial business, property/mortgage, and household non-housing
-credit. Scale and composition use the same credit population. Stock changes
-are aggregated within each taxonomy bucket before taking positive parts,
-making the four-quarter vector invariant to finer classifications that
-preserve those buckets. Construction belongs to non-financial business in the
-primary crosswalk and moves in two literature-anchored alternatives based on
-\citet{Werner1997} and \citet{MullerVerner2024}. Evidence centers on the BOJ
-mapping, exact identities, coverage and residual accounting, positive and net
-changes, and joint alternative allocations. Ministry of Finance statistics
-provide borrower-side convergence for manufacturing; Ministry of Land,
-Infrastructure, Transport and Tourism purpose data partially validate
-household housing. A current-vintage pseudo-out-of-sample exercise is only an
-application: all main-table augmentations have higher point loss than the
-matched-stock baseline. One Appendix row improves point loss, but its interval
-crosses zero. The contribution is a verifiable measurement bridge, not a
-purpose measure or forecasting result.
+sectoral loan stocks. The primary mapping follows the published Japan
+crosswalk of \citet{BezemerSamarinaZhang2020}: non-financial business,
+financial business, property and mortgages, and household non-housing credit.
+Scale and composition use the same loan population. We aggregate stock changes
+within each bucket before taking positive parts. The resulting four-quarter
+vector is therefore unchanged by finer classifications that keep each series
+in the same bucket. Because the placement of construction is not unique, we
+also report two literature-based alternatives from \citet{Werner1997} and
+\citet{MullerVerner2024}. The empirical audit covers exact accounting
+identities, coverage, residuals, and positive and net changes. Ministry of
+Finance data provide borrower-side evidence for manufacturing, while Ministry
+of Land, Infrastructure, Transport and Tourism data partly validate household
+housing. In a current-vintage pseudo-out-of-sample application, every
+main-table model that adds composition has higher point loss than the matched
+credit-stock baseline. One Appendix result has lower point loss, but its
+interval includes zero. The contribution is a verifiable bridge from sectoral
+loan stocks to borrower composition, not a measure of loan purpose or a
+forecasting result.
 \end{abstract}
 
 \noindent\textbf{Keywords:} endogenous credit; borrower composition; sectoral
@@ -59,59 +60,52 @@ lending; measurement; Bank of Japan
 
 \section{Introduction}
 
-Theories of endogenous money and the monetary circuit explain why bank lending
-cannot be reduced to a prior stock of loanable funds
-\citep{LeBourva1992,Fontana2003,BoE2014}. The use and institutional location of
-credit also matter: a loan to a non-financial firm, a construction company, a
-financial intermediary, or a household enters a different balance-sheet
-position even when the aggregate amount is unchanged
-\citep{RochonRossi2007,Passarella2014,Werner2012}. Empirical work nevertheless
-often measures credit scale without an equally explicit measure of its
-composition.
+Bank lending creates deposits and cannot be reduced to a prior stock of
+loanable funds \citep{LeBourva1992,Fontana2003,BoE2014}. Endogenous-money and
+monetary-circuit theories also make the location of credit important. Loans to
+non-financial firms, construction companies, financial intermediaries, and
+households enter different balance-sheet positions even when total lending is
+unchanged \citep{RochonRossi2007,Passarella2014,Werner2012}. Credit scale alone
+does not capture this difference.
 
-Existing studies show that mortgage and business credit
-\citep{BezemerSamarinaZhang2020,BezemerZhang2019}, tradable and non-tradable
-sector credit
-\citep{MullerVerner2024,AndriesOngenaSprincean2025}, and the riskiness of
-corporate credit allocation \citep{BrandaoMarquesEtAl2022} have different
-macro-financial implications. Earlier work for Japan also documents shifts and
-dispersion in sectoral loan growth \citep{SaitaSekine2001}. These contributions
-motivate disaggregation but do not solve the measurement problem considered
-here. The Bank of Japan (BOJ) reports detailed outstanding loans by borrower
-sector, not comprehensive gross originations jointly classified by borrower
-and purpose. A stock change can reflect new lending, repayment, write-off, or
-reclassification. A borrower label does not identify what the loan financed.
+Empirical studies find different macro-financial patterns for mortgage and
+business credit \citep{BezemerSamarinaZhang2020,BezemerZhang2019}, tradable and
+non-tradable sector credit
+\citep{MullerVerner2024,AndriesOngenaSprincean2025}, and riskier corporate
+credit allocation \citep{BrandaoMarquesEtAl2022}. Research on Japan also shows
+shifts and dispersion in sectoral loan growth \citep{SaitaSekine2001}. Yet a
+basic measurement problem remains. The Bank of Japan (BOJ) reports detailed
+loan stocks by borrower sector, but not comprehensive gross originations
+classified jointly by borrower and purpose. Stock changes can reflect new
+lending, repayment, write-offs, or reclassification. Borrower labels therefore
+do not reveal what a loan financed.
 
-This paper therefore makes a narrower claim than a destination-of-credit
-paper. It constructs and audits an observable borrower-composition measure.
-Its primary specification follows the published Japan crosswalk of
-\citet{BezemerSamarinaZhang2020}, which divides the included population into
-non-financial business (NFB), financial business, property/mortgage, and
-household non-housing credit. This replaces an author-defined three-way
-classification as the main measure. The scalar \(q_t\) is only the NFB
-coordinate of the four-part vector. It is a borrower-composition statistic,
-not a share of credit reaching a final destination.
+This paper addresses the observable part of that problem. It constructs and
+audits a borrower-composition measure based on the published Japan crosswalk of
+\citet{BezemerSamarinaZhang2020}. The measure divides one included loan
+population into non-financial business (NFB), financial business, property and
+mortgages, and household non-housing credit. Credit scale is calculated from
+the same population. The scalar \(q_t\) is the NFB coordinate of this
+four-part vector. It is not a share of credit reaching a final destination.
 
-The classification literature does not imply a unique placement for
-construction. It is part of NFB in the primary Japan crosswalk, enters the
-financial-circulation proxy in \citet{Werner1997}, and is non-tradable in
-\citet{MullerVerner2024}. We implement all three placements over the same
-included credit population and report them jointly. This design converts an
-otherwise hidden author choice into a disclosed robustness dimension. The
-current-sample declaration is not an externally time-stamped preregistration;
-the earlier author-defined G/B/E grouping is retained only in the Appendix for
-archive compatibility.
+Construction shows why the classification must remain visible. It belongs to
+NFB in the primary Japan crosswalk, enters the financial-circulation proxy in
+\citet{Werner1997}, and is non-tradable in \citet{MullerVerner2024}. We apply
+all three classifications to the same loan population and report them
+together. This turns a hidden classification choice into a direct robustness
+check. The earlier author-defined G/B/E grouping remains only in the Appendix
+for archive compatibility.
 
-The paper makes three contributions. First, it uses the early
-endogenous-credit literature to motivate two observables---credit scale and
-borrower composition---without claiming that borrower labels reveal loan use.
-Second, it makes the published crosswalk, included population, residuals,
-coverage, aggregation order, positive-versus-net convention, and construction
-placements fully auditable. Third, it provides a falsifiable application
-protocol: external MOF and MLIT data partially validate selected branches,
-while a pseudo-out-of-sample (OOS) comparison shows how the bridge can be used.
-These checks do not validate the full four-bucket construct or establish
-incremental predictability.
+The evidence proceeds in three stages. First, the BOJ audit reports the source
+mapping, included population, residuals, coverage, aggregation order, and
+positive and net changes. Second, independent Ministry of Finance (MOF) and
+Ministry of Land, Infrastructure, Transport and Tourism (MLIT) data provide
+partial checks for manufacturing and household housing. Third, a
+pseudo-out-of-sample comparison demonstrates how the measure can be added to a
+matched credit-stock baseline. The external checks cover selected branches,
+not the full four-bucket measure, and the forecasting application does not
+establish incremental predictability. The main contribution is a measurement
+bridge whose definitions, limits, and failure conditions can be audited.
 
 \section{Conceptual Motivation and Measurement Design}
 
@@ -528,27 +522,31 @@ The measure has clear boundaries:
 
 \section{Conclusions}
 
-This paper constructs a four-quarter measure of borrower composition from
-Japanese sectoral loan stocks. The primary measure follows a published
-four-bucket Japan crosswalk, while two literature-anchored robustness mappings
-expose how construction placement changes the coordinate without changing the
-credit population. The central evidence is the BOJ mapping, exact
-same-population identities, explicit coverage and residual accounting,
-positive and net changes, the limited household comparison, and jointly
-reported alternative allocations. These checks support a reproducible
-borrower-composition bridge, not a destination or loan-purpose interpretation.
-Table~\ref{tab:destination_oos_incremental} demonstrates one use of the bridge
-against a matched-stock baseline. All main-table point losses are worse. One
-Appendix row improves point loss, but its interval crosses zero. The current
-sample therefore does not establish incremental predictability.
+This paper shows what can and cannot be measured from Japanese sectoral loan
+stocks. The primary four-bucket crosswalk produces a reproducible
+borrower-composition measure over the same population used for credit scale.
+Two literature-based alternatives make the treatment of construction visible
+without changing that population. Exact accounting identities, coverage and
+residual checks, and separate positive and net changes support the measurement
+bridge. They do not identify loan purpose or final expenditure.
 
+The external data support only selected parts of the mapping. The forecasting
+application also provides no evidence of incremental predictability: every
+main-table composition model has higher point loss than the matched
+credit-stock baseline. The one lower-loss Appendix result has an interval that
+includes zero. The value of the bridge is therefore practical and limited. It
+turns an aggregate loan stock into an auditable borrower-composition measure
+and states what additional data would be needed for stronger purpose or
+forecasting claims.
+
+\begingroup
+\small
 \subsection*{Declarations}
 
 \noindent\textbf{Data availability.}
-The empirical results use public macro-financial data sources described above.
-An anonymised replication archive accompanies the double-blind review files.
-After acceptance, the authors intend to release the code, bridge tables, and
-replication scripts in a public repository.
+The study uses the public sources listed in Appendix~A. An anonymised
+replication archive accompanies the review files; code and source mappings are
+linked in the non-anonymous public record.
 
 \medskip
 \noindent\textbf{Conflicts of interest.}
@@ -556,9 +554,9 @@ The authors declare no conflicts of interest.
 
 \medskip
 \noindent\textbf{Declaration of generative AI use.}
-OpenAI Codex was used to assist with language editing and manuscript
-organisation. The authors reviewed and edited all resulting content and take
-full responsibility for the content of the article.
+OpenAI Codex assisted with language editing and manuscript organisation. The
+authors reviewed the output and are responsible for the article.
+\endgroup
 
 \newpage
 \appendix
