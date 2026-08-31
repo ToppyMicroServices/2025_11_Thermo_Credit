@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import os
 import re
@@ -9,6 +10,22 @@ from pathlib import Path
 from typing import Any, Dict, List, NoReturn, Optional
 
 import requests
+
+
+PROJECT_URL = "https://github.com/ToppyMicroServices/2025_11_Thermo_Credit"
+DASHBOARD_URL = "https://www.toppymicros.com/2025_11_Thermo_Credit/"
+PAPER_TITLE = (
+    "From Endogenous Credit to Borrower Composition: "
+    "A Reproducible Measure from Japanese Sectoral Loan Stocks"
+)
+PROJECT_KEYWORDS = [
+    "endogenous credit",
+    "borrower composition",
+    "sectoral lending",
+    "Bank of Japan",
+    "macro-financial diagnostics",
+    "reproducible research",
+]
 
 
 def _fail(message: str) -> NoReturn:
@@ -207,14 +224,58 @@ def _ensure_draft(
     )
 
 
-def _maybe_update_description(description: str, tag: str, release_url: str) -> str:
-    if not release_url:
-        return description
-    marker = f"GitHub release: <a href=\"{release_url}\">{tag}</a>"
-    if marker in description:
-        return description
-    suffix = f'<p>GitHub release: <a href="{release_url}">{tag}</a></p>'
-    return description + suffix if description else suffix
+def _release_description(tag: str, release_url: str) -> str:
+    version = html.escape(tag.split("/")[-1], quote=True)
+    safe_release_url = html.escape(release_url, quote=True)
+    release_link = ""
+    if release_url:
+        release_link = (
+            f'<a href="{safe_release_url}">GitHub release {version}</a>, '
+        )
+    return (
+        "<p><strong>Thermo Credit separates credit scale from borrower "
+        "composition and publishes the result as reproducible research.</strong></p>"
+        "<p>The strongest current result is a four-bucket Japanese "
+        "borrower-composition measure built from Bank of Japan sectoral loan "
+        "stocks. It measures the sector of the borrower, not loan purpose or "
+        "final expenditure. Euro-area and US panels use coarser proxies and do "
+        "not provide cross-country validation.</p>"
+        "<p>The thermodynamic diagnostics remain experimental. Current "
+        "pseudo-out-of-sample tests do not establish forecasting gains over a "
+        "matched credit-stock baseline.</p>"
+        f'<p>Version {version}: {release_link}'
+        f'<a href="{PROJECT_URL}">source and methods</a>, and '
+        f'<a href="{DASHBOARD_URL}">interactive dashboard</a>.</p>'
+    )
+
+
+def _merge_project_related_identifiers(
+    existing: Any,
+    release_url: str,
+) -> List[Dict[str, str]]:
+    project_prefixes = (
+        PROJECT_URL,
+        DASHBOARD_URL.rstrip("/"),
+    )
+    preserved: List[Dict[str, str]] = []
+    if isinstance(existing, list):
+        for item in existing:
+            if not isinstance(item, dict):
+                continue
+            identifier = str(item.get("identifier") or "")
+            if identifier.startswith(project_prefixes):
+                continue
+            preserved.append(dict(item))
+
+    canonical = [
+        {"identifier": PROJECT_URL, "relation": "isSupplementedBy"},
+        {"identifier": DASHBOARD_URL, "relation": "isSupplementedBy"},
+    ]
+    if release_url:
+        canonical.append(
+            {"identifier": release_url, "relation": "isSupplementedBy"}
+        )
+    return preserved + canonical
 
 
 def _sanitize_metadata_for_update(metadata: Dict[str, Any]) -> Dict[str, Any]:
@@ -246,9 +307,19 @@ def _update_metadata(
 ) -> Dict[str, Any]:
     metadata = _sanitize_metadata_for_update(dict(draft.get("metadata") or {}))
     version = tag.split("/")[-1]
+    metadata["title"] = PAPER_TITLE
     metadata["version"] = version
-    description = str(metadata.get("description") or "")
-    metadata["description"] = _maybe_update_description(description, tag, release_url)
+    metadata["description"] = _release_description(tag, release_url)
+    metadata["keywords"] = PROJECT_KEYWORDS
+    metadata["language"] = "eng"
+    metadata.setdefault("upload_type", "publication")
+    metadata.setdefault("publication_type", "report")
+    metadata.setdefault("access_right", "open")
+    metadata.setdefault("license", "cc-by-4.0")
+    metadata["related_identifiers"] = _merge_project_related_identifiers(
+        metadata.get("related_identifiers"),
+        release_url,
+    )
     deposition_id = _resource_deposition_id(draft)
     return _request_json(
         session,

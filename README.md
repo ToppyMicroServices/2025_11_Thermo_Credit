@@ -2,35 +2,45 @@
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17563220.svg)](https://doi.org/10.5281/zenodo.17563220)
 
-Thermo Credit is a reproducible research project on credit scale, borrower
-composition, and experimental macro-financial diagnostics. It publishes a
-quarterly dashboard for Japan, the euro area, and the United States, together
-with the paper, source mappings, robustness tests, and recalculation code.
+Bank credit can grow while its borrower mix changes. Thermo Credit separates
+these two movements and publishes the result as a research system that anyone
+can inspect and recalculate.
 
-[Open the dashboard](https://toppymicros.com/2025_11_Thermo_Credit/report.html)
+The project combines a reproducible Japanese borrower-composition measure with
+exploratory panels for the euro area and the United States. It includes the
+paper, data mappings, dashboard, robustness checks, and calculation code.
+
+[Explore the dashboard](https://toppymicros.com/2025_11_Thermo_Credit/)
+| [Read the paper](https://github.com/ToppyMicroServices/2025_11_Thermo_Credit/releases/latest/download/theory.pdf)
+| [Review the methods](docs/identification_strategy.md)
+| [Cite the project](#citation)
 | [日本語](README_JP.md)
 
-## Evidence boundary
+## Start here
 
-The strongest current result is a Japanese borrower-composition measurement
-bridge built from Bank of Japan sectoral loan stocks. Its primary four buckets
-follow the published Japan crosswalk of Bezemer, Samarina, and Zhang. Scale and
-composition use the same reconciled loan population.
+1. Use the dashboard to compare each region with its own history.
+2. Read the paper for the Japanese measurement design and validation results.
+3. Run the code below to reproduce the indicators and public data interface.
 
-The scalar `q_t` is the four-quarter non-financial-business coordinate of that
-borrower composition. It is not a direct measure of loan purpose, GDP-linked
-credit, or final expenditure. EU and US panels use coarser proxies and test
-schema portability; they are not cross-country validation of the JP measure.
+## What the current evidence supports
 
-`S_M`, `T_L`, `p_C`, `U`, `F_C`, `X_C`, and `loop_area` are experimental model
-diagnostics. In particular, `X_C` is not a validated safety margin, policy
-threshold, or forecast. The current pseudo-out-of-sample results do not
-establish incremental predictability over the matched credit-stock baseline.
+| Question | Current answer |
+| --- | --- |
+| Can borrower composition be measured from Japanese sectoral loan stocks? | Yes, as a reproducible four-bucket measure with explicit coverage and accounting checks. |
+| Does `q_t` measure where a loan was ultimately spent? | No. It is the four-quarter non-financial-business coordinate of borrower composition. |
+| Are the EU and US panels cross-country validation? | No. They are coarser proxies used to test whether the calculation schema can travel. |
+| Does borrower composition improve forecasting? | Not in the current pseudo-out-of-sample tests against the matched credit-stock baseline. |
+| Are the thermodynamic indicators decision thresholds? | No. They remain experimental descriptive transformations. |
 
-See [definitions](docs/definitions.md), the
-[identification strategy](docs/identification_strategy.md), and the
-[calibration protocol](docs/calibration_protocol.md) before interpreting the
-outputs.
+The Japanese measure is the strongest current result. Its four primary
+buckets follow the published Japan crosswalk of Bezemer, Samarina, and Zhang,
+and scale and composition use the same reconciled loan population. The
+thermodynamic diagnostics (`S_M`, `T_L`, `p_C`, `U`, `F_C`, `X_C`, and
+`loop_area`) do not provide validated trading, policy, or safety signals.
+
+Before interpreting the outputs, see the [variable definitions](docs/definitions.md),
+[identification strategy](docs/identification_strategy.md), and
+[calibration protocol](docs/calibration_protocol.md).
 
 ## Quick start
 

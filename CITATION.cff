@@ -1,0 +1,41 @@
+cff-version: 1.2.0
+message: >-
+  If you use Thermo Credit, cite this release. Use the concept DOI when you
+  need a reference that resolves across all versions:
+  10.5281/zenodo.17563220.
+title: Thermo Credit
+type: software
+authors:
+  - family-names: Okutomi
+    given-names: Akira
+    orcid: https://orcid.org/0000-0001-6409-8922
+version: 2.2.1
+date-released: "2026-08-30"
+doi: 10.5281/zenodo.22177533
+repository-code: https://github.com/ToppyMicroServices/2025_11_Thermo_Credit
+url: https://www.toppymicros.com/2025_11_Thermo_Credit/
+license: Apache-2.0
+abstract: >-
+  Thermo Credit separates credit scale from borrower composition and publishes
+  experimental regional diagnostics as a reproducible research system. The
+  strongest current result is a Japanese borrower-composition measure built
+  from Bank of Japan sectoral loan stocks.
+keywords:
+  - endogenous credit
+  - borrower composition
+  - sectoral lending
+  - macro-financial diagnostics
+  - reproducible research
+preferred-citation:
+  type: report
+  title: >-
+    From Endogenous Credit to Borrower Composition: A Reproducible Measure from
+    Japanese Sectoral Loan Stocks
+  authors:
+    - family-names: Okutomi
+      given-names: Akira
+      orcid: https://orcid.org/0000-0001-6409-8922
+  year: 2026
+  version: 2.2.1
+  doi: 10.5281/zenodo.22177533
+  url: https://doi.org/10.5281/zenodo.22177533

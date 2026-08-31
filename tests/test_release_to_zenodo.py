@@ -100,6 +100,85 @@ def test_sanitize_metadata_for_update_removes_dates_when_all_invalid():
     assert "dates" not in cleaned
 
 
+def test_release_description_replaces_stale_version_text():
+    module = _load_module()
+
+    description = module._release_description(
+        "release/v2.3.0",
+        "https://github.com/ToppyMicroServices/2025_11_Thermo_Credit/releases/tag/release/v2.3.0",
+    )
+
+    assert "Version v2.3.0" in description
+    assert "borrower-composition measure" in description
+    assert "not loan purpose" in description
+    assert "v2.1.7" not in description
+
+
+def test_related_identifiers_replace_old_project_links_and_keep_external_ones():
+    module = _load_module()
+    external = {
+        "identifier": "https://doi.org/10.1234/example",
+        "relation": "cites",
+    }
+    old_release = {
+        "identifier": (
+            "https://github.com/ToppyMicroServices/2025_11_Thermo_Credit/"
+            "releases/tag/release/v2.1.7"
+        ),
+        "relation": "isSupplementedBy",
+    }
+
+    related = module._merge_project_related_identifiers(
+        [external, old_release],
+        (
+            "https://github.com/ToppyMicroServices/2025_11_Thermo_Credit/"
+            "releases/tag/release/v2.3.0"
+        ),
+    )
+
+    assert external in related
+    assert old_release not in related
+    assert any(item["identifier"].endswith("release/v2.3.0") for item in related)
+    assert any(item["identifier"].endswith("2025_11_Thermo_Credit/") for item in related)
+
+
+def test_update_metadata_writes_canonical_release_record(monkeypatch):
+    module = _load_module()
+    captured = {}
+
+    def fake_request_json(session, method, url, *, expected=None, **kwargs):
+        captured.update(kwargs["json"]["metadata"])
+        return {"id": 18888888, "metadata": captured}
+
+    monkeypatch.setattr(module, "_request_json", fake_request_json)
+    draft = {
+        "id": 18888888,
+        "metadata": {
+            "title": "Old title",
+            "description": "Version 2.0 under development",
+            "creators": [{"name": "Okutomi, Akira"}],
+        },
+    }
+
+    module._update_metadata(
+        requests.Session(),
+        "https://zenodo.org/api",
+        draft,
+        tag="release/v2.3.0",
+        release_url=(
+            "https://github.com/ToppyMicroServices/2025_11_Thermo_Credit/"
+            "releases/tag/release/v2.3.0"
+        ),
+    )
+
+    assert captured["title"] == module.PAPER_TITLE
+    assert captured["version"] == "v2.3.0"
+    assert captured["creators"] == [{"name": "Okutomi, Akira"}]
+    assert "under development" not in captured["description"]
+    assert captured["language"] == "eng"
+    assert len(captured["related_identifiers"]) == 3
+
+
 def test_linked_latest_draft_ignores_same_id(monkeypatch):
     module = _load_module()
     latest = {
