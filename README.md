@@ -16,11 +16,8 @@ paper, data mappings, dashboard, robustness checks, and calculation code.
 | [Cite the project](#citation)
 | [日本語](README_JP.md)
 
-## Start here
-
-1. Use the dashboard to compare each region with its own history.
-2. Read the paper for the Japanese measurement design and validation results.
-3. Run the code below to reproduce the indicators and public data interface.
+Start with the dashboard. The paper explains the Japanese measure, and the
+commands below reproduce the public outputs.
 
 ## What the current evidence supports
 
@@ -32,13 +29,8 @@ paper, data mappings, dashboard, robustness checks, and calculation code.
 | Does borrower composition improve forecasting? | Not in the current pseudo-out-of-sample tests against the matched credit-stock baseline. |
 | Are the thermodynamic indicators decision thresholds? | No. They remain experimental descriptive transformations. |
 
-The Japanese measure is the strongest current result. Its four primary
-buckets follow the published Japan crosswalk of Bezemer, Samarina, and Zhang,
-and scale and composition use the same reconciled loan population. The
-thermodynamic diagnostics (`S_M`, `T_L`, `p_C`, `U`, `F_C`, `X_C`, and
-`loop_area`) do not provide validated trading, policy, or safety signals.
-
-Before interpreting the outputs, see the [variable definitions](docs/definitions.md),
+Definitions and interpretation limits are documented in the
+[variable definitions](docs/definitions.md),
 [identification strategy](docs/identification_strategy.md), and
 [calibration protocol](docs/calibration_protocol.md).
 

@@ -1001,14 +1001,11 @@ def _training_sensitivity_note(
     )
     values_with_selected = [values[20], values[24], selected_value]
     if all(np.isfinite(value) and value > 0.0 for value in values_with_selected):
-        interpretation = (
-            "all three signs are above zero, so none of these window choices "
-            "shows a point-loss improvement"
-        )
+        interpretation = "the sign stays positive across all three windows"
     elif all(np.isfinite(value) and value < 0.0 for value in values_with_selected):
         interpretation = (
-            "all three signs are below zero, although this remains a selected, "
-            "descriptive sensitivity"
+            "the sign stays negative across all three windows, but this was a "
+            "selected sensitivity check"
         )
     else:
         interpretation = "the sign changes across training-window choices"
@@ -1097,6 +1094,7 @@ def _render_destination_oos_table(
             f"{last_origins.max().date()}."
         )
     coverage_bits: list[str] = []
+    coverage_values: list[tuple[int, int, str]] = []
     if not summary.empty and "allocation_measure" in summary.columns:
         for measure in FOUR_QUARTER_TAXONOMY_MEASURES:
             rows = summary[summary["allocation_measure"].eq(measure)]
@@ -1116,7 +1114,18 @@ def _render_destination_oos_table(
             if missing_pattern:
                 bit += f" (missing-source pattern {missing_pattern})"
             coverage_bits.append(bit + ".")
-    coverage_note = " ".join(coverage_bits)
+            coverage_values.append((available, total, missing_pattern))
+    if coverage_values and len(set(coverage_values)) == 1:
+        available, total, missing_pattern = coverage_values[0]
+        coverage_note = (
+            f"All displayed coordinates are available in {available}/{total} "
+            "post-break source quarters"
+        )
+        if missing_pattern:
+            coverage_note += f" (missing-source pattern {missing_pattern})"
+        coverage_note += "."
+    else:
+        coverage_note = " ".join(coverage_bits)
     lines.extend(
         [
             r"    \bottomrule",
@@ -1124,39 +1133,21 @@ def _render_destination_oos_table(
             r"  }",
             r"  \par\smallskip\raggedright\footnotesize "
             + _latex_escape(
-                "Rows use the current-vintage Japan pseudo-OOS panel with an assumed "
-                "fixed 90-day lag for BOJ inputs. "
-                "Scale is log growth of the exact Bezemer Japan-crosswalk population "
-                "(BOJ total less local-government loans) in primary_included_stock; "
-                "the lender population is domestically licensed banks, but the residual "
-                "NFB bucket includes the disclosed overseas-linked series. Each displayed four-quarter "
-                "coordinate uses the same population. The three literature-anchored "
-                "mappings are reported jointly rather than choosing among their displayed "
-                "loss results: Bezemer non-financial business, a Werner-inspired BOJ "
-                "borrower-sector proxy, or a BOJ-sector adaptation of Muller-Verner "
-                "non-tradables. Positive parts are "
-                "taken after aggregation within each reported taxonomy bucket. "
-                "The 2009Q2 cross-taxonomy flow is invalid; dated BOJ inputs are shifted "
-                "by that assumed fixed lag. Targets report standardized "
-                "RMSE. Each h-quarter regression excludes training labels whose outcomes "
-                "are not realized by the forecast origin and requires at least "
-                f"{MIN_TRAINING_ROWS} complete "
-                "training cases in both models. The moving-block length equals the horizon, "
-                "with 2,000 fixed-seed replications. The mean loss differential is candidate "
-                "standardized squared loss minus matched-stock baseline loss; it is not an "
-                "RMSE difference. Its block-bootstrap interval is descriptive and conditional "
-                "on the displayed construction and training-window choice, not confirmatory "
-                "post-selection inference. Negative values favor the candidate."
+                "Current-vintage BOJ inputs use an assumed 90-day lag, and the 2009Q2 "
+                "classification break is omitted. The matched-stock baseline and each "
+                "four-quarter coordinate use the same loan population. Forecasts require "
+                f"at least {MIN_TRAINING_ROWS} training cases. The moving-block length equals "
+                "the horizon, with 2,000 fixed-seed replications. The loss differential is "
+                "candidate standardized squared loss minus baseline loss; negative values "
+                "favor the candidate. It is not an RMSE difference. Intervals are "
+                "descriptive and conditional on the displayed specification."
                 + origin_note
             ),
             r"  \par\smallskip\raggedright\footnotesize "
-            + _latex_escape(coverage_note),
-            r"  \par\smallskip\raggedright\footnotesize "
             + _latex_escape(
-                "Only models augmenting matched-stock growth are shown; the companion CSV "
-                "contains standalone predictors, identity checks, simple benchmarks, and "
-                "alternative borrower-composition constructions when available. No "
-                "p-values or multiplicity-adjusted inference are reported."
+                coverage_note
+                + " Only augmented models are shown; other specifications are in the "
+                "companion CSV. No p-values or multiplicity-adjusted results are reported."
             ),
             *(
                 [
@@ -1184,8 +1175,8 @@ def render_destination_oos_tex(results: pd.DataFrame) -> str:
         ),
         label="tab:destination_oos_incremental",
         scope_note=(
-            "Each row augments matched-stock growth with the displayed coordinate. "
-            "The table is a use case for the BOJ borrower-composition bridge, not a validated forecasting model."
+            "This is an application of the borrower-composition bridge, not a "
+            "validated forecasting model."
         ),
         sensitivity_note=_training_sensitivity_note(
             results,
@@ -1201,9 +1192,8 @@ def render_destination_oos_asset_auxiliary_tex(results: pd.DataFrame) -> str:
         caption="Auxiliary BOJ balance-sheet acceleration pseudo-OOS check.",
         label="tab:destination_oos_asset_auxiliary",
         scope_note=(
-            "Each row augments matched-stock growth with the displayed coordinate. "
-            "This appendix-only specification records the asset-acceleration check "
-            "separately from the main borrower-composition application."
+            "This appendix records the asset-acceleration check separately from the "
+            "main application."
         ),
     )
 

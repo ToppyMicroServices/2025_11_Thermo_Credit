@@ -563,13 +563,13 @@ def render_main_mapping_table(frame: pd.DataFrame, metadata: Mapping[str, Any]) 
             r"    \bottomrule",
             r"  \end{tabular}",
             (
-                r"  \par\smallskip\raggedright\footnotesize The primary four-bucket mapping follows Bezemer, Samarina, and Zhang (2020; Japan crosswalk in DNB Working Paper 559); \texttt{q\_t} is the four-quarter NFB coordinate. Construction is an NFB detail. Overseas-linked and unresolved amounts absorbed by the published residual are shown explicitly. "
+                r"  \par\smallskip\raggedright\footnotesize The primary mapping follows Bezemer, Samarina, and Zhang (2020); \texttt{q\_t} is its four-quarter NFB coordinate. Construction remains in NFB, and residual components are shown separately. "
                 if is_primary
                 else r"  \par\smallskip\raggedright\footnotesize The G/B/E labels and $P_t^G/P_t^B/P_t^E$ symbols are author-defined, not official BOJ categories; they correspond to replication columns \texttt{C\_G}/\texttt{C\_B}/\texttt{C\_E}. "
             )
             + share_note
             + (
-                r" Positive parts are taken after net changes are aggregated within each fixed bucket. The current-sample mappings are literature-anchored and reported jointly; this declaration is not an externally time-stamped preregistration."
+                r" Positive parts are taken after net changes are aggregated within each fixed bucket."
                 if is_primary
                 else r" Positive parts are taken after net changes are aggregated within borrower groups. Stock levels are jointly observed from 2009Q2; the first valid within-taxonomy change is 2009Q3. The overseas-linked series enters only the selected-series coverage denominator. These shares are not coverage of all BOJ credit."
             ),
@@ -617,6 +617,18 @@ def render_primary_mapping_table(frame: pd.DataFrame, metadata: Mapping[str, Any
 
 def render_taxonomy_robustness_table(metadata: Mapping[str, Any]) -> str:
     rows = taxonomy_robustness_rows(metadata)
+    labels = {
+        PRIMARY_TAXONOMY_ID: "Bezemer--Samarina--Zhang (2020)",
+        WERNER_TAXONOMY_ID: "Werner (1997), BOJ proxy",
+        MULLER_VERNER_TAXONOMY_ID: "Muller--Verner (2024), BOJ adaptation",
+        LEGACY_TAXONOMY_ID: "Legacy G/B/E grouping",
+    }
+    roles = {
+        PRIMARY_TAXONOMY_ID: "primary",
+        WERNER_TAXONOMY_ID: "robustness",
+        MULLER_VERNER_TAXONOMY_ID: "robustness",
+        LEGACY_TAXONOMY_ID: "archive",
+    }
     lines = [
         r"\begin{table}[htbp]",
         r"  \centering",
@@ -628,15 +640,31 @@ def render_taxonomy_robustness_table(metadata: Mapping[str, Any]) -> str:
         r"  \resizebox{\textwidth}{!}{%",
         r"  \begin{tabular}{@{}p{0.20\textwidth}p{0.14\textwidth}p{0.25\textwidth}p{0.25\textwidth}p{0.16\textwidth}@{}}",
         r"    \toprule",
-        r"    Taxonomy identifier & Role & Population & Construction placement & Selection rule \\",
+        r"    Taxonomy & Role & Population & Construction placement & Selection rule \\",
         r"    \midrule",
     ]
     for row in rows:
+        taxonomy_id = row["taxonomy_id"]
+        display_row = {
+            "taxonomy": labels[taxonomy_id],
+            "role": roles[taxonomy_id],
+            "population": (
+                row["population"]
+                if taxonomy_id in {PRIMARY_TAXONOMY_ID, LEGACY_TAXONOMY_ID}
+                else "Same included population as the primary mapping."
+            ),
+            "construction": row["construction"],
+            "selection": (
+                "Reported jointly; not selected on outcome fit."
+                if taxonomy_id != LEGACY_TAXONOMY_ID
+                else "Archive compatibility only."
+            ),
+        }
         lines.append(
             "    "
             + " & ".join(
-                _validation_latex(row[key])
-                for key in ("taxonomy_id", "role", "population", "construction", "selection")
+                _validation_latex(display_row[key])
+                for key in ("taxonomy", "role", "population", "construction", "selection")
             )
             + r" \\"
         )
@@ -644,7 +672,7 @@ def render_taxonomy_robustness_table(metadata: Mapping[str, Any]) -> str:
         [
             r"    \bottomrule",
             r"  \end{tabular}}",
-            r"  \par\smallskip\raggedright\footnotesize The primary and robustness mappings are defined in replication metadata and reported jointly. The current-sample declaration is not an externally time-stamped preregistration; the prospective archive freezes these definitions only for future releases.",
+            r"  \par\smallskip\raggedright\footnotesize The mappings are defined in replication metadata and reported jointly. This is not an externally time-stamped preregistration; the prospective archive applies only to future releases.",
             r"\end{table}",
         ]
     )
@@ -654,17 +682,16 @@ def render_taxonomy_robustness_table(metadata: Mapping[str, Any]) -> str:
 def render_mapping_table(frame: pd.DataFrame, metadata: Mapping[str, Any]) -> str:
     rows = mapping_rows(frame, metadata)
     lines = [
-        r"\begin{table}[htbp]",
+        r"\begin{table}[!htbp]",
         r"  \centering",
-        r"  \caption{Detailed BOJ source series to borrower-composition buckets.}",
+        r"  \caption{Legacy G/B/E source map.}",
         r"  \label{tab:boj_bridge_mapping_detail}",
         r"  \scriptsize",
-        r"  \setlength{\tabcolsep}{2pt}",
+        r"  \setlength{\tabcolsep}{3pt}",
         r"  \renewcommand{\arraystretch}{1.12}",
-        r"  \resizebox{\textwidth}{!}{%",
-        r"  \begin{tabular}{@{}p{0.15\textwidth}p{0.12\textwidth}p{0.10\textwidth}p{0.13\textwidth}p{0.13\textwidth}p{0.08\textwidth}p{0.12\textwidth}p{0.10\textwidth}p{0.08\textwidth}p{0.06\textwidth}@{}}",
+        r"  \begin{tabular}{@{}p{0.28\textwidth}p{0.15\textwidth}p{0.16\textwidth}p{0.28\textwidth}p{0.08\textwidth}@{}}",
         r"    \toprule",
-        r"    BOJ series name / code & Borrower sector & Borrower bucket & Grouping rationale & Ambiguous cases & Type & Expected bias direction & Negative quarterly changes & Assumed release lag & Series share (incl.\ U) \\",
+        r"    BOJ series / code & Borrower & Legacy group & Main limit & Flow share \\",
         r"    \midrule",
     ]
     for row in rows:
@@ -676,12 +703,7 @@ def render_mapping_table(frame: pd.DataFrame, metadata: Mapping[str, Any]) -> st
                     "source",
                     "borrower",
                     "bucket",
-                    "rationale",
                     "ambiguous",
-                    "type",
-                    "bias",
-                    "negative",
-                    "lag",
                     "coverage",
                 )
             )
@@ -690,8 +712,8 @@ def render_mapping_table(frame: pd.DataFrame, metadata: Mapping[str, Any]) -> st
     lines.extend(
         [
             r"    \bottomrule",
-            r"  \end{tabular}}",
-            r"  \par\smallskip\raggedright\footnotesize Shares use positive parts taken after net changes are aggregated within borrower buckets. Stock levels are jointly observed from 2009Q2; the first valid within-taxonomy change is 2009Q3. They are selected-series composition shares, not coverage of the official BOJ aggregate.",
+            r"  \end{tabular}",
+            r"  \par\smallskip\raggedright\footnotesize Positive parts follow within-group aggregation. Joint observations begin in 2009Q2 and the first valid change is 2009Q3. Shares use the selected-series denominator, not the official BOJ total.",
             r"\end{table}",
         ]
     )
@@ -1268,7 +1290,7 @@ def render_validation_table(frame: pd.DataFrame, lambda_b: float = LAMBDA_B_DEFA
     audit_order = PRIMARY_VALIDATION_AUDITS if _has_primary_taxonomy(frame) else MAIN_VALIDATION_AUDITS
     rows = [by_audit[audit] for audit in audit_order]
     lines = [
-        r"\begin{table}[htbp]",
+        r"\begin{table}[!htbp]",
         r"  \centering",
         (
             r"  \caption{Published-taxonomy BOJ bridge audits.}"
