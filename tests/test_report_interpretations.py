@@ -142,7 +142,7 @@ def test_page_header_explains_scope_and_links_public_outputs():
 
     assert "Credit scale is only half the story." in html
     assert "borrower composition" in html
-    assert "exploratory proxies" in html
+    assert "broader proxies" in html
     assert 'href="#dashboard-tabs"' in html
     assert "releases/latest/download/theory.pdf" in html
     assert "10.5281/zenodo.17563220" in html

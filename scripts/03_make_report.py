@@ -114,9 +114,8 @@ def _build_page_header(style_block: str, logo_uri: str, month_key: str = "") -> 
         '<div class="page-hero"><div class="hero-copy">',
         '<span class="page-kicker">Thermo Credit / Reproducible research</span>',
         '<h1>Credit scale is only half the story.</h1>',
-        '<p class="page-subtitle">Track credit scale, borrower composition, and '
-        'experimental stress diagnostics. Japan is the primary measurement result; '
-        'euro-area and US panels are exploratory proxies.</p>',
+        '<p class="page-subtitle">Compare lending and borrower composition over time. '
+        'Japan is the primary measure; the euro-area and US panels use broader proxies.</p>',
         '<nav class="hero-actions" aria-label="Project links">',
         '<a class="hero-button primary" href="#dashboard-tabs">Explore the charts</a>',
         f'<a class="hero-button" href="{PAPER_URL}">Read the paper</a>',
@@ -347,8 +346,8 @@ def _build_dashboard_summary(region_ctxs: List[Dict[str, Any]]) -> str:
     gate_value = f"{passed}/{total}" if isinstance(passed, int) and isinstance(total, int) else "Not rated"
     cards = [
         _summary_card("Latest observation", latest_date, "Freshest regional panel.", "neutral"),
-        _summary_card("Best-supported result", "Japan", "Borrower composition from BOJ sectoral loan stocks.", "supported"),
-        _summary_card("Forecasting", "Not established", "Composition does not beat a matched scale-only baseline.", "limited"),
+        _summary_card("Primary measure", "Japan", "Borrower composition from BOJ sectoral lending.", "supported"),
+        _summary_card("Forecasting", "Not established", "No reliable gain over the matched scale-only baseline.", "limited"),
         _summary_card("EU / US evidence", "Exploratory", "Proxy panels, not cross-country validation.", "proxy"),
         _summary_card("Validation gates", gate_value, "Open gates remain visible and testable.", "limited"),
     ]
@@ -361,7 +360,7 @@ def _build_dashboard_summary(region_ctxs: List[Dict[str, Any]]) -> str:
         )
     return (
         '<section class="decision-summary">'
-        '<div class="section-heading"><span class="section-kicker">Evidence first</span><h2>What this release can support</h2></div>'
+        '<div class="section-heading"><span class="section-kicker">Current evidence</span><h2>What the results show</h2></div>'
         '<div class="summary-grid kpi-grid">' + "".join(cards) + "</div>" + stale_note + "</section>"
     )
 
@@ -1359,14 +1358,10 @@ def main() -> None:
 
     intro_html = (
         '<details class="intro">'
-        '<summary>What the indicators mean and do not mean</summary>'
-        '<p>Use these charts as descriptive evidence, not as a score or forecast. Each regional '
-        'series should be compared with its own history. The panels ask:</p>'
-        '<ul>'
-        '<li>Where does the latest observation sit within that region&apos;s recorded range?</li>'
-        '<li>Does the state path change around a registered macro-financial event?</li>'
-        '<li>How current are the inputs, and which results remain experimental?</li>'
-        '</ul>'
+        '<summary>How to read the indicators</summary>'
+        '<p>Use these charts as descriptive evidence, not as a score or forecast. Compare each '
+        'region with its own history, note the registered event periods, and check data freshness '
+        'before reading the latest value.</p>'
         '<p>The dashboard displays four experimental diagnostics:</p>'
         '<ul>'
         '<li><strong>S<sub>M</sub></strong> measures dispersion in the configured allocation shares.</li>'
@@ -1374,9 +1369,7 @@ def main() -> None:
         '<li><strong>Loop area</strong> records an open state-space path; it does not prove a closed cycle.</li>'
         '<li><strong>X<sub>C</sub></strong> is an exergy-like transformation, not a safety margin or forecast.</li>'
         '</ul>'
-        '<p>The Japanese borrower-composition series is the primary measurement bridge. EU and US '
-        'series are proxy panels used to test portability of the schema. None of these diagnostics '
-        'is validated for trading, regulation, or causal policy analysis.</p>'
+        '<p>These diagnostics are not validated for trading, regulation, or causal policy analysis.</p>'
         '</details>'
     )
 

@@ -28,28 +28,23 @@
 \maketitle
 
 \begin{abstract}
-Bank lending can grow while its borrower mix changes. Theories of endogenous
-credit therefore distinguish credit creation from credit allocation, but
-public data often report only aggregate lending or borrower-sector stocks. We
-construct a reproducible borrower-composition measure from Bank of Japan (BOJ)
-sectoral loan stocks. The primary mapping follows the published Japan
-crosswalk of \citet{BezemerSamarinaZhang2020}: non-financial business,
-financial business, property and mortgages, and household non-housing credit.
-Scale and composition use the same loan population. We aggregate stock changes
-within each bucket before taking positive parts. The resulting four-quarter
-vector is therefore unchanged by finer classifications that keep each series
-in the same bucket. Because the placement of construction is not unique, we
-also report two literature-based alternatives from \citet{Werner1997} and
-\citet{MullerVerner2024}. The empirical audit covers exact accounting
-identities, coverage, residuals, and positive and net changes. Ministry of
-Finance data provide borrower-side evidence for manufacturing, while Ministry
-of Land, Infrastructure, Transport and Tourism data partly validate household
-housing. In a current-vintage pseudo-out-of-sample application, every
-main-table model that adds composition has higher point loss than the matched
-credit-stock baseline. One Appendix result has lower point loss, but its
-interval includes zero. The contribution is a verifiable bridge from sectoral
-loan stocks to borrower composition, not a measure of loan purpose or a
-forecasting result.
+Bank lending can grow while its borrower mix changes. Endogenous-credit theory
+distinguishes credit creation from credit allocation, but public data often
+show only total lending or borrower-sector stocks. We construct a reproducible
+borrower-composition measure from Bank of Japan sectoral loan stocks. The
+published Japan crosswalk of \citet{BezemerSamarinaZhang2020} divides one loan
+population into non-financial business, financial business, property and
+mortgages, and household non-housing credit. Stock changes are summed within
+each bucket before positive parts are taken, so finer classifications within a
+bucket do not alter the four-quarter vector. We also report alternative
+placements of construction based on \citet{Werner1997} and
+\citet{MullerVerner2024}. Accounting and coverage checks support the bridge;
+external data provide only partial checks of selected branches. In the
+current-vintage pseudo-out-of-sample application, five of six main estimates
+have higher point loss than the matched credit-stock baseline. The remaining
+main estimate and one Appendix estimate are lower, but both intervals include
+zero. The result is a reproducible measure of borrower composition, not loan
+purpose or a forecasting result.
 \end{abstract}
 
 \noindent\textbf{Keywords:} endogenous credit; borrower composition; sectoral
@@ -96,16 +91,12 @@ together. This turns a hidden classification choice into a direct robustness
 check. The earlier author-defined G/B/E grouping remains only in the Appendix
 for archive compatibility.
 
-The evidence proceeds in three stages. First, the BOJ audit reports the source
-mapping, included population, residuals, coverage, aggregation order, and
-positive and net changes. Second, independent Ministry of Finance (MOF) and
-Ministry of Land, Infrastructure, Transport and Tourism (MLIT) data provide
-partial checks for manufacturing and household housing. Third, a
-pseudo-out-of-sample comparison demonstrates how the measure can be added to a
-matched credit-stock baseline. The external checks cover selected branches,
-not the full four-bucket measure, and the forecasting application does not
-establish incremental predictability. The main contribution is a measurement
-bridge whose definitions, limits, and failure conditions can be audited.
+The BOJ mapping, coverage, residual accounting, and positive and net changes
+form the main evidence. MOF and MLIT data provide partial checks for
+manufacturing and household housing. A pseudo-out-of-sample comparison shows
+how the measure can be used with a matched credit-stock baseline, although it
+does not establish a forecast improvement in the present sample. The
+contribution is an auditable measurement bridge.
 
 \section{Conceptual Motivation and Measurement Design}
 
@@ -200,17 +191,9 @@ therefore depends on classification granularity. The empirical audit reports
 the difference between the two orders rather than silently treating them as
 equivalent.
 
-The measurement design imposes five checks before any outcome application is
-considered. First, the mapped stocks should approximately reconcile with the
-published BOJ aggregate after the local-government exclusion is made explicit.
-Second, the four buckets and the scale stock must exactly exhaust the same
-included population. Third, within-bucket refinements should leave the primary
-measure unchanged. Fourth, positive and net changes should be reported
-separately because they answer different accounting questions. Fifth, cross-
-bucket ambiguity should be evaluated under mappings fixed from the literature.
-A purpose interpretation would additionally require an independent source that
-codes loan purpose. The current same-provider comparator cannot supply that
-validation.
+Table~\ref{tab:theory_measure} links each observable to the check needed for
+its interpretation. A purpose interpretation would require independent data
+that code loan purpose, which the current BOJ comparator cannot provide.
 
 \begin{center}
   \refstepcounter{table}
@@ -281,16 +264,11 @@ Run \texttt{python scripts/18\_boj\_bridge\_validation.py} to populate
 \texttt{tex/generated/theory\_boj\_bridge\_mapping\_main.tex}.
 }
 
-Table~\ref{tab:boj_bridge_mapping} is the empirical centre of the paper. It
-reports the published borrower labels, construction of the four primary
-buckets, explicit exclusion, embedded residual components, and each bucket's
-share of positive changes. The primary population is
-\(L_t^P=B_t^{TOT}-B_t^{LG}\),
-not a domestic-borrower subset. Accounting coverage reconciles that population
-and the explicit local-government exclusion to the official aggregate.
-Decomposition coverage separately shows how much of published residual NFB is
-accounted for by detailed NFB industries, the overseas-linked series, and the
-unresolved remainder. Neither coverage concept establishes loan purpose.
+Table~\ref{tab:boj_bridge_mapping} defines the four buckets and their common
+population, \(L_t^P=B_t^{TOT}-B_t^{LG}\). Accounting coverage reconciles this
+population and the local-government exclusion to the official aggregate.
+Decomposition coverage accounts for the detailed industries, overseas-linked
+series, and unresolved remainder within published residual NFB.
 
 \IfFileExists{generated/theory_boj_taxonomy_robustness.tex}{
 \begingroup
@@ -302,68 +280,37 @@ Run \texttt{python scripts/18\_boj\_bridge\_validation.py} to populate
 \texttt{tex/generated/theory\_boj\_taxonomy\_robustness.tex}.
 }
 
-Table~\ref{tab:boj_taxonomy_robustness} makes construction placement central
-rather than incidental. The primary Bezemer--Samarina--Zhang crosswalk places
-construction within NFB. Werner's Japan operationalisation places construction
-with real estate and non-bank financial institutions in a
-financial-circulation category; our BOJ adaptation uses the available broader
-finance-and-insurance series and is labelled a proxy. The M\"uller--Verner
-sector crosswalk places construction among non-tradables; its implementation
-here is likewise a BOJ-sector adaptation. The three measures exhaust the same
-included population; only their categorical partition changes. They are
-therefore informative about classification sensitivity, not alternative
-estimates of unobserved loan purpose.
+Table~\ref{tab:boj_taxonomy_robustness} records how the three mappings treat
+construction. The Werner adaptation uses the broader BOJ finance-and-insurance
+series and is labelled a proxy; the M\"uller--Verner measure is also a BOJ
+sector adaptation. All three use the same included population, so their
+differences reflect classification rather than loan coverage.
 
 \subsection{Pre-outcome measurement audits}
 
 \paragraph{Aggregation order and granularity.}
-For each taxonomy, the primary calculation aggregates signed changes within
-every fixed bucket before applying the positive part and then forms a
-four-quarter flow-weighted vector. Splitting or combining additive series
-within a bucket therefore cannot change the result. Moving construction or
-another sector across buckets can change it; Tables
-\ref{tab:boj_bridge_mapping} and \ref{tab:boj_taxonomy_robustness} disclose
-those placements rather than hiding them in an author-defined label.
+Signed changes are summed inside each fixed bucket before the positive part is
+taken. Refinements within a bucket leave the result unchanged; moves across
+buckets do not.
 
 \paragraph{Positive and signed changes.}
-The bounded shares in equation \eqref{eq:borrower_composition} describe the
-composition of positive bucket-level net changes. The signed vector
-\((\Delta L_t^k)_{k\in\mathcal K}\) retains contractions and reconciles to the
-change in the same included stock. A signed contribution ratio can fall
-outside \([0,1]\) when bucket changes have opposing signs, so it is not
-reported as a composition share. Keeping both objects prevents repayment or
-contraction from being silently reinterpreted as positive allocation.
+The positive vector describes expansion. The signed vector retains
+contractions and reconciles to the change in the included stock. Its ratios
+may fall outside \([0,1]\), so they are not reported as composition shares.
 
 \paragraph{Purpose and borrower-side comparators.}
 The BOJ consumer-purpose household stock is compared with
 \(L_t^{HHN}=B_t^{HH}-B_t^{HOU}\). It does not define the residual and is not an
-input to \(q_t\). Because it comes from the same provider and covers a narrower
-concept than household non-housing credit, it is a limited consistency check,
-not independent external purpose validation. Source-independent checks are
-also reported: MOF corporate statistics provide debtor-side convergent
-evidence for the manufacturing branch of NFB, and MLIT purpose-classified
-originations provide direct-purpose evidence for the household-housing branch
-of PROP. Neither source validates the full four-bucket composition.
-
-\paragraph{Alternative allocations.}
-The Werner-inspired and M\"uller--Verner mappings provide
-literature-anchored alternatives to the primary crosswalk, with construction
-placed differently in each. All are implemented on the same credit population
-and reported jointly. The current archive records these definitions, but it
-does not turn them into an externally time-stamped preregistration. The
-resulting coordinates are classification-robustness checks, not data-driven
-weights, confidence bounds, or attempts to recover unobserved purpose.
+input to \(q_t\). As a same-provider, narrower measure, it is only a
+consistency check. MOF and MLIT data provide independent checks for selected
+branches, not for the full four-bucket composition.
 
 \section{Empirical Application}\label{sec:application}
 
 \subsection{Same-population reconciliation and coverage}
 
-The primary four buckets exactly exhaust the included stock, and their signed
-changes exactly exhaust the change in that stock. The maximum recorded gap is
-zero at the precision reported in Table~\ref{tab:boj_bridge_validation}.
-Werner and M\"uller--Verner coordinates also exhaust this same population.
-This resolves a scale-composition population mismatch, but it is an accounting
-result rather than evidence about loan use.
+The primary and alternative mappings all exhaust the included stock. Their
+signed changes also exhaust the change in that stock.
 
 \IfFileExists{generated/theory_boj_bridge_validation.tex}{
 \input{generated/theory_boj_bridge_validation.tex}
@@ -372,47 +319,27 @@ Run \texttt{python scripts/18\_boj\_bridge\_validation.py} to populate
 \texttt{tex/generated/theory\_boj\_bridge\_validation.tex}.
 }
 
-The included stock has a median 94.5\% coverage ratio relative to the official
-total; the explicit local-government exclusion accounts for a median 5.5\%,
-and the scope identity has zero maximum gap. Within published residual NFB,
-detailed NFB industries account for 94.3\% at the median, the disclosed
-overseas-linked component for 5.7\%, and the unresolved component for 0.001\%.
-Their decomposition identity also has zero maximum gap. These readouts keep
-coverage, geography, and the unexplained residual visible instead of treating
-published NFB as a purely domestic industry aggregate.
+The included stock covers a median 94.5\% of the official total; the explicit
+local-government exclusion accounts for 5.5\%. Within residual NFB, detailed
+industries account for 94.3\% at the median, the overseas-linked component for
+5.7\%, and the unresolved component for 0.001\%. Both accounting identities
+have zero maximum gap at the reported precision.
 
 \subsubsection{Positive and net changes}
 
-The positive-flow vector and the net-change vector are retained as distinct
-objects. Taking the positive part after within-bucket aggregation prevents
-finer publication detail from mechanically increasing a bucket's measured
-flow. The four positive coordinates share one denominator and sum to one to
-the precision reported. Net changes preserve contractions and exactly
-reconcile to the included stock change; they are not forced into bounded
-shares. The primary four-quarter vector is available for 64 of 67 valid
-within-taxonomy changes, beginning in 2010Q2. The three unavailable endpoints
-reflect the rolling construction and source availability, not an inferred
-borrower state.
+The positive coordinates sum to one, while signed changes reconcile to the
+included stock change. The four-quarter vector is available for 64 of 67 valid
+within-taxonomy changes, beginning in 2010Q2. The other endpoints are lost to
+the rolling window and source availability.
 
 \subsubsection{Literature-anchored mappings and limited validation}
-
-Replacing a private classification with a published primary crosswalk and
-literature-anchored robustness mappings reduces discretion but does not remove
-taxonomy uncertainty. Construction is the clearest test: the three
-literature-based placements differ even though the underlying BOJ population
-is fixed. The appropriate robustness
-claim is therefore that results can be compared under these disclosed
-partitions, not that one taxonomy identifies the true economic destination.
 
 The household non-housing residual is non-negative in every reported row and
 its stock identity has zero maximum gap. Its correlation with the narrower BOJ
 consumer-purpose stock is 0.904 over 67 paired observations, with a median
-absolute stock gap of 35,947 in units of JPY 100 million. This is consistent
-with a related household-credit component, but level correlation from the same
-provider is not source-independent purpose validation. The stronger
-destination claim therefore remains unsupported. Table
-\ref{tab:external_partial_validation} adds partial source-independent evidence
-without upgrading that claim.
+absolute stock gap of 35,947 in units of JPY 100 million. As both series come
+from the BOJ and cover different concepts, this is a consistency check only.
+Table~\ref{tab:external_partial_validation} adds selected independent checks.
 
 \subsection{Use example: pseudo-OOS loss comparison}
 
@@ -429,19 +356,12 @@ financial-circulation coordinate, or the M\"uller--Verner non-tradable
 coordinate. Thus Table~\ref{tab:destination_oos_incremental} uses the bridge
 without treating the three classifications as interchangeable.
 
-The design uses current-vintage data with assumed fixed release lags and does not
-reconstruct historical vintages. Labels whose forward outcomes are not
-realised by a forecast origin are purged. Predictors are standardised within
-each expanding training window. The moving-block bootstrap uses a block length
-equal to the horizon and 2,000 fixed-seed replications. Its interval is for the
-mean difference in standardised squared-error loss, not for the difference in
-RMSE.
-
-The taxonomy, candidate feature, baseline, horizons, and minimum training size
-are fixed before each outcome comparison. At every forecast origin, fitting and
-standardisation use the training window only. A specification changed after its
-holdout loss is inspected is a new model version and requires later data; the
-same holdout cannot be reused as validation.
+The design uses current-vintage data and fixed release lags; historical
+vintages are not reconstructed. Unavailable forward outcomes are purged, and
+predictors are standardised within each expanding training window. The
+moving-block bootstrap uses a block length equal to the horizon and 2,000
+fixed-seed replications. Its interval covers the mean difference in
+standardised squared-error loss, not the difference in RMSE.
 
 \IfFileExists{generated/theory_destination_oos_incremental.tex}{
 \input{generated/theory_destination_oos_incremental.tex}
@@ -450,17 +370,12 @@ Run \texttt{python scripts/19\_destination\_oos\_incremental.py} to populate
 \texttt{tex/generated/theory\_destination\_oos\_incremental.tex}.
 }
 
-Table~\ref{tab:destination_oos_incremental} is an illustration of how a
-borrower-composition coordinate can be added to a scale-only benchmark. It is
-not construct validation, a causal design, or a forecasting contribution. All
-six main-table loss differentials are positive, so every displayed
-composition-augmented model has worse point loss than the matched-stock
-baseline. At four quarters, the primary and Werner intervals include zero,
-whereas the M\"uller--Verner interval is above zero; at eight quarters, all
-three intervals are above zero. The short post-break sample, overlapping
-horizons, current-vintage inputs, and conditional bootstrap intervals preclude
-a claim of incremental predictability. The single negative point differential
-appears only in the Appendix and its interval includes zero.
+Five of the six main-table loss differentials are positive. The four-quarter
+primary estimate is negative, but its interval includes zero. The Werner
+four-quarter interval also includes zero, whereas the M\"uller--Verner interval
+is above zero; all three eight-quarter intervals are above zero. The present
+sample therefore gives no reliable evidence that composition improves the
+forecast.
 
 \subsection{Partial external validation}
 
@@ -474,28 +389,21 @@ Run \texttt{python scripts/23\_external\_purpose\_validation.py} to populate
 The MOF comparison uses four-quarter changes in manufacturing corporations'
 short- and long-term bank borrowing and BOJ manufacturing loan stocks over
 2010Q2--2026Q1. Pearson correlation is 0.735, Spearman correlation is 0.792,
-and change directions agree in 70.3\% of 64 common observations. These are
-borrower-side convergence statistics across non-identical populations; they
-do not validate purpose or the full NFB bucket. The MLIT FY2024 survey directly
-classifies individual housing-loan originations: new and existing acquisition
-account for 93.5\%, refinancing 6.4\%, and apartment-loan originations total
-JPY 3.82 trillion. This validates the availability of a housing-purpose margin
-for the household-housing branch of PROP, not corporate real-estate purpose or
-quarterly BOJ stock changes \citep{MOFCorporateStatistics,MLITHousingSurvey}.
+and change directions agree in 70.3\% of 64 common observations. The MLIT
+FY2024 survey classifies individual housing-loan originations: new and existing
+acquisition account for 93.5\%, refinancing 6.4\%, and apartment-loan
+originations total JPY 3.82 trillion. These sources support selected branches,
+but their populations do not match the full BOJ measure
+\citep{MOFCorporateStatistics,MLITHousingSurvey}.
 
 \subsection{Implications for data design}
 
-A destination or purpose measure would require gross originations classified
-jointly by borrower and use, separately reporting repayments, write-offs,
-refinancing, and reclassifications. It would also require stable taxonomies,
-revision vintages, and reconciliation from detailed cells to a published
-aggregate. Source-independent validation would additionally require
-purpose-coded data matched as closely as possible to the same lender,
-instrument, borrower, and timing population. Until such data are assembled, a
-borrower-composition release should ship with its literature source, code map,
-common start, aggregation order, positive and net versions, residual
-decomposition, and jointly reported literature-anchored alternatives. Those
-items form the transferable measurement protocol of this paper.
+A purpose measure would need gross originations classified by both borrower
+and use, with repayments, write-offs, and refinancing reported separately.
+Stable taxonomies, data vintages, and reconciliation to a published aggregate
+would also be needed. Until then, borrower-composition releases should retain
+their source mapping, positive and net versions, residual accounting, and
+alternative classifications.
 
 \section{Limits}
 
@@ -508,36 +416,25 @@ The measure has clear boundaries:
   \item Granularity invariance holds for refinements within a fixed bucket, not
         for moving a sector between reported mappings; construction makes
         this dependence visible.
-  \item Published residual NFB includes an overseas-linked component and a
-        small unresolved component; both are disclosed but not independently
-        classified.
-  \item The consumer-purpose comparator is narrower than household
-        non-housing credit and is not source-independent; MOF and MLIT evidence
-        validates only selected branches under non-identical populations.
-  \item Assumed fixed release lags do not remove look-ahead from historical data
-        revisions.
-  \item The application sample is too short for confirmatory predictive or
-        causal inference.
+  \item Residual NFB includes an overseas-linked component and a small
+        unresolved component. The external sources cover only selected
+        branches under different populations.
+  \item Fixed release lags do not remove look-ahead from historical revisions,
+        and the application sample is too short for predictive or causal
+        inference.
 \end{itemize}
 
 \section{Conclusions}
 
-This paper shows what can and cannot be measured from Japanese sectoral loan
-stocks. The primary four-bucket crosswalk produces a reproducible
-borrower-composition measure over the same population used for credit scale.
-Two literature-based alternatives make the treatment of construction visible
-without changing that population. Exact accounting identities, coverage and
-residual checks, and separate positive and net changes support the measurement
-bridge. They do not identify loan purpose or final expenditure.
+The four-bucket crosswalk turns Japanese sectoral loan stocks into a
+reproducible borrower-composition measure matched to credit scale. Published
+alternatives show how the result changes when construction is classified
+differently, while the accounting and coverage checks make the mapping
+auditable.
 
-The external data support only selected parts of the mapping. The forecasting
-application also provides no evidence of incremental predictability: every
-main-table composition model has higher point loss than the matched
-credit-stock baseline. The one lower-loss Appendix result has an interval that
-includes zero. The value of the bridge is therefore practical and limited. It
-turns an aggregate loan stock into an auditable borrower-composition measure
-and states what additional data would be needed for stronger purpose or
-forecasting claims.
+The external checks remain partial, and the forecasting application shows no
+reliable improvement over the matched baseline. The result is a measurement
+bridge, not a measure of loan purpose or a forecasting result.
 
 \begingroup
 \small
@@ -564,16 +461,14 @@ authors reviewed the output and are responsible for the article.
 \section*{Appendix A: Reproducibility and Data Sources}
 
 \paragraph{Reproducibility.}
-The anonymised review archive regenerates the BOJ mapping, validation audits,
-and pseudo-OOS outputs from the supplied processed inputs. It hashes the inputs
-and compares regenerated files byte-for-byte with expected snapshots. The
-archive does not refetch the BOJ source data.
+The anonymised review archive regenerates the reported outputs from processed
+inputs and checks them against expected snapshots. It does not refetch the BOJ
+source data.
 
 \paragraph{Detailed mapping.}
-The anonymous replication archive supplies the code-level map, series labels,
-release timing, common-availability information, and all alternative
-assignments. Table~\ref{tab:boj_primary_mapping_detail} records the detailed
-published-taxonomy crosswalk and its explicit residuals.
+The archive supplies the code-level map, series labels, timing information,
+and alternative assignments. Table~\ref{tab:boj_primary_mapping_detail}
+records the detailed crosswalk and its residuals.
 
 \IfFileExists{generated/theory_boj_primary_mapping.tex}{
 \input{generated/theory_boj_primary_mapping.tex}
@@ -587,7 +482,8 @@ Run \texttt{python scripts/18\_boj\_bridge\_validation.py} to populate
 
 The earlier G/B/E specification is retained only for reproducibility and
 archive compatibility. It is not the primary classification and is not used to
-select the literature-anchored mappings reported in the main text.
+select the literature-anchored mappings reported in the main text. The full
+code-level map remains in the replication archive.
 
 \IfFileExists{generated/theory_boj_bridge_mapping.tex}{
 \input{generated/theory_boj_bridge_mapping.tex}
@@ -603,17 +499,10 @@ Run \texttt{python scripts/18\_boj\_bridge\_validation.py} to populate
 A separate literature links broad credit and leverage expansions to asset-price
 cycles and financial instability
 \citep{BorioLowe2002,JordaSchularickTaylor2015,SchularickTaylor2012}. The
-borrower groups used here do not identify asset-directed lending. The
-balance-sheet outcome below therefore records an earlier application question
-without testing or supporting an asset-boom hypothesis.
-
-The auxiliary specification applies the same matched-scale design to forward
-changes in the BOJ balance sheet. It is retained to disclose the previously
-examined use case, not as evidence that the borrower groups identify asset-
-directed lending. The only negative point-loss differential is the
-M\"uller--Verner four-quarter row, \(-0.097\), with a 95\% interval of
-\([-0.223,0.010]\); the interval crosses zero. Every other row has a positive
-point-loss differential.
+borrower groups used here do not identify asset-directed lending, so the BOJ
+balance-sheet outcome is retained only as an earlier use case. Only the
+M\"uller--Verner eight-quarter estimate is negative, and its interval includes
+zero. Every other estimate is positive.
 
 \IfFileExists{generated/theory_destination_oos_asset_auxiliary.tex}{
 \input{generated/theory_destination_oos_asset_auxiliary.tex}
