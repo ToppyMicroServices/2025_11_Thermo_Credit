@@ -1,5 +1,10 @@
 # Thermo Credit
 
+Part of [mAI Economy](https://www.toppymicros.com/Economy_AI_ERA.html), a research
+program on credit creation and AI-assisted window guidance. The
+[research plan](docs/mai_research_program.md) defines the next model and
+experiments. The current measurement results below do not validate guidance.
+
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17563220.svg)](https://doi.org/10.5281/zenodo.17563220)
 
 Bank credit can grow while its borrower mix changes. Thermo Credit separates

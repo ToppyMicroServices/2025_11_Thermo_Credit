@@ -1,5 +1,7 @@
 # Thermo Credit
 
+[mAI Economy](https://www.toppymicros.com/Economy_AI_ERA_ja.html)は、信用創造を基礎に金融を捉え直し、AI版の窓口指導を研究する計画です。Thermo Creditはその測定基盤を担います。[研究計画](docs/mai_research_program.md)に次のモデルと比較実験をまとめました。以下の測定結果は、信用誘導の有効性を検証したものではありません。
+
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17563220.svg)](https://doi.org/10.5281/zenodo.17563220)
 
 銀行貸出は、総額が同じでも、どの部門が借り手になるかによって意味が変わります。Thermo Creditは「貸出の規模」と「借り手構成」を分けて測り、誰でも検証・再計算できる形で公開する研究プロジェクトです。
