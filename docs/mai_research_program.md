@@ -3,6 +3,8 @@
 Status: research plan, 8 September 2026. The closed-loop simulator described
 here is not yet implemented. Existing measurement code remains unchanged.
 
+This is one Toppy research theme, not a replacement for its other projects.
+
 ## Question
 
 How do credit creation and its uses shape production, asset transactions, and
@@ -18,6 +20,14 @@ that a requested allocation becomes actual lending.
 Thermo Credit supplies a candidate measurement and state representation within
 this program. Its current borrower-composition paper is one empirical input,
 not the complete theory of credit or a validation of guidance.
+
+The credit-use distinction draws on Richard A. Werner's Quantity Theory of
+Credit: separate credit for GDP transactions from credit for existing-asset
+transactions [Werner, 2012](https://doi.org/10.1016/j.irfa.2012.06.002).
+GDP-related credit is not synonymous with productive investment. The model
+must retain the distinction between consumption and capacity-building uses.
+Thermo-Credit's state representation and the AI controller are proposed
+extensions, not results established in Werner's work.
 
 ## The model to build first
 
@@ -164,6 +174,8 @@ identify bank responses to a new policy. Existing empirical results and the
 
 ## Starting references
 
+- Werner (2012), [Towards a new research programme on "banking and the economy"](https://doi.org/10.1016/j.irfa.2012.06.002): Quantity Theory of Credit and the economic uses of credit.
+- Werner (2014), [Can banks individually create money out of nothing?](https://doi.org/10.1016/j.irfa.2014.07.015): a study of lending and deposit creation using a cooperating bank's accounting records.
 - Jakab and Kumhof (2015), [Banks are not intermediaries of loanable funds](https://www.bankofengland.co.uk/working-paper/2015/banks-are-not-intermediaries-of-loanable-funds-and-why-this-matters): modeling bank financing through money creation.
 - Fukumoto et al. (2010), [Effectiveness of Window Guidance and Financial Environment](https://www.boj.or.jp/en/research/wps_rev/rev_2010/rev10e04.htm): Japan's experience and the limits of guidance as alternative funding channels expanded.
 - [Current measurement definitions](definitions.md) and [MCP interface](thermo_credit_mcp_spec.md): existing implementation boundaries.
