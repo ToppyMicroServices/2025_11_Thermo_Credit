@@ -111,6 +111,10 @@ def test_release_description_replaces_stale_version_text():
     assert "Version v2.3.0" in description
     assert "borrower-composition measure" in description
     assert "not loan purpose" in description
+    assert "four-quarter shares" in description
+    assert "Current-vintage pseudo-out-of-sample" in description
+    assert "do not establish forecasting gains" in description
+    assert "strongest current result" not in description
     assert "v2.1.7" not in description
 
 

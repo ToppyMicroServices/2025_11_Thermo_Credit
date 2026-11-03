@@ -233,16 +233,17 @@ def _release_description(tag: str, release_url: str) -> str:
             f'<a href="{safe_release_url}">GitHub release {version}</a>, '
         )
     return (
-        "<p><strong>Thermo Credit separates credit scale from borrower "
-        "composition and publishes the result as reproducible research.</strong></p>"
-        "<p>The strongest current result is a four-bucket Japanese "
-        "borrower-composition measure built from Bank of Japan sectoral loan "
-        "stocks. It measures the sector of the borrower, not loan purpose or "
-        "final expenditure. Euro-area and US panels use coarser proxies and do "
-        "not provide cross-country validation.</p>"
-        "<p>The thermodynamic diagnostics remain experimental. Current "
-        "pseudo-out-of-sample tests do not establish forecasting gains over a "
-        "matched credit-stock baseline.</p>"
+        "<p>This paper presents a reproducible borrower-composition measure "
+        "from Bank of Japan sectoral loan stocks. A published four-bucket "
+        "crosswalk groups the stocks before positive changes are calculated. "
+        "The resulting four-quarter shares describe borrower composition, "
+        "not loan purpose or gross originations.</p>"
+        "<p>Independent data provide partial checks for manufacturing and "
+        "household housing. Current-vintage pseudo-out-of-sample tests do not "
+        "establish forecasting gains over a matched credit-stock baseline.</p>"
+        "<p>The accompanying Euro-area and US dashboard panels use coarser "
+        "proxies and do not provide cross-country validation. The "
+        "thermodynamic diagnostics remain experimental.</p>"
         f'<p>Version {version}: {release_link}'
         f'<a href="{PROJECT_URL}">source and methods</a>, and '
         f'<a href="{DASHBOARD_URL}">interactive dashboard</a>.</p>'

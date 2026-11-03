@@ -115,7 +115,7 @@ def _build_page_header(style_block: str, logo_uri: str, month_key: str = "") -> 
         '<span class="page-kicker">Thermo Credit / Reproducible research</span>',
         '<h1>Credit scale is only half the story.</h1>',
         '<p class="page-subtitle">Compare lending and borrower composition over time. '
-        'Japan is the primary measure; the euro-area and US panels use broader proxies.</p>',
+        'Japan provides the primary measure; the euro-area and US panels use broader proxies.</p>',
         '<nav class="hero-actions" aria-label="Project links">',
         '<a class="hero-button primary" href="#dashboard-tabs">Explore the charts</a>',
         f'<a class="hero-button" href="{PAPER_URL}">Read the paper</a>',
@@ -180,7 +180,7 @@ def _build_compare_context(region_ctxs: List[Dict[str, Any]]) -> Optional[Dict[s
         except Exception:
             latest_dt_str = ""
         headline = (
-            f"<p><strong>At the latest date</strong>{' (' + latest_dt_str + ')' if latest_dt_str else ''}, this section compares only within-region historical position. Percentiles and ranks are computed inside each regional history; raw indicator levels are not compared across JP/EU/US.</p>"
+            f"<p><strong>At the latest date</strong>{' (' + latest_dt_str + ')' if latest_dt_str else ''}, percentiles and ranks show each region's position within its own history. Raw indicator levels are not compared across JP/EU/US.</p>"
         )
         snapshot = latest_df.to_html(index=False, border=0, classes="mini", float_format=lambda x: f"{x:.4g}")
         highlight_rows: List[str] = []
@@ -196,7 +196,7 @@ def _build_compare_context(region_ctxs: List[Dict[str, Any]]) -> Optional[Dict[s
                 vals = pd.to_numeric(latest_df[pct_col], errors="coerce")
                 if vals.notna().any():
                     row = latest_df.loc[vals.idxmax()]
-                    detail = f"within-region pctile = {float(row[pct_col]):.1f}"
+                    detail = f"within-region percentile = {float(row[pct_col]):.1f}"
                     if rank_col in latest_df.columns and pd.notna(row.get(rank_col)):
                         detail += f", rank {row.get(rank_col)}"
                     highlight_rows.append(_summary_card(label, str(row.get("Region", "")), detail))
@@ -279,7 +279,7 @@ def _summary_card(label: str, value: str, detail: str, tone: str = "neutral") ->
 def _summary_cards_html(items: List[str]) -> str:
     details = {
         "Latest date": "Most recent observation in this panel.",
-        "S_M": "Dispersion and allocation spread.",
+        "S_M": "Credit scale times allocation dispersion.",
         "T_L": "Liquidity state index.",
         "Loop area": "Streaming open-path area in the policy-credit state plane.",
         "U": "Internal-energy-like model gauge.",
@@ -380,9 +380,9 @@ def _build_coverage_summary(region_ctxs: List[Dict[str, Any]]) -> str:
         if lag_days <= 45:
             tone, label, note = "current", "Current", "Freshest panel."
         elif lag_days <= 365:
-            tone, label, note = "delayed", "Delayed", f"{lag_days} days lag."
+            tone, label, note = "delayed", "Delayed", f"{lag_days} days behind the freshest panel."
         else:
-            tone, label, note = "stale", "Stale", f"{lag_days} days lag."
+            tone, label, note = "stale", "Stale", f"{lag_days} days behind the freshest panel."
         cards.append(
             '<article class="coverage-card tone-' + tone + '">'
             '<div class="coverage-head">'
@@ -438,7 +438,7 @@ def _build_event_summary(region_ctxs: List[Dict[str, Any]]) -> str:
         )
     return (
         '<details class="event-summary"><summary>Reference events</summary>'
-        '<p class="note small">Event bands are used as reading context for the visible chart window.</p>'
+        '<p class="note small">Event bands provide context for the period shown.</p>'
         '<div class="event-grid">' + "".join(cards) + "</div></details>"
     )
 
@@ -571,7 +571,7 @@ def _build_freshness_summary(region_ctxs: List[Dict[str, Any]]) -> str:
     return (
         '<section class="freshness-panel" aria-label="Data freshness">'
         "<h2>Data freshness</h2>"
-        '<p class="note small">Latest available differs by region. Cross-region comparisons use each region\'s latest observation, not necessarily the same calendar month.</p>'
+        '<p class="note small">Comparisons use each region\'s latest available observation. These may come from different calendar months.</p>'
         '<div class="freshness-grid">' + "".join(cards) + "</div>"
         f'<p class="freshness-meta">Check date: {checked_at} UTC</p>'
         "</section>"
@@ -983,14 +983,14 @@ def _build_region_context(
 
     parts: List[str] = []
     if sm_bucket and tl_bucket:
-        parts.append(f"{label} sits in a <strong>{sm_bucket}-dispersion, {tl_bucket}-liquidity</strong> regime.")
+        parts.append(f"In {label}, <strong>dispersion is {sm_bucket} and liquidity is {tl_bucket}</strong>.")
     elif sm_bucket or tl_bucket:
         if sm_bucket:
             parts.append(f"Dispersion is <strong>{sm_bucket}</strong>.")
         if tl_bucket:
             parts.append(f"Liquidity state is <strong>{tl_bucket}</strong>.")
     if la_desc:
-        parts.append(f"Streaming loop area is <strong>{la_desc}</strong>; this describes the current open-path geometry.")
+        parts.append(f"Streaming loop area is <strong>{la_desc}</strong>, describing the current open-path geometry.")
     if xc_desc:
         parts.append(f"X<sub>C</sub> is <strong>{xc_desc}</strong>.")
     comment_html = ("<p>" + " ".join(parts) + "</p>") if parts else ""
@@ -1064,7 +1064,7 @@ def _build_region_context(
             diagnostics_html += f"<h2>Diagnostics – Maxwell-like (window={effective_window})</h2>" + _table_scroll(diag_subset.to_html(index=False, border=0, classes="mini", escape=True))
             if out_of_spec_ranges:
                 spans = ", ".join([f"{s.strftime('%Y-%m-%d')} → {e.strftime('%Y-%m-%d')}" for s, e in out_of_spec_ranges])
-                diagnostics_html += f"<p class=\"note\"><strong>Out-of-spec / crisis / proxy invalid zone</strong>: {html_lib.escape(spans)}</p>"
+                diagnostics_html += f"<p class=\"note\"><strong>Model diagnostic flags (not crisis classifications)</strong>: {html_lib.escape(spans)}</p>"
     elif has_thermo and diag_window:
         diagnostics_html += f"<h2>Diagnostics – Maxwell-like</h2><p class=\"note\">Insufficient data (requested window={diag_window}).</p>"
 
@@ -1086,7 +1086,7 @@ def _build_region_context(
             "Its sign is not a validated safety margin, forecast, or policy threshold."
         )
         if suppress_xc_numeric:
-            interpret_notes += " Numeric table suppressed for X_C (estimation logic under review)."
+            interpret_notes += " X_C values are omitted from the table while the estimation logic is under review."
         interpret_notes += "</p>"
 
     # Fold advanced diagnostics by default
@@ -1335,7 +1335,7 @@ def main() -> None:
                     "<figure><img src='fig3.png' alt='X_C' width='100%'/><figcaption>X_C</figcaption></figure>"
                     + extra_png + "</noscript>")
     else:
-        noscript = "<noscript><p>No static images this run.</p></noscript>"
+        noscript = "<noscript><p>No static images are available for this run.</p></noscript>"
 
     logo_uri = _logo_data_uri()
     # Brand colors can be overridden by env vars

@@ -584,7 +584,7 @@ def render_primary_mapping_table(frame: pd.DataFrame, metadata: Mapping[str, Any
     lines = [
         r"\begin{table}[htbp]",
         r"  \centering",
-        r"  \caption{Published-taxonomy BOJ crosswalk and explicit residuals.}",
+        r"  \caption{BOJ mapping to the published taxonomy, including residuals.}",
         r"  \label{tab:boj_primary_mapping_detail}",
         r"  \scriptsize",
         r"  \setlength{\tabcolsep}{3pt}",
@@ -608,7 +608,7 @@ def render_primary_mapping_table(frame: pd.DataFrame, metadata: Mapping[str, Any
         [
             r"    \bottomrule",
             r"  \end{tabular}}",
-            r"  \par\smallskip\raggedright\footnotesize The four primary flow coordinates share one included population. Local government is outside that population. Overseas-linked and unresolved amounts are disclosed as components absorbed by the published NFB residual, not silently discarded.",
+            r"  \par\smallskip\raggedright\footnotesize The four primary flow coordinates use the same loan population, excluding local government. Overseas-linked and unresolved amounts remain in the published NFB residual and are shown separately.",
             r"\end{table}",
         ]
     )
@@ -632,7 +632,7 @@ def render_taxonomy_robustness_table(metadata: Mapping[str, Any]) -> str:
     lines = [
         r"\begin{table}[htbp]",
         r"  \centering",
-        r"  \caption{Literature-anchored credit-taxonomy placements.}",
+        r"  \caption{Literature-based credit classifications and the legacy grouping.}",
         r"  \label{tab:boj_taxonomy_robustness}",
         r"  \scriptsize",
         r"  \setlength{\tabcolsep}{3pt}",

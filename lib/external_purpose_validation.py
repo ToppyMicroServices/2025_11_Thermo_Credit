@@ -255,7 +255,7 @@ def validation_rows(summary: Mapping[str, Any]) -> list[dict[str, str]]:
         {
             "source": "MOF corporate survey",
             "branch": "NFB: manufacturing",
-            "estimand": "Correlation of debtor-side and BOJ lender-side 4Q changes in manufacturing borrowing stocks.",
+            "estimand": "Correlation between borrower-reported and BOJ lender-reported four-quarter changes in manufacturing loan stocks.",
             "period_readout": (
                 f"{mof['common_period']}; N={mof['n_common_changes']}; "
                 f"Pearson={_format_float(mof['pearson_correlation'])}; "
@@ -263,8 +263,8 @@ def validation_rows(summary: Mapping[str, Any]) -> list[dict[str, str]]:
                 f"direction={_format_pct(mof['direction_agreement'])}"
             ),
             "boundary": (
-                "Borrower-side convergent evidence only; populations and lender "
-                "coverage differ, and no loan purpose is observed."
+                "An independent borrower-side check. Populations and lender "
+                "coverage differ; neither series identifies loan purpose."
             ),
         },
         {
@@ -309,7 +309,7 @@ def render_validation_table(summary: Mapping[str, Any]) -> str:
     lines = [
         r"\begin{table}[htbp]",
         r"  \centering",
-        r"  \caption{Partial external validation of published-bucket branches.}",
+        r"  \caption{Partial external checks of manufacturing and housing credit.}",
         r"  \label{tab:external_partial_validation}",
         r"  \footnotesize",
         r"  \setlength{\tabcolsep}{3pt}",
@@ -317,7 +317,7 @@ def render_validation_table(summary: Mapping[str, Any]) -> str:
         r"  \resizebox{\textwidth}{!}{%",
         r"  \begin{tabular}{@{}p{0.15\textwidth}p{0.13\textwidth}p{0.25\textwidth}p{0.22\textwidth}p{0.25\textwidth}@{}}",
         r"    \toprule",
-        r"    External source & Primary branch & Estimand & Period and readout & Claim boundary \\",
+        r"    External source & Primary branch & Quantity compared & Period and results & Limits \\",
         r"    \midrule",
     ]
     for row in rows:
@@ -339,7 +339,7 @@ def render_validation_table(summary: Mapping[str, Any]) -> str:
         [
             r"    \bottomrule",
             r"  \end{tabular}}",
-            r"  \par\smallskip\raggedright\footnotesize MOF uses four-quarter differences to reduce sensitivity to its annual April--June sample replacement; this does not make the two credit populations identical. MLIT is annual origination evidence and is therefore not correlated with the quarterly stock-change bridge.",
+            r"  \par\smallskip\raggedright\footnotesize MOF uses four-quarter differences to reduce sensitivity to its annual April--June sample replacement; this does not make the two credit populations identical. MLIT reports annual originations. We do not calculate a correlation with the quarterly stock-change measure.",
             r"\end{table}",
         ]
     )

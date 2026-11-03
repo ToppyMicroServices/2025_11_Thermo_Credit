@@ -8,8 +8,8 @@ experiments. The current measurement results below do not validate guidance.
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.17563220.svg)](https://doi.org/10.5281/zenodo.17563220)
 
 Bank credit can grow while its borrower mix changes. Thermo Credit separates
-these two movements and publishes the result as a research system that anyone
-can inspect and recalculate.
+these two movements and makes the results available for anyone to inspect and
+recalculate.
 
 The project combines a reproducible Japanese borrower-composition measure with
 exploratory panels for the euro area and the United States. It includes the
@@ -30,7 +30,7 @@ commands below reproduce the public outputs.
 | --- | --- |
 | Can borrower composition be measured from Japanese sectoral loan stocks? | Yes, as a reproducible four-bucket measure with explicit coverage and accounting checks. |
 | Does `q_t` measure where a loan was ultimately spent? | No. It is the four-quarter non-financial-business coordinate of borrower composition. |
-| Are the EU and US panels cross-country validation? | No. They are coarser proxies used to test whether the calculation schema can travel. |
+| Are the EU and US panels cross-country validation? | No. They are coarser proxies used to test whether the same calculation framework can be used elsewhere. |
 | Does borrower composition improve forecasting? | Not in the current pseudo-out-of-sample tests against the matched credit-stock baseline. |
 | Are the thermodynamic indicators decision thresholds? | No. They remain experimental descriptive transformations. |
 
@@ -59,8 +59,8 @@ still generated.
 
 ## Machine-facing interfaces
 
-Build the versioned static JSON API, or call the same evidence-labelled core
-through the CLI:
+Build the versioned static JSON API, or use the CLI to run the same
+calculations with evidence labels:
 
 ```bash
 python scripts/28_build_public_api.py
@@ -113,7 +113,7 @@ Source roles and units are listed in `data/data_dictionary.csv` and
 - `site/calibration_holdout_test.csv`: train/holdout test for calibrated `X_C`.
 - `site/submission_readiness.csv`: explicit research gates and blockers.
 - `site/api/v1/`: versioned static definitions, latest states, and descriptive cases.
-- `schemas/thermo_credit/`: JSON contracts for the MCP and CLI tool surface.
+- `schemas/thermo_credit/`: JSON contracts for the MCP and CLI tools.
 - `prospective/`: frozen protocol and append-only BOJ vintage archive tools.
 - `replication/`: reproducibility manifest and logs.
 
@@ -122,7 +122,7 @@ ignored by Git.
 
 ## Paper and figures
 
-Regenerate the empirical tables and modern Matplotlib/Seaborn figures with:
+Regenerate the empirical tables and Matplotlib/Seaborn figures with:
 
 ```bash
 python scripts/18_boj_bridge_validation.py

@@ -10,17 +10,17 @@ These small extracts support two deliberately limited checks.
 - `mlit_private_housing_2024.csv` contains published FY2024 aggregates from the
   FY2025 Ministry of Land, Infrastructure, Transport and Tourism survey of
   private housing loans. The purpose shares are reported by institutions that
-  supplied all three purpose categories. It directly validates only that the
-  observed housing-loan branch is purpose-coded as housing acquisition or
-  refinancing; it does not validate corporate real-estate loans or the full
+  supplied all three purpose categories. This extract directly validates only
+  that the observed housing-loan branch is purpose-coded as housing acquisition
+  or refinancing; it does not validate corporate real-estate loans or the full
   BOJ PROP bucket.
 
-The original MOF workbook and MLIT PDF are not committed because the former is
-an in-place, periodically revised historical workbook and the latter is much
-larger than the extracted table. `metadata.json` records their official URLs,
-retrieval date, source checksums, exact extraction locations, populations, and
-claim boundaries. A changed upstream checksum means that the official file has
-changed and the committed extract must not be silently treated as current.
+The original MOF workbook is not committed because it is periodically revised
+in place. The MLIT PDF is not committed because it is much larger than the
+extracted table. `metadata.json` records their official URLs, retrieval date,
+source checksums, exact extraction locations, populations, and claim boundaries.
+A changed upstream checksum means that the official file has changed and the
+committed extract must not be silently treated as current.
 
 The MOF validation uses four-quarter differences. This reduces sensitivity to
 the April--June sample replacement described by MOF, but it does not eliminate

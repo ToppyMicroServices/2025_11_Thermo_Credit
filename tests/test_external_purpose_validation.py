@@ -108,7 +108,8 @@ def test_repository_pipeline_keeps_partial_claim_boundary() -> None:
     assert summary["mof_manufacturing"]["n_common_changes"] > 0
     assert summary["mof_manufacturing"]["purpose_status"] == "not purpose validation"
     assert summary["mlit_private_housing"]["status"] == "published_cross_section"
-    assert "Partial external validation" in table
+    assert "Partial external checks of manufacturing and housing credit" in table
     assert "NFB: manufacturing" in table
     assert "PROP: household housing" in table
     assert "does not validate corporate real-estate loans" in table
+    assert "neither series identifies loan purpose" in table

@@ -2,10 +2,10 @@
 
 Status: research interface, version 1
 
-The MCP server makes the current measurement layer callable. It does not turn
-Thermo Credit into a validated forecast or make the server discoverable by
-itself. The same calculations are available through the JSON CLI and the
-versioned static API.
+The MCP server provides access to the current measurement calculations. It
+does not validate Thermo Credit as a forecast, nor does it make itself
+discoverable. The same calculations are available through the JSON CLI and
+the versioned static API.
 
 ## Evidence rule
 
@@ -25,8 +25,8 @@ appropriate.
 - `thermo-credit://public-api-manifest`
 - `thermo-credit://case-studies`
 
-The last two resources require `python scripts/28_build_public_api.py` to have
-run in the current checkout.
+To use the last two resources, first run `python scripts/28_build_public_api.py`
+in the current checkout.
 
 ## Tools
 
@@ -58,7 +58,7 @@ python scripts/thermo_credit_mcp_server.py --transport streamable-http
 The default endpoint is `/mcp`. Public deployment, authentication, rate
 limits, logging, and availability are outside this repository's static Pages
 workflow. Streamable HTTP must not be exposed with sensitive inputs unless
-those controls are supplied by the deployment environment.
+the deployment environment provides those controls.
 
 ## Non-MCP access
 

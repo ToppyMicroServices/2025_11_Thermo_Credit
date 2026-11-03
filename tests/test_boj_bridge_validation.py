@@ -315,7 +315,8 @@ def test_published_taxonomy_tables_and_audits_keep_population_identities_visible
     assert "max |C_t-sum four buckets|=0.000000" in identity
     assert "max |included stock-sum four stocks|=0.000000" in identity
     assert "Literature-anchored BOJ credit-allocation crosswalk" in main_table
-    assert "Published-taxonomy BOJ crosswalk" in detail_table
+    assert "BOJ mapping to the published taxonomy, including residuals" in detail_table
+    assert "remain in the published NFB residual and are shown separately" in detail_table
     assert "not an externally time-stamped preregistration" in robustness_table
     assert len(robustness) == 4
     assert TAXONOMY_SELECTION_RULE["oos_results_used"] is False

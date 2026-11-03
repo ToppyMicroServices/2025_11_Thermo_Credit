@@ -40,3 +40,9 @@ def test_dashboard_takeaways_write_citation_ready_formats(tmp_path: Path) -> Non
     snippet = (output / "dashboard_takeaways.tex").read_text(encoding="utf-8")
     assert "generated/dashboard_takeaways.pdf" in snippet
     assert "fig:dashboard_takeaways" in snippet
+    svg = (output / "dashboard_takeaways.svg").read_text(encoding="utf-8")
+    assert "Top: raw allocation shares. Bottom:" in svg
+    assert "with a four-quarter rolling median." in svg
+    assert "JP measures borrower composition; EU/US use proxies." in svg
+    assert "Event bands mark timing." in svg
+    assert "region-specific scales and is not a forecast or policy threshold." in svg

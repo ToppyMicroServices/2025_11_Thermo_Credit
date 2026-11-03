@@ -25,14 +25,14 @@ REGION_SPECS: dict[str, dict[str, Any]] = {
         "files": ("indicators_eu.csv",),
         "evidence_class": "proxy",
         "allocation_semantics": "configured regional allocation proxy",
-        "claim_limit": "Schema-portability proxy; it is not validation of the Japanese measure.",
+        "claim_limit": "This proxy tests the schema in another region; it does not validate the Japanese measure.",
     },
     "us": {
         "label": "United States",
         "files": ("indicators_us.csv",),
         "evidence_class": "proxy",
         "allocation_semantics": "configured regional allocation proxy",
-        "claim_limit": "Schema-portability proxy; it is not validation of the Japanese measure.",
+        "claim_limit": "This proxy tests the schema in another region; it does not validate the Japanese measure.",
     },
 }
 PUBLIC_METRICS = (

@@ -1,8 +1,8 @@
 # Thermo Credit definitions
 
-This document separates variables that are observed in the current release from
-quantities that remain proxies, model diagnostics, or future latent states. The
-distinction is part of the claim, not a documentation detail.
+This document distinguishes observed variables from proxies, model diagnostics,
+and future latent states. These distinctions limit what the current release can
+claim.
 
 ## Current measurement layer
 
@@ -27,8 +27,8 @@ validation of the Japanese borrower-composition measure.
 
 ## Proposed structural layer
 
-These variables state the model we would like to estimate. The current data do
-not identify them directly.
+These variables describe the proposed structural model. The current data do not
+identify them directly.
 
 | Symbol | Meaning | Current status | Required evidence |
 | --- | --- | --- | --- |

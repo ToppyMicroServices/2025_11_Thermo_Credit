@@ -160,7 +160,7 @@ def build_dashboard_takeaways(
         top.text(
             0.99,
             0.08,
-            f"last {q_valid.iloc[-1]:.3f} ({frame.loc[q_last_index, 'date']:%Y-%m})",
+            f"latest {q_valid.iloc[-1]:.3f} ({frame.loc[q_last_index, 'date']:%Y-%m})",
             transform=top.transAxes,
             ha="right",
             fontsize=8,
@@ -175,7 +175,7 @@ def build_dashboard_takeaways(
         bottom.text(
             0.99,
             0.08,
-            f"last {x_valid.iloc[-1]:.3f} ({frame.loc[x_last_index, 'date']:%Y-%m})",
+            f"latest {x_valid.iloc[-1]:.3f} ({frame.loc[x_last_index, 'date']:%Y-%m})",
             transform=bottom.transAxes,
             ha="right",
             fontsize=8,
@@ -199,7 +199,7 @@ def build_dashboard_takeaways(
     figure.text(
         0.055,
         0.94,
-        "Raw allocation shares above; only $X_C$ uses a four-quarter rolling median below.",
+        "Top: raw allocation shares. Bottom: $X_C$ with a four-quarter rolling median.",
         ha="left",
         fontsize=10,
         color="#436579",
@@ -207,8 +207,8 @@ def build_dashboard_takeaways(
     figure.text(
         0.055,
         0.015,
-        "Evidence boundary: JP is a borrower-composition measurement; EU/US are proxies. "
-        "Event bands mark timing. $X_C$ scales are region-specific and are not forecasts or policy thresholds.",
+        "JP measures borrower composition; EU/US use proxies. Event bands mark timing. "
+        "$X_C$ has region-specific scales and is not a forecast or policy threshold.",
         ha="left",
         fontsize=8.5,
         color="#436579",

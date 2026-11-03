@@ -10,8 +10,8 @@ by the present repository. The current evidence and claim limits are defined in
 
 ## 1. Problem Statement
 
-Thermo Credit v2 is designed to explain how the destination of new credit
-changes the transformation of credit expansion into:
+Thermo Credit v2 aims to explain how the destination of new credit affects
+the way credit expansion translates into:
 
 - output and inflation pass-through,
 - asset-price acceleration,
@@ -19,7 +19,7 @@ changes the transformation of credit expansion into:
 
 The primary research question is:
 
-How does the partition of new credit between GDP-linked transactions and
+How does the split of new credit between GDP-linked transactions and
 existing-asset transactions change growth, prices, asset prices, and
 instability over time?
 
@@ -31,7 +31,7 @@ The model should stay focused on three use cases:
 
 ## 2. Proposed Minimal State Vector
 
-The baseline state vector is intentionally small.
+The baseline uses a small state vector.
 
 - `C_t`: new credit flow over period `t`
 - `q_t^use in [0, 1]`: proposed share of new credit flowing to GDP-linked transactions
@@ -100,8 +100,7 @@ Fallback when only an asset-price index is available:
 d_t^proxy = Delta log(A_t) / (C_t / Y_t^N)
 ```
 
-These are provisional quantities. They are useful because they can be
-estimated now and refined later.
+These provisional quantities can be estimated now and refined later.
 
 ## 4. State Dynamics And Irreversibility
 
@@ -127,7 +126,7 @@ label in an empirical model.
 
 ## 5. Testable Hypotheses
 
-Only a small number of falsifiable hypotheses should be carried at once.
+Test only a few falsifiable hypotheses at a time.
 
 - `H1`: lower `q_t` should predict asset-price acceleration before it predicts
   stronger real growth.
@@ -179,7 +178,7 @@ Recommended order:
 
 ## 7. Relation To Current Repo Outputs
 
-The current repo already computes a useful thermo-monitoring layer:
+The repository already computes these thermo-monitoring indicators:
 
 - `S_M`
 - `T_L`
@@ -189,7 +188,7 @@ The current repo already computes a useful thermo-monitoring layer:
 - `F_C`
 - `X_C`
 
-These should be retained, but repositioned as:
+Retain them as:
 
 - current thermo diagnostics,
 - candidate inputs into the future `S_t` block,
@@ -228,10 +227,10 @@ rates relative to simpler baselines.
 
 ## 9. Falsifiability
 
-The model should say clearly how it can fail.
+State clearly what would count as failure.
 
 - If the estimated `q_t` does not improve asset-price or fragility forecasts,
-  the partition is not pulling its weight.
+  the partition has not shown added value for those forecasts.
 - If separating `C_t^R` and `C_t^A` does not improve forecast performance over
   total credit alone, the two-bucket split is not empirically justified.
 - If adding `S_t` does not improve downside prediction, the thermo extension is
@@ -239,7 +238,8 @@ The model should say clearly how it can fail.
 
 ## 10. Repository Deliverables
 
-The model should be published as a recalculable package, not only as a report.
+Publish the model with what readers need to recalculate its results, not only
+as a report.
 
 Minimum deliverables:
 

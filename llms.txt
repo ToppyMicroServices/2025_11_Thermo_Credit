@@ -1,6 +1,6 @@
 # Thermo Credit LLM index
 
-Thermo Credit is a measurement-first research project. Read these files in
+Thermo Credit is a research project focused on measurement. Read these files in
 order:
 
 1. docs/definitions.md

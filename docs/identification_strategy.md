@@ -1,8 +1,8 @@
 # Identification strategy
 
-Thermo Credit uses a layered design because public credit statistics do not
-usually observe borrower, purpose, recipient, collateral, and final expenditure
-in one record. The current release does not fill those gaps by definition.
+Thermo Credit separates evidence into layers because public credit statistics
+do not usually record borrower, purpose, recipient, collateral, and final
+expenditure together. Definitions alone cannot fill these gaps.
 
 ## Evidence layers
 
@@ -34,11 +34,11 @@ The following checks are required before an empirical row is interpreted:
 ## What would identify credit use
 
 A stronger Real/Asset claim needs gross originations jointly classified by
-borrower and use. It must separately retain repayments, refinancing, write-offs,
-and reclassifications. Asset-use categories must distinguish new construction
-from purchases of existing property. A purpose-coded sample with a different
-population can provide partial triangulation, but it cannot validate the full
-BOJ bridge by itself.
+borrower and use. These data must separately record repayments, refinancing,
+write-offs, and reclassifications. Asset-use categories must distinguish new
+construction from purchases of existing property. A purpose-coded sample from
+a different population can provide a partial cross-check, but it cannot
+validate the full BOJ bridge by itself.
 
 If direct purpose data remain unavailable, a latent model may be attempted only
 after its measurement equation is fixed from training data and tested on a new
@@ -47,15 +47,18 @@ using those outcomes both to construct and validate it would be circular.
 
 ## Outcome design
 
-The current pseudo-OOS table is a bounded use example. At each forecast origin,
-preprocessing is fit on the expanding training window. The candidate adds one
-registered composition coordinate to matched-population credit growth. It is
-compared with the same-scale baseline on the same complete-case observations.
+The current pseudo-OOS table is a limited example of how to use the bridge. At
+each forecast origin, preprocessing is fit on the expanding training window.
+The candidate adds one registered composition coordinate to matched-population
+credit growth. It is compared with the same-scale baseline on the same
+complete-case observations.
 Current-vintage inputs and fixed release lags do not recreate historical data
 vintages, so this exercise is not prospective evidence.
 
-The current main-table candidates have worse point loss than the matched-stock
-baseline. That result is retained. A claim of incremental predictability would
+Five of the six current main-table estimates have higher point loss than the
+matched-stock baseline. The remaining estimate has lower point loss, but its
+interval includes zero. These results do not establish a reliable forecasting
+gain. A claim of incremental predictability would
 require an untouched prospective sequence or a genuinely new vintage under the
 frozen protocol.
 
@@ -63,5 +66,5 @@ frozen protocol.
 
 The borrower-composition claim may be upgraded to a loan-use claim only when a
 joint borrower-and-purpose source covers the same lender, instrument, timing,
-and population closely enough to support that mapping. Until then, there is not
-enough evidence to require or support the stronger interpretation.
+and population closely enough to support that mapping. Until then, the stronger
+interpretation is not supported.
