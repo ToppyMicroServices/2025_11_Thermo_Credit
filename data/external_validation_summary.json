@@ -73,9 +73,9 @@
   },
   "table_rows": [
     {
-      "boundary": "Borrower-side convergent evidence only; populations and lender coverage differ, and no loan purpose is observed.",
+      "boundary": "An independent borrower-side check. Populations and lender coverage differ; neither series identifies loan purpose.",
       "branch": "NFB: manufacturing",
-      "estimand": "Correlation of debtor-side and BOJ lender-side 4Q changes in manufacturing borrowing stocks.",
+      "estimand": "Correlation between borrower-reported and BOJ lender-reported four-quarter changes in manufacturing loan stocks.",
       "period_readout": "2010Q2-2026Q1; N=64; Pearson=0.74; Spearman=0.79; direction=70.3%",
       "source": "MOF corporate survey"
     },

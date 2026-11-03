@@ -69,7 +69,7 @@ def get_theory_overview(payload: Mapping[str, Any] | None = None) -> dict[str, A
     response.update(
         {
             "purpose": [
-                "Measure credit scale and borrower composition on a reconciled population.",
+                "Measure credit scale and borrower composition for the same reconciled loan population.",
                 "Keep current measurements separate from the proposed credit-use partition.",
                 "Test whether a composition coordinate adds information beyond matched credit-stock growth.",
             ][:limit],
@@ -80,9 +80,9 @@ def get_theory_overview(payload: Mapping[str, Any] | None = None) -> dict[str, A
             },
             "proposed_structural_variables": ["C_t", "C_t^R", "C_t^A", "q_t^use", "S_t"],
             "falsification_rules": [
-                "Do not claim forecasting value unless composition beats a matched-scale untouched baseline.",
-                "Keep the structural Real/Asset partition unidentified until purpose-coded evidence is available.",
-                "Keep dashboard quantities descriptive if calibration does not improve untouched holdout loss.",
+                "Claim forecasting value only if composition improves on a matched-scale baseline in untouched test data.",
+                "The structural Real/Asset split remains unidentified without purpose-coded evidence. Borrower sectors alone do not identify it.",
+                "Treat dashboard quantities as descriptive unless calibration reduces loss on an untouched holdout sample.",
             ][:limit],
             "limitations": [
                 "EU and US allocation panels are proxies, not cross-country validation.",
@@ -219,7 +219,7 @@ def compute_thermo_credit_metrics(payload: Mapping[str, Any]) -> dict[str, Any]:
             "limitations": [
                 str(payload.get("__claim_limit") or "The allocation share is interpreted only as supplied."),
                 "Allocated and complement scales are arithmetic decompositions, not causal effects.",
-                "output_change_per_credit is a descriptive ratio and not an efficiency estimate unless separately identified.",
+                "output_change_per_credit is a descriptive ratio. Interpreting it as efficiency requires separate identification.",
             ],
         }
     )
@@ -257,7 +257,7 @@ def evaluate_scenario(payload: Mapping[str, Any]) -> dict[str, Any]:
             "baseline": before,
             "scenario": after,
             "delta": delta,
-            "summary": "Arithmetic response to the user-supplied credit-scale and allocation-share shocks.",
+            "summary": "Recalculated credit amounts after the supplied changes in scale and allocation share.",
             "limitations": [
                 "No behavioral response, lag structure, price response, stress recursion, or forecast is estimated.",
                 "The allocation meaning and evidence class must be supplied by the caller.",

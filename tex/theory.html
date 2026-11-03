@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Thermo-Credit theory — entropy, CET1 slack, and AI reliability</title>
-  <meta name="description" content="Thermo-Credit (QTC) notebook linking CET1 slack, credit allocation entropy, Maxwell-style relations, and AI reliability controls with derivations, glossary, and data notes.">
+  <title>Thermo-Credit: exploratory theory notes</title>
+  <meta name="description" content="Exploratory Thermo-Credit notes on credit allocation, entropy-like dispersion, and balance-sheet capacity. These are not the current measurement paper.">
   <link rel="canonical" href="https://toppymicros.com/theory.html">
 
   <!-- Performance: speed up MathJax fetch -->
@@ -14,13 +14,13 @@
   <!-- Open Graph / Twitter -->
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="ToppyMicroServices">
-  <meta property="og:title" content="ToppyMicroServices — Thermo-Credit & AI Reliability">
-  <meta property="og:description" content="Open math + dashboards for credit allocation (Thermo-Credit) and AI reliability.">
+  <meta property="og:title" content="ToppyMicroServices: Thermo-Credit exploratory notes">
+  <meta property="og:description" content="Exploratory Thermo-Credit notes on credit allocation, entropy-like dispersion, and balance-sheet capacity. These are not the current measurement paper.">
   <meta property="og:url" content="https://toppymicros.com/theory.html">
   <meta property="og:image" content="https://toppymicros.com/og-brand-clean.png">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="ToppyMicroServices — Thermo-Credit & AI Reliability">
-  <meta name="twitter:description" content="Open math + dashboards for credit allocation (Thermo-Credit) and AI reliability.">
+  <meta name="twitter:title" content="ToppyMicroServices: Thermo-Credit exploratory notes">
+  <meta name="twitter:description" content="Exploratory Thermo-Credit notes on credit allocation, entropy-like dispersion, and balance-sheet capacity. These are not the current measurement paper.">
   <meta name="twitter:image" content="https://toppymicros.com/og-brand-clean.png">
 
   <!-- Typography -->
@@ -204,19 +204,20 @@ window.MathJax = {
         <meta itemprop="position" content="2" />
       </span>
     </nav>
-    <p class="tagline" role="doc-subtitle">Credit-First Macroeconomics for the AI Era</p>
+    <p class="tagline" role="doc-subtitle">Exploratory notes on credit and thermodynamics</p>
     <h1>Thermo-Credit Theory (QTC ↔ Thermodynamics)</h1>
+    <p class="callout"><strong>Historical notes.</strong> These earlier exploratory notes are not the current borrower-composition measurement paper. The thermodynamic gauges described here remain experimental, not validated decision thresholds. See the <a href="https://github.com/ToppyMicroServices/2025_11_Thermo_Credit/releases/latest/download/theory.pdf">paper release</a> and <a href="https://github.com/ToppyMicroServices/2025_11_Thermo_Credit/blob/main/docs/definitions.md">current definitions</a> for the present results and limits.</p>
     <p class="muted">QTM = Quantity Theory of Money (money-first). QTC = Quantity Theory of Credit (credit-first).</p>
-    <p class="muted">We use an <em>entropy-like</em>, <em>extensive</em> index to separate <strong>scale</strong> and <strong>dispersion</strong>. This is an <strong>isomorphism</strong>, not a physical identity, because the real economy we study does not obey physical laws in the first place. We are deliberately practice-first: what matters is decision-useful performance in real economies; academic formalization is welcome but strictly secondary.</p>
+    <p class="muted">We use an <em>entropy-like</em>, <em>extensive</em> index to separate <strong>scale</strong> and <strong>dispersion</strong>. This is an <strong>isomorphism</strong>, not a physical identity, because the real economy we study does not obey physical laws in the first place. We prioritize practical use in economic decisions over academic formalization.</p>
     <p style="margin:12px 0 0">
-      <a class="btn" href="https://doi.org/10.5281/zenodo.17563221" target="_blank" rel="noopener noreferrer">Download Technical Notes: (Zenodo)</a>
+      <a class="btn" href="https://doi.org/10.5281/zenodo.17563221" target="_blank" rel="noopener noreferrer">Earlier technical notes (Zenodo)</a>
     </p>
 
     <section class="card" id="abstract" style="margin-top:12px">
       <h2>Plain-English abstract</h2>
-      <p><strong>Thermo-Credit Theory</strong> reinterprets the Quantity Theory of Credit (QTC) through the lens of thermodynamics. It treats <strong>credit expansion and repayment</strong> as energy-like flows within a financial system that has measurable capacity, pressure, and dispersion. This mapping is not physics—it is a structured bookkeeping analogy designed for decision support and early-warning analytics.</p>
+      <p><strong>Thermo-Credit Theory</strong> reinterprets the Quantity Theory of Credit (QTC) using a thermodynamic analogy. It treats <strong>credit expansion and repayment</strong> as energy-like flows within a financial system that has measurable capacity, pressure, and dispersion. This mapping is a bookkeeping analogy for decision support and early-warning analytics, not a physical model.</p>
       <p>QTC extends the classic <strong>Quantity Theory of Money (QTM)</strong> by adding an explicit capacity term, \(V_C\), for the banking system. Just as physical systems have pressure–volume interactions, credit systems respond to changes in balance-sheet headroom and regulatory constraints. This allows us to separate random liquidity diffusion from intentional policy work, and to test whether data behave like state variables.</p>
-      <p>The theory introduces <strong>entropy-like dispersion</strong>, <strong>credit potential</strong>, and <strong>free-energy measures</strong> (\(F_C, X_C\)) to monitor stress and policy space. These quantities can be calculated from public balance-sheet and market data, producing falsifiable indicators. <strong>Thermo-Credit</strong> therefore serves as both a conceptual bridge between money and information, and a practical framework for quantitative supervision.</p>
+      <p>The theory introduces <strong>entropy-like dispersion</strong>, <strong>credit potential</strong>, and <strong>free-energy measures</strong> (\(F_C, X_C\)) to monitor stress and policy space. These quantities can be calculated from public balance-sheet and market data, producing falsifiable indicators. <strong>Thermo-Credit</strong> provides a conceptual link between money and information and a practical framework for quantitative supervision.</p>
     </section>
   </header>
 
@@ -259,7 +260,7 @@ window.MathJax = {
         <li><strong>Both:</strong> random mixing tends to raise our entropy-like index. To reverse it (make it more concentrated) you need structure—policy, rules, guidance.</li>
         <li><strong>Only in QTC:</strong> tightening or relaxing capacity shifts the “pressure” of constraints, which changes how hard it is to concentrate or relax the system.</li>
       </ul>
-      <p><strong>Why QTC adds value.</strong> QTC makes the hidden capacity/pressure channel explicit. That lets us distinguish “more random dispersion” from “intentional work by policy or rules” — which is exactly what you want for audit trails and early-warning dashboards.</p>
+      <p><strong>What QTC adds.</strong> QTC makes the capacity/pressure channel explicit. It distinguishes random dispersion from intentional work by policy or rules, a useful distinction for audit trails and early-warning dashboards.</p>
     </section>
 
     <!-- Primer -->
@@ -267,7 +268,7 @@ window.MathJax = {
     <!-- Overview -->
     <section id="overview" class="card" style="margin-top:12px">
       <h2>Overview</h2>
-      The index we informally described above is made precise as follows.
+      We define the index as follows.
       <p><span class="def-label">Definition.</span> Monetary dispersion entropy (entropy-like, extensive):
       <span id="eq1"></span>
       \[
@@ -473,7 +474,7 @@ window.MathJax = {
   <!-- Inserted: Free energy (F_C) and exergy (X_C) section -->
     <section id="free-vs-exergy" class="card" style="margin-top:12px">
   <h2>Free energy \(F_C\) — and optional exergy \(X_C\)</h2>
-  <p><strong>Why this exists.</strong> We want a single scalar potential for the QTC side that (i) decreases as dispersion <em>\(S_M\)</em> increases under a fixed environment, and (ii) provides an upper bound on structured work over a cycle. A Helmholtz-style free energy plays exactly this role.</p>
+  <p><strong>Purpose.</strong> We seek a scalar potential for QTC that decreases as dispersion <em>\(S_M\)</em> increases under a fixed environment and bounds structured work from above over a cycle. A Helmholtz-style free energy serves this purpose.</p>
       <p><strong>Definition.</strong> With a state potential \(U(S_M,V_C,\dots)\) and fixed environment \(T_0\): <span id="eq3"></span>
       \[
         F_C \equiv U - T_0 S_M,\qquad dF_C = -\,p_C\,dV_C + \delta W_{other} \tag{3}
@@ -520,7 +521,7 @@ window.MathJax = {
     <!-- Rephrasing? -->
     <section id="rephrasing" class="card" style="margin-top:12px">
       <h2>Is this merely a rephrasing?</h2>
-  <p>Mathematically it is a change of coordinates that isolates <em>scale</em> and <em>dispersion</em>. It becomes non-trivial because it yields: (i) <strong>falsifiable integrability constraints</strong> (Maxwell-like), (ii) a <strong>clean separation</strong> of policy work vs dispersion, and (iii) an <strong>exergy/free-energy lens</strong> for early-warning ceilings via \(X_C\) or \(F_C\).</p>
+  <p>Mathematically, this is a change of coordinates that separates <em>scale</em> and <em>dispersion</em>. It yields <strong>falsifiable integrability constraints</strong> (Maxwell-like) and separates policy work from dispersion. It also expresses early-warning ceilings through <strong>exergy or free energy</strong>, using \(X_C\) or \(F_C\).</p>
     </section>
 
     <!-- Insights from the analogy -->
@@ -602,7 +603,7 @@ window.MathJax = {
   <li><strong>Forward-looking statements.</strong> Forward-looking statements are uncertain and actual outcomes may differ materially.</li>
   <li><strong>Regulatory status.</strong> This content is not a regulated financial service (e.g., investment adviser, broker-dealer) and should not be treated as such.</li>
 </ul>
-        <p class="muted">Rationale: Economics here is treated at the limit of pragmatism—tools must earn their keep in real operations before being formalized in journals. Empirical validation and falsification are ongoing.</p>
+        <p class="muted">We prioritize testing the tools in practice before journal publication. Empirical validation and falsification are ongoing.</p>
       </div>
     </section>
     <!-- App behavior -->
@@ -617,7 +618,7 @@ window.MathJax = {
   </main>
 
   <footer>
-    <p class="muted">Last updated: 2025-11-06 (JST)</p>
+    <p class="muted">Original notes: 2025-11-06 (JST)</p>
     <p>© 2025 ToppyMicroServices OÜ</p>
     <p>Legal address: Karamelli tn 2, 11317 Tallinn, Harju County, Estonia</p>
     <p>Registry code: 16551297</p>

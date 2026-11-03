@@ -11,15 +11,15 @@ How do credit creation and its uses shape production, asset transactions, and
 financial fragility? Can explicit guidance rules improve these outcomes once
 banks and borrowers are allowed to respond to them?
 
-mAI Economy studies this question with AI-assisted model development and
-reproducible experiments. The intended system is an AI version of window
-guidance: institutions set objectives, compare rules, observe responses, and
-revise guidance. It does not assume a fixed pool of money to distribute, or
-that a requested allocation becomes actual lending.
+mAI Economy studies this question through AI-assisted model development and
+reproducible experiments. It aims to build an AI version of window guidance:
+institutions set objectives, compare rules, observe responses, and revise
+guidance. It does not assume a fixed pool of money to distribute, or that a
+requested allocation becomes actual lending.
 
-Thermo Credit supplies a candidate measurement and state representation within
-this program. Its current borrower-composition paper is one empirical input,
-not the complete theory of credit or a validation of guidance.
+Thermo Credit provides a candidate way to measure and represent the state of
+the system. Its current borrower-composition paper is one empirical input to
+the program, not a complete theory of credit or a validation of guidance.
 
 The credit-use distinction draws on Richard A. Werner's Quantity Theory of
 Credit: separate credit for GDP transactions from credit for existing-asset
@@ -96,15 +96,15 @@ separate experiments, not hidden consequences of changing a corridor.
 
 ## What AI contributes
 
-In research, AI proposes competing behavioral equations and helps locate
+In research, AI proposes competing behavioral equations and helps find
 evidence that can distinguish them. An explanation that fits a historical
 episode is a candidate hypothesis, not a discovered law. Retain alternative
 models when the observations cannot identify a unique mechanism.
 
 In the simulator, an adaptive controller may propose guidance using past
 observations. It must not see future shocks or the hidden state used by the
-evaluator. Start with a transparent adaptive rule; an AI controller is a
-separate comparator, not a new name for that rule.
+evaluator. Start with a transparent adaptive rule, then compare it with a
+separate AI controller. Do not call the transparent rule an AI controller.
 
 Institutions choose the objectives and permitted actions. Report output,
 prices, debt-service failures, and the distribution of gains and losses
@@ -162,8 +162,8 @@ assumed for the economy.
    Publish trajectories and failed cases before tuning an adaptive controller.
 3. Add the transparent adaptive baseline, then an AI controller. Evaluate
    both on reserved shocks and alternative behavioral models.
-4. Use real data to restrict plausible mechanisms and parameters. Test the
-   additional value of Thermo-Credit state variables before connecting an
+4. Use real data to narrow the range of plausible mechanisms and parameters.
+   Test the additional value of Thermo-Credit state variables before connecting an
    experimental guidance interface to the dashboard or MCP.
 
 The current Japanese `q_t` measures borrower composition from sectoral loan

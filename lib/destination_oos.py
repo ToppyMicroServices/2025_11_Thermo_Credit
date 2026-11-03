@@ -1170,13 +1170,13 @@ def render_destination_oos_tex(results: pd.DataFrame) -> str:
     return _render_destination_oos_table(
         summary,
         caption=(
-            "Bridge application: JP borrower-composition pseudo-OOS loss "
-            "comparison for the long-term JGB yield change."
+            "JP borrower-composition pseudo-OOS loss comparison: "
+            "long-term JGB yield changes."
         ),
         label="tab:destination_oos_incremental",
         scope_note=(
-            "This is an application of the borrower-composition bridge, not a "
-            "validated forecasting model."
+            "This exercise uses the borrower-composition measure. It does not "
+            "validate a forecasting model."
         ),
         sensitivity_note=_training_sensitivity_note(
             results,

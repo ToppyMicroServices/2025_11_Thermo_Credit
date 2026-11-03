@@ -43,8 +43,8 @@ external data provide only partial checks of selected branches. In the
 current-vintage pseudo-out-of-sample application, five of six main estimates
 have higher point loss than the matched credit-stock baseline. The remaining
 main estimate and one Appendix estimate are lower, but both intervals include
-zero. The result is a reproducible measure of borrower composition, not loan
-purpose or a forecasting result.
+zero. The contribution is a reproducible measure of borrower composition. It
+does not identify loan purpose or establish a forecasting gain.
 \end{abstract}
 
 \noindent\textbf{Keywords:} endogenous credit; borrower composition; sectoral
@@ -106,8 +106,8 @@ Classical quantity theories relate nominal expenditure to money and its
 velocity \citep{Fisher1911,Friedman1956,Laidler1985}. Endogenous-credit accounts
 instead start from bank lending and deposit creation
 \citep{LeBourva1992,Fontana2003,BoE2014}. The Quantity Theory of Credit further
-emphasises that the economic use of credit conditions its transmission
-\citep{Werner2012}. Monetary-circuit theory supplies an institutional account:
+emphasises that credit's effects on the economy depend on how it is used
+\citep{Werner2012}. Monetary-circuit theory explains the institutional process:
 bank credit opens and finances circuits whose balance-sheet positions need not
 be equivalent \citep{RochonRossi2007,Passarella2014}.
 
@@ -163,11 +163,11 @@ For a window of \(w\) quarters, define
 The primary empirical object is the four-quarter vector
 \(\boldsymbol{\pi}_{t,4}=(\pi_{t,4}^{NFB},\pi_{t,4}^{FIN},
 \pi_{t,4}^{PROP},\pi_{t,4}^{HHN})\). The scalar
-\(q_t\equiv\pi_{t,4}^{NFB}\) is a display coordinate. Four-quarter aggregation
-reduces quarter-specific stock-difference noise and remains defined whenever
-the four-quarter positive-flow denominator is positive. Neither the vector nor
-\(q_t\) is a share of credit used for production, investment, or asset
-purchases.
+\(q_t\equiv\pi_{t,4}^{NFB}\) is a display coordinate. Aggregating over four
+quarters reduces noise in quarterly stock differences. The vector is defined
+whenever the four-quarter positive-flow denominator is positive. Neither the
+vector nor \(q_t\) is a share of credit used for production, investment, or
+asset purchases.
 
 \subsection{Granularity invariance and claim boundary}
 
@@ -180,20 +180,19 @@ Because the positive part in equation \eqref{eq:bucket_positive} is applied
 after this sum, \(P_t^k\), \(\boldsymbol{\pi}_{t,w}\), and \(q_t\) are unchanged.
 The measure is therefore invariant to classification refinements within a
 fixed borrower bucket. It is not invariant to moving a sector across buckets.
-That remaining classification uncertainty is addressed by three
-literature-anchored mappings reported jointly rather than by presenting a
-single author choice as uniquely implied by the data.
+We report three mappings from the literature to show this remaining
+classification uncertainty. The data do not uniquely determine which mapping
+to use.
 
 This construction differs from
 \(\sum_{s\in\mathcal S_k}\max\{\Delta L_{s,t},0\}\). The latter rises when
 offsetting expansions and contractions are published as separate subseries and
 therefore depends on classification granularity. The empirical audit reports
-the difference between the two orders rather than silently treating them as
-equivalent.
+how much these two aggregation orders differ.
 
 Table~\ref{tab:theory_measure} links each observable to the check needed for
 its interpretation. A purpose interpretation would require independent data
-that code loan purpose, which the current BOJ comparator cannot provide.
+classified by loan purpose. The current BOJ comparator cannot provide these.
 
 \begin{center}
   \refstepcounter{table}
@@ -238,8 +237,8 @@ that code loan purpose, which the current BOJ comparator cannot provide.
 
 \subsection{BOJ source, population, and timing}
 
-The source is the BOJ Time-Series Data Search, database LA01. The selected map
-is the total outstanding loans of domestically licensed banks less
+The source is the BOJ Time-Series Data Search, database LA01. The included stock
+is total outstanding loans of domestically licensed banks less
 local-government loans. The lender designation does not restrict borrowers to
 Japan: the published NFB residual includes the disclosed overseas-linked
 series. BOJ documentation states that the sector data have a discontinuity in
@@ -250,7 +249,7 @@ four-quarter measure is dated 2010Q2 and becomes usable in the application in
 2010Q3 under an assumed fixed 90-day release lag.
 
 The long-term JGB yield, nominal GDP, and BOJ total assets are proxy outcomes
-used only to demonstrate the bridge; none measures borrower composition or
+used only to demonstrate the bridge. None measures borrower composition or
 validates it. Table~\ref{tab:destination_oos_incremental} reports the JGB
 application, nominal GDP is not tabulated, and BOJ balance-sheet acceleration
 is confined to the Appendix.
@@ -268,7 +267,7 @@ Table~\ref{tab:boj_bridge_mapping} defines the four buckets and their common
 population, \(L_t^P=B_t^{TOT}-B_t^{LG}\). Accounting coverage reconciles this
 population and the local-government exclusion to the official aggregate.
 Decomposition coverage accounts for the detailed industries, overseas-linked
-series, and unresolved remainder within published residual NFB.
+series, and unresolved remainder within the published NFB residual.
 
 \IfFileExists{generated/theory_boj_taxonomy_robustness.tex}{
 \begingroup
@@ -309,8 +308,8 @@ branches, not for the full four-bucket composition.
 
 \subsection{Same-population reconciliation and coverage}
 
-The primary and alternative mappings all exhaust the included stock. Their
-signed changes also exhaust the change in that stock.
+The buckets in each mapping sum to the included stock. Their signed changes
+sum to the change in that stock.
 
 \IfFileExists{generated/theory_boj_bridge_validation.tex}{
 \input{generated/theory_boj_bridge_validation.tex}
@@ -343,8 +342,8 @@ Table~\ref{tab:external_partial_validation} adds selected independent checks.
 
 \subsection{Use example: pseudo-OOS loss comparison}
 
-For horizon \(h\in\{4,8\}\), the use example augments the matched BOJ credit-
-stock-growth baseline with a reported taxonomy coordinate \(z_t^{(r)}\):
+For horizon \(h\in\{4,8\}\), we augment the matched BOJ credit-stock-growth
+baseline with a reported taxonomy coordinate \(z_t^{(r)}\):
 \begin{equation}
   y_{t,t+h}
     =\alpha_t+\beta_t g_{t,h}^P+\gamma_t z_t^{(r)}
@@ -373,9 +372,8 @@ Run \texttt{python scripts/19\_destination\_oos\_incremental.py} to populate
 Five of the six main-table loss differentials are positive. The four-quarter
 primary estimate is negative, but its interval includes zero. The Werner
 four-quarter interval also includes zero, whereas the M\"uller--Verner interval
-is above zero; all three eight-quarter intervals are above zero. The present
-sample therefore gives no reliable evidence that composition improves the
-forecast.
+is above zero; all three eight-quarter intervals are above zero. This sample
+provides no reliable evidence that composition improves the forecast.
 
 \subsection{Partial external validation}
 
@@ -414,7 +412,7 @@ The measure has clear boundaries:
   \item Positive stock changes are not gross originations. Repayment,
         refinancing, write-offs, and reclassification can change the stocks.
   \item Granularity invariance holds for refinements within a fixed bucket, not
-        for moving a sector between reported mappings; construction makes
+        for moving a sector between reported mappings. Construction makes
         this dependence visible.
   \item Residual NFB includes an overseas-linked component and a small
         unresolved component. The external sources cover only selected
@@ -433,8 +431,8 @@ differently, while the accounting and coverage checks make the mapping
 auditable.
 
 The external checks remain partial, and the forecasting application shows no
-reliable improvement over the matched baseline. The result is a measurement
-bridge, not a measure of loan purpose or a forecasting result.
+reliable improvement over the matched baseline. The bridge measures borrower
+composition rather than loan purpose.
 
 \begingroup
 \small
@@ -496,7 +494,7 @@ Run \texttt{python scripts/18\_boj\_bridge\_validation.py} to populate
 \section*{Appendix C: Asset-Boom Hypothesis and BOJ Balance-Sheet Acceleration}
 
 \paragraph{Exploratory asset-boom hypothesis.}
-A separate literature links broad credit and leverage expansions to asset-price
+Other studies link expansions in broad credit and leverage to asset-price
 cycles and financial instability
 \citep{BorioLowe2002,JordaSchularickTaylor2015,SchularickTaylor2012}. The
 borrower groups used here do not identify asset-directed lending, so the BOJ

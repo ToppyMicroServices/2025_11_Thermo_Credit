@@ -155,7 +155,8 @@ def test_destination_oos_reports_focused_jp_models(tmp_path) -> None:
         ]
     ) == {28}
     assert set(results["boj_data_source"]) == {"data/credit_destination_jp.csv"}
-    assert "Bridge application: JP borrower-composition pseudo-OOS" in tex
+    assert "JP borrower-composition pseudo-OOS loss comparison" in tex
+    assert "does not validate a forecasting model" in tex
     assert "Bezemer: NFB (primary)" in tex
     assert "Werner-inspired BOJ proxy" in tex
     assert r'M\"uller--Verner: non-tradable' in tex

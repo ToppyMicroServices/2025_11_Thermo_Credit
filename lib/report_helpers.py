@@ -463,31 +463,41 @@ def _metric_phrase(metric: str) -> str:
 
 
 def _compare_interpretation(short_label: str, frame: Optional[pd.DataFrame]) -> Optional[str]:
+    metric = short_label.replace("Compare:", "").strip()
+    normalized_note = "S_M_hat shows normalized entropy, not within-region z-scores."
+    missing_note = (
+        normalized_note if metric == "S_M_hat" else
+        "Values are standardized within each region. Raw levels cannot be compared across regions."
+    )
     if frame is None or not isinstance(frame, pd.DataFrame):
-        return "Within-region standardized view; raw levels are not cross-region comparable."
+        return missing_note
     if not {"value", "Region"}.issubset(frame.columns):
-        return "Within-region standardized view; raw levels are not cross-region comparable."
+        return missing_note
     data = frame.copy()
     data.loc[:, "value"] = pd.to_numeric(data["value"], errors="coerce")
     data = data.dropna(subset=["value"])
     if "date" in data.columns:
         data = data.sort_values("date")
     if data.empty:
-        return "Within-region standardized view; raw levels are not cross-region comparable."
+        return missing_note
     latest = data.groupby("Region").tail(1)
     latest = latest.dropna(subset=["value"])
     if latest.empty or latest["Region"].nunique() < 2:
-        return "Within-region standardized view; watch relative slopes."
+        return normalized_note if metric == "S_M_hat" else "Values are standardized within each region. Compare slopes rather than raw levels."
     leader = latest.loc[latest["value"].idxmax()]
     laggard = latest.loc[latest["value"].idxmin()]
     if leader.get("Region") == laggard.get("Region"):
-        return "Within-region standardized view; watch relative slopes."
-    metric = short_label.replace("Compare:", "").strip()
+        return normalized_note if metric == "S_M_hat" else "Values are standardized within each region. Compare slopes rather than raw levels."
+    if metric == "S_M_hat":
+        return (
+            f"Normalized entropy is highest in {leader['Region']} "
+            f"(S_M_hat≈{leader['value']:.2f}) vs {laggard['Region']} (S_M_hat≈{laggard['value']:.2f})."
+        )
     phrase = _metric_phrase(metric)
     return (
-        f"{phrase.capitalize()} standardized position highest in {leader['Region']} "
-        f"(z≈{leader['value']:.2f}) vs {laggard['Region']} (z≈{laggard['value']:.2f}); "
-        "compare historical position, not raw levels."
+        f"{phrase.capitalize()}: the standardized position is highest in {leader['Region']} "
+        f"(z≈{leader['value']:.2f}) vs {laggard['Region']} (z≈{laggard['value']:.2f}). "
+        "Compare historical position, not raw levels."
     )
 
 
@@ -498,7 +508,7 @@ def _chart_interpretation(short_label: str, frame: Optional[pd.DataFrame]) -> Op
     if label.startswith("Compare"):
         return _compare_interpretation(label, frame)
     if label == "Raw Inputs (first=100)":
-        return "Each input series is rebased to 100 at its start; steeper slopes show faster growth on that rebased scale."
+        return "Each input series is rebased to 100 at its start. Steeper slopes show faster growth on this scale."
     if frame is None or not isinstance(frame, pd.DataFrame) or frame.empty:
         return None
 
@@ -518,19 +528,19 @@ def _chart_interpretation(short_label: str, frame: Optional[pd.DataFrame]) -> Op
         tl_txt = _bucket_text("T_L", tl)
         if tl_txt:
             parts.append(f"T_L≈{tl_txt}")
-        suffix = " These are model-specific historical positions; no policy or overheating threshold is validated."
+        suffix = " These historical positions are model-specific. No policy or overheating threshold is validated."
         return ", ".join(parts) + suffix if parts else None
 
     if label == "S_M by category":
         cat_cols = [c for c in frame.columns if c.startswith("S_M_in_")]
         if not cat_cols:
-            return "Category stacking shows which lending blocks drive dispersion."
+            return "The stacked categories show each lending block's contribution to dispersion."
         try:
             latest = frame[cat_cols].apply(pd.to_numeric, errors="coerce").dropna(how="all").tail(1)
         except Exception:
             latest = pd.DataFrame()
         if latest.empty:
-            return "Category stacking shows which lending blocks drive dispersion."
+            return "The stacked categories show each lending block's contribution to dispersion."
         row = latest.iloc[0]
         contribs: List[Tuple[str, float]] = []
         total = 0.0
@@ -541,7 +551,7 @@ def _chart_interpretation(short_label: str, frame: Optional[pd.DataFrame]) -> Op
             key = col.replace("S_M_in_", "")
             contribs.append((CATEGORY_LABELS.get(key, key.replace("_", " ").title()), float(val)))
         if total <= 0 or not contribs:
-            return "Category stacking shows which lending blocks drive dispersion."
+            return "The stacked categories show each lending block's contribution to dispersion."
         contribs.sort(key=lambda kv: abs(kv[1]), reverse=True)
         top_parts = [f"{name} {abs(val)/total:.0%}" for name, val in contribs[:2]]
         return "Latest dispersion split: " + ", ".join(top_parts) + "."
@@ -558,12 +568,12 @@ def _chart_interpretation(short_label: str, frame: Optional[pd.DataFrame]) -> Op
     if label == "X_C Diagnostic":
         val = _latest_numeric(frame, "X_C")
         if val is None:
-            return "Experimental exergy-like transformation; no validated threshold is available."
+            return "This exergy-like transformation is experimental. No threshold has been validated."
         bucket = _series_bucket(frame.get("X_C"), val)
         trend = _series_trend(frame.get("X_C"))
         trend_txt = f", {trend}" if trend else ""
         bucket_txt = f" ({bucket})" if bucket else ""
-        return f"X_C≈{val:.2f}{bucket_txt}{trend_txt}; this is an experimental diagnostic, not validated headroom."
+        return f"X_C≈{val:.2f}{bucket_txt}{trend_txt}. This is an experimental diagnostic, not validated headroom."
 
     if label == "Free Energy (F_C)":
         val = _latest_numeric(frame, "F_C")
@@ -614,7 +624,7 @@ def _chart_interpretation(short_label: str, frame: Optional[pd.DataFrame]) -> Op
         if gap is None:
             gap = _latest_numeric(frame, "maxwell_gap")
         if gap is None:
-            return "Comparing ∂T/∂V|S and −∂p/∂S|V; zero curl means proxies agree."
+            return "This compares ∂T/∂V|S and −∂p/∂S|V. Zero curl means the proxies agree."
         try:
             col = "maxwell_curl" if "maxwell_curl" in frame.columns else "maxwell_gap"
             series = pd.to_numeric(frame.get(col), errors="coerce").dropna()
@@ -627,10 +637,10 @@ def _chart_interpretation(short_label: str, frame: Optional[pd.DataFrame]) -> Op
     if label == "First-law Decomposition":
         resid = _latest_numeric(frame, "firstlaw_resid")
         if resid is None:
-            return "Tracks ΔU versus predicted TΔS−pΔV contributions."
+            return "Compares ΔU with the predicted TΔS−pΔV contributions."
         trend = _series_trend(frame.get("firstlaw_resid"))
-        trend_txt = f" trending {trend}" if trend and trend != "flat" else ""
-        return f"Residual≈{resid:.3f}{trend_txt}; smaller values indicate a smaller residual in this model construction."
+        trend_txt = f" and {trend}" if trend and trend != "flat" else ""
+        return f"Residual≈{resid:.3f}{trend_txt} in the first-law-like model."
 
     return None
 
